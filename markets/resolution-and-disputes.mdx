@@ -1,70 +1,151 @@
 ---
 title: "Resolution & Disputes"
-description: "How Aura's optimistic oracle settles markets, and how community voting handles disputes."
+description: "How Aura's optimistic oracle settles markets, and how the commit/reveal vote handles disputes."
 ---
 
-Aura emphasizes transparency and fairness through a structured market
-resolution and dispute process, ensuring outcomes reflect community consensus.
+Aura uses an **optimistic oracle**: most markets resolve without any vote.
+A bonded proposer states the outcome, and if no one disputes within the
+challenge window, that outcome stands. When a market *is* disputed, neutral
+$AURA stakers settle it through a **tier-weighted commit/reveal vote**.
 
-## Submitting market outcomes
+## Submitting an outcome
 
-Once a market reaches its end date, users can submit a proposed outcome
-(e.g. **YES** or **NO**) by posting a **100 USDT bond**. This initiates a
-24-hour dispute window.
+Once a market reaches its end date, anyone can submit a proposed outcome
+(**YES**, **NO**, or one of the categorical options) by posting a refundable
+**proposer bond** in USDT. This opens a dispute window.
 
-- If no one disputes the proposal within 24 hours, the market automatically
-  resolves to that outcome.
-- The proposer's 100 USDT bond is refunded in full.
+- If no one disputes the proposal before the dispute deadline, the market
+  automatically resolves to that outcome.
+- The proposer's bond is refunded in full.
 
-## How disputes work
+## Initiating a dispute
 
-If another user disagrees with the proposed outcome, they can initiate a
-dispute by also staking **100 USDT** within the 24-hour window.
+If another user disagrees, they can initiate a dispute by posting an equal
+**disputer bond** in USDT before the dispute deadline. The market then enters
+a structured commit/reveal vote.
 
-- The market then enters a **24-hour community voting period**.
-- During this time, the outcome remains open until the community vote
-  concludes.
-- Both the proposer and disputer now have 100 USDT at stake — for a total of
-  **200 USDT**.
+Both the proposer and the disputer have funds at stake — the loser's bond is
+forfeit, the winner's is doubled.
 
-## Voting on outcomes
+## The commit/reveal vote
 
-Only **neutral users** (those with no position in the disputed market) can
-vote on the correct outcome. This maintains fairness.
+The vote runs in two phases to prevent voters from copying each other's
+choices:
 
 <Steps>
-  <Step title="Navigate to Voting page">
-    Visit the **Voting** tab, select the **Outcomes** section, and locate the
-    disputed market.
+  <Step title="Commit phase">
+    Eligible voters submit a **hashed vote**: `keccak256(choice || salt)`.
+    The choice is one of `YES`, `NO`, or `TOO_EARLY` (see below). Nobody can
+    see what anyone else voted for during this phase.
   </Step>
-  <Step title="Cast your vote">
-    Voting power is determined by your staking tier (1 to 30 votes, depending
-    on tier level — see [Tier Structure](/tokens/tier-structure)).
+  <Step title="Reveal phase">
+    Once the commit window closes, voters reveal their vote by submitting
+    the original `choice` and `salt`. The contract verifies the hash and
+    counts the vote with the voter's tier weight.
   </Step>
-  <Step title="Wait for finalization">
-    Majority votes determine the resolution.
+  <Step title="Finalization">
+    After the reveal phase, the protocol checks whether any single outcome
+    cleared the **65% supermajority** threshold of revealed weight.
   </Step>
 </Steps>
 
-### What if there's a tie?
+The build-tx endpoints for this flow are
+[`POST /v1/tx/oracle/commit`](/api-reference/introduction) and
+[`POST /v1/tx/oracle/reveal`](/api-reference/introduction).
 
-If the vote results in a tie, the market does **not** resolve. Instead:
+### Why commit/reveal?
 
-- A revote is triggered with another 24-hour voting window.
-- This process repeats until a majority is reached.
+A naive "vote in one transaction" design lets later voters mirror earlier
+ones, which collapses the vote into whatever the first big voter does.
+Commit/reveal forces every voter to lock in their answer privately first,
+then prove it after the deadline. The result is an honest snapshot of what
+each voter believed at vote time.
 
-## Finalizing outcomes
+### The `TOO_EARLY` option
 
-After the voting period concludes:
+Some disputes shouldn't resolve in either direction — the underlying event
+hasn't actually happened yet, the data source isn't out, or the question is
+malformed. Voters can pick `TOO_EARLY` to signal this.
 
-- **Winning outcome** — determined by majority community votes.
-- **Voters are incentivized** — 10% of the market's fees are split among
-  users who voted for the final winning outcome, proportional to their voting
-  power.
+If `TOO_EARLY` clears the 65% supermajority, the market is **canceled**:
+
+- All open positions are unwound; share holders are refunded.
+- Both the proposer's and disputer's bonds go to the **disputer** (the
+  proposer made an avoidable mistake).
+- Trading fees collected up to that point go to the treasury.
+
+## Eligibility
+
+Only **neutral $AURA stakers** can vote in a dispute:
+
+- You must hold a vaulted $AURA position above the **None** tier (i.e. at
+  least the **Iron** tier, 60,000 $AURA).
+- You must **not** hold any open position in the disputed market and must
+  not have traded it during the dispute window. The contract enforces this
+  by checking the market's stake-holder registry — any address that placed
+  an order is excluded.
+
+## What happens if no outcome clears 65%?
+
+If neither `YES`, `NO`, nor `TOO_EARLY` clears the supermajority threshold,
+the round is inconclusive. The protocol immediately starts a **new
+commit/reveal round** with the same windows. This repeats until an outcome
+wins decisively.
+
+This is intentional — Aura would rather take longer to resolve a contested
+market than ship a 51/49 result that half the market disagrees with.
+
+## Voting power
+
+Voting weight matches your staking tier:
+
+| Tier | Voting weight |
+| --- | ---: |
+| Degenerate | 30 |
+| Diamond | 22 |
+| Platinum | 16 |
+| Gold | 11 |
+| Silver | 7 |
+| Bronze | 3 |
+| Iron | 1 |
+| None | 0 (cannot vote) |
+
+See [Tier Structure](/tokens/tier-structure) for stake requirements.
+
+## Voter rewards (and penalties)
+
+Aura's dispute system uses **slashing**, not protocol fees, to reward honest
+voting:
+
+- **Wrong-side voters** — anyone who revealed a vote for the *losing*
+  outcome has a portion of their vaulted $AURA slashed.
+- **Non-revealers** — stakers who committed but never revealed (or never
+  committed at all) are penalized too, since silent voters undermine the
+  oracle.
+- **Slashed $AURA** flows into a **penalty pool** for that market.
+- **Winning voters** then claim a proportional share of the penalty pool,
+  weighted by their voting tier.
+
+Dispute rewards are paid in **$AURA** — the wrong side of a controversial
+market literally funds the right side.
+
+## Bonds & finalization
+
+After a vote round resolves with a clear winner:
+
 - **Bonds** — the winning side's representative (proposer or disputer)
-  receives the full 200 USDT bond as a reward.
-- **Outcome enforcement** — winning share holders are automatically paid out
-  in USDT.
+  receives the full **proposer + disputer bond pool**.
+- **Settlement** — winning share holders are paid out automatically in
+  USDT.
+- **Penalty bookkeeping** — once `applyVotePenalties` and
+  `applyNonVoterPenalties` finish slashing, the penalty pool is finalized
+  and winning voters can claim their rewards.
 
-This transparent, community-driven process ensures integrity and
-trustworthiness across all prediction markets on Aura.
+## TL;DR
+
+- Most markets resolve **without** a vote — only disputed ones go through
+  the commit/reveal flow.
+- Voters lock a hashed vote, then reveal it; copy-voting is prevented.
+- A **65% supermajority** is required; otherwise a new round runs.
+- `TOO_EARLY` cancels the market and refunds traders.
+- Voters are paid in **$AURA** from a slashing pool, not in USDT fees.

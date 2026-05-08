@@ -3,61 +3,81 @@ title: "Creating Markets"
 description: "How to propose a new prediction market on Aura."
 ---
 
-Aura provides users the power to propose their own prediction markets.
-Community members with a valid staking tier (**Iron** or higher) can create
-engaging markets on various events, predictions, and topics.
+Aura puts market creation in the hands of the community. Stakers above the
+**Iron** tier can propose new prediction markets on any topic — sports,
+politics, crypto, real-world events — and earn a share of the trading fees
+on every market they ship.
 
 ## Proposal requirements
 
-Before proposing a market, users must meet the following requirements:
+Before submitting a proposal, you'll need:
 
-- **Minimum tier** — Iron (or higher). Users without a valid tier must vault
-  (stake) $AURA tokens first. See [Tier Structure](/tokens/tier-structure) and
+- **Iron tier or higher** — at least 60,000 vaulted $AURA. See
+  [Tier Structure](/tokens/tier-structure) and
   [Staking & Vaulting $AURA](/tokens/staking).
-- **Deposit** — a refundable deposit of **0.5 ALPH** per market proposal.
+- **A small ALPH deposit** — covers the on-chain contract storage for the
+  proposal. The deposit is **fully refunded** when the proposal is
+  finalized (whether it's approved or rejected). Typical cost is around
+  0.5 ALPH.
 
-## Market creation process
+## Market creation flow
 
 <Steps>
-  <Step title="Navigate to the proposal form">
-    Click the **Propose Market** button at the top-right of the Aura website.
+  <Step title="Open the proposal form">
+    Click **Propose Market** at the top right of the Aura site.
   </Step>
-  <Step title="Complete the proposal form">
-    - **Market question** — clearly state the prediction event or outcome.
-    - **Category** — choose the appropriate category to help users find your
-      market easily.
-    - **Market rules** — provide clear, detailed instructions or conditions
-      for resolving the market outcome.
-    - **End date** — specify the exact date and time when the market will
-      close.
-    - **Images and links** — optionally add relevant images or links to
-      support clarity and user engagement.
+  <Step title="Fill in the details">
+    - **Question** — clearly state the prediction event or outcome.
+    - **Category** — pick a top-level category so users can find your
+      market.
+    - **Resolution rules** — describe exactly what conditions resolve the
+      market YES, NO, or to each option.
+    - **Resolution date** — the deadline at which the market closes for
+      trading. The outcome is resolved shortly after.
+    - **Sources & images** — list authoritative sources voters can use to
+      verify the outcome, and add a relevant image to drive engagement.
   </Step>
-  <Step title="Submit your proposal">
-    Confirm the submission by authorizing the 0.5 ALPH deposit through your
-    wallet.
+  <Step title="Submit + sign">
+    Confirm the transaction in your wallet. The deposit is locked into a
+    proposal contract.
   </Step>
   <Step title="Community voting">
-    Your proposal enters a 24-hour community voting period. Proposals with the
-    most votes are considered for approval, but final acceptance also accounts
-    for the current number of markets on the platform, recent average daily
-    volume, and how many other proposals are active. This means even a
-    highly-voted proposal might be rejected if the platform is at capacity.
+    Your proposal enters a **24-hour community voting window**. Stakers
+    review and vote on each proposal, weighted by their tier.
+  </Step>
+  <Step title="Approval">
+    After voting closes, a curator reviews the most-supported proposals
+    against current platform capacity (number of active markets, recent
+    daily volume, and total queued proposals) and approves the ones that
+    best fit the slate. Approved proposals deploy on-chain immediately;
+    rejected proposals refund the deposit.
   </Step>
 </Steps>
 
-## Market limits & restrictions
+## Market limits
 
-To maintain platform quality and avoid spam, the following limits apply:
-
-| Limit | Value |
-| --- | --- |
-| Cooldown between proposals | 1 minute per user |
-| Daily proposals per user | 25 |
-| Quality assurance | Proposals that don't pass voting and platform criteria are rejected; the proposer's deposit is refunded. |
+To keep the platform high-quality and spam-free, each proposer can submit
+**up to 25 proposals per day**.
 
 <Tip>
   See [Binary Market Best Practices](/tutorials/binary-market-best-practices)
   and [Categorical Market Best Practices](/tutorials/categorical-market-best-practices)
-  for guidance on writing markets that pass community voting.
+  for guidance on writing markets that gain support and pass curation.
 </Tip>
+
+## Linked markets
+
+For events with multiple related outcomes — election races, league seasons,
+playoff brackets — you can submit a **linked proposal** that bundles up to
+60 related markets into a single voting decision. If the bundle is
+approved, all of its child markets deploy together with shared metadata,
+so the UI can group them into a single "event" page.
+
+Linked proposals are ideal for:
+
+- League winners + division winners + playoff appearances
+- Multi-stage tournaments (group stage, knockouts, final)
+- Election cycles with primaries, conventions, and the general
+
+You'll find the linked-proposal mode in the same proposal form, under
+**Linked / event-style markets**.

@@ -5,10 +5,10 @@ description: "Aura uses a central limit order book. Place market or limit orders
 
 Aura uses a **central limit order book (CLOB)**. Prices are shown as
 probabilities (0–100%), and liquidity comes from limit orders posted by
-traders and market makers. When you place a market order, it fills instantly
-against the best available orders on the book. When you place a limit order,
-you choose your price and your order sits on the book until someone matches
-it (or you cancel it).
+traders and market makers. When you place a market order, it fills
+instantly against the best available orders on the book. When you place a
+limit order, you choose your price and your order sits on the book until
+someone matches it (or you cancel it).
 
 ## Buying outcome shares
 
@@ -56,9 +56,9 @@ it (or you cancel it).
         average fill price depends on book depth.
       </Tab>
       <Tab title="Limit sell (set your price)">
-        Set a price and quantity to sell. The order sits on the book until a
-        buyer matches it. You can cancel open orders anytime if you change
-        your mind.
+        Set a price and quantity to sell. The order sits on the book until
+        a buyer matches it. You can cancel open orders anytime if you
+        change your mind.
       </Tab>
     </Tabs>
   </Step>
@@ -69,27 +69,34 @@ it (or you cancel it).
 
 ## Parlay bets (multi-leg trades)
 
-- **Multiple legs** — select 2 to 5 different market outcome positions (legs)
-  to include in one parlay bet.
+- **Multiple legs** — select 2 to 5 different market outcome positions
+  (legs) to include in one parlay bet.
 - **Combined odds** — the odds of each leg multiply together, yielding a
-  combined payout that can reach **up to 50× the original stake** if all legs
-  are correct.
-- **All-or-nothing payout** — every leg must win for the parlay to pay out.
-  If any leg fails, the entire parlay bet is lost and no payout is given.
-- **Dynamic odds impact** — parlay odds are influenced by execution across the
-  selected markets. As legs are added, the overall odds can shift based on
-  available liquidity and prices at the time of entry.
+  combined payout that can reach **up to 50× the original stake** if all
+  legs are correct.
+- **All-or-nothing payout** — every leg must win for the parlay to pay
+  out. If any leg fails, the parlay is lost and no payout is given.
+- **Dynamic odds** — parlay odds reflect the live order book at the time
+  you place the bet. As legs are added, the overall odds shift based on
+  available liquidity and prices.
 
-## Understanding fees & order book pricing
+## Understanding fees
 
-A **2.5% trading fee** is charged in USDT on executed volume.
+A **2.5% trading fee** is charged in USDT on executed volume. The fee
+splits between the market creator and the protocol treasury:
 
-| Slice | Goes to |
+| Slice | Recipient |
 | --- | --- |
-| Creator fee | A predefined slice goes to the market creator (1–30% based on tier). |
-| Treasury | The remainder goes to the Aura treasury. |
-| Referral | If a referral link is used, **10% of the treasury slice** is paid to the referrer. |
-| Voter | If a market is disputed and resolved by community vote, **10% of the treasury slice** is redirected to voters who backed the ultimately correct outcome. |
+| **Creator share** | A tier-scaled cut (1–30%) goes to the market creator. |
+| **Treasury** | The remainder funds liquidity rewards, dispute incentives, referral payouts, and protocol development. |
+
+Two additional rewards flow from the treasury's share:
+
+- **Referrals** — when a trader uses a referral link, the referrer earns
+  **10% of the treasury share** of that trader's fees.
+- **Dispute resolution** — voters who decide disputed markets are
+  rewarded through a separate slashing mechanism. See
+  [Resolution & Disputes](/markets/resolution-and-disputes).
 
 <Tip>
   No other fees exist — no exit tax, hidden spread, or performance fee.
@@ -98,8 +105,8 @@ A **2.5% trading fee** is charged in USDT on executed volume.
 ### Spreads & slippage
 
 - **Spread** — the gap between the best bid and best ask on the book.
-- **Slippage** — when a trade consumes multiple price levels due to limited
-  depth.
+- **Slippage** — when a trade consumes multiple price levels due to
+  limited depth.
 
 ## Potential returns
 
@@ -108,21 +115,20 @@ A **2.5% trading fee** is charged in USDT on executed volume.
 | Each YES share pays **1 USDT** | Each NO share pays **1 USDT** |
 | All NO shares expire worthless | All YES shares expire worthless |
 
-Once a market outcome is finalized, winning shares are settled and paid out
-in USDT to the same account/wallet that holds the shares. Payouts are
-processed after resolution as part of settlement.
+Once a market outcome is finalized, winning shares are settled and paid
+out in USDT to the wallet that holds them. Payouts are processed
+automatically as part of settlement.
 
 ## Collateral & settlement safety
 
-Buy orders lock USDT collateral based on the order's price and size. If an
-order is partially filled or canceled, **any unused locked USDT is refunded**.
+Buy orders lock USDT collateral based on the order's price and size. If
+an order is partially filled or canceled, **any unused locked USDT is
+refunded** immediately.
 
 ## TL;DR
 
-- Aura uses a CLOB order book.
-- Prices are 0–100% probabilities from bids and asks.
-- Market orders cross the book and may partially fill.
-- Limit orders provide liquidity, can be canceled, and release unused
-  collateral if unfilled.
-- A 2.5% fee is charged in USDT on executed volume, with creator / treasury /
-  referral / dispute-voter distribution.
+- Central limit order book — bids and asks form 0–100% probabilities.
+- Market orders cross the book; limit orders provide liquidity.
+- 2.5% USDT fee on executed volume, split between creator and treasury.
+- 1 USDT per winning share at settlement.
+- Up to 50× payout on 2–5-leg parlays.

@@ -1,62 +1,100 @@
 ---
 title: "Outcome Voting"
-description: "How disputed markets get resolved by neutral $AURA holders."
+description: "How disputed markets get resolved by neutral $AURA stakers via commit/reveal."
 ---
 
-Aura ensures fairness and transparency through a robust community-driven
-voting mechanism used to finalize market outcomes, particularly in cases of
-disputes.
+When a market outcome is disputed, the protocol runs a **commit/reveal vote**
+among neutral $AURA stakers. This page walks through the voter's
+perspective; for the full lifecycle (bonds, penalties, finalization) see
+[Resolution & Disputes](/markets/resolution-and-disputes).
 
 ## How voting works
 
-When a market outcome is disputed, it enters a community voting phase:
-
 <Steps>
-  <Step title="Initiating a dispute">
-    A user initiates a dispute by posting a dispute bond, triggering the
-    voting period.
+  <Step title="A dispute opens">
+    A user disagrees with a proposed outcome and posts a disputer bond. This
+    triggers the vote.
   </Step>
-  <Step title="Navigate to the Voting section">
-    Sign in with your wallet, then access the **Voting** tab from the
-    navigation toolbar.
+  <Step title="Find the market">
+    Sign in with your wallet, open the **Voting** tab, and select the
+    **Outcomes** section. Eligible disputed markets are listed with their
+    commit and reveal deadlines.
   </Step>
-  <Step title="Select a market outcome">
-    Review active disputes listed in the **Outcomes** section and cast your
-    vote for the outcome you believe is correct.
+  <Step title="Commit your vote">
+    During the commit phase, your wallet sends a **hash** of your choice
+    (`YES`, `NO`, or `TOO_EARLY`) plus a random salt. Nobody — including
+    the protocol — can see what you actually picked yet.
+
+    The salt is stored locally in your wallet. **Do not lose it** — you'll
+    need it to reveal.
   </Step>
-  <Step title="Finalize results">
-    When the voting period ends, the outcome with the most votes becomes
-    final. If there is a tie, an immediate revote is triggered.
+  <Step title="Reveal your vote">
+    Once the commit window closes, you have a shorter reveal window to
+    submit your choice and salt. The contract verifies the hash matches
+    your earlier commit and tallies your vote at your tier weight.
+  </Step>
+  <Step title="Wait for finalization">
+    After the reveal phase, the protocol checks whether any outcome cleared
+    the **65% supermajority** of revealed weight. If yes, the market
+    finalises. If not, a new commit/reveal round starts immediately.
   </Step>
 </Steps>
 
-### Voting eligibility
+### Eligibility
 
-- **Neutral voting** — only users who hold no active positions in the
-  disputed market can participate, ensuring unbiased outcomes.
-- **Voting period** — voting lasts **24 hours** from the moment a dispute is
-  initiated.
+- **Vaulted $AURA above None tier** — you must hold at least 60,000 $AURA
+  (Iron tier) at the time of the dispute.
+- **Neutral position** — you cannot have placed any order on the disputed
+  market, including during the dispute itself. The on-chain stake-holder
+  registry is checked when you commit.
 
-## Voting power explained
+### Vote choices
 
-Your voting power is determined by the tier achieved through staking $AURA
-tokens:
-
-| Tier | Voting Power |
+| Choice | Meaning |
 | --- | --- |
-| Degenerate | 30 votes |
-| Diamond | 22 votes |
-| Platinum | 16 votes |
-| Gold | 11 votes |
-| Silver | 7 votes |
-| Bronze | 3 votes |
-| Iron | 1 vote |
-| None | 0 votes |
+| `YES` / `NO` (or category option) | The outcome is decided in this direction. |
+| `TOO_EARLY` | The event hasn't happened yet, the data source isn't out, or the question is malformed. If this wins, the market is canceled and traders are refunded. |
 
-Your voting power directly impacts the resolution of disputed markets,
-allowing higher-tiered users greater influence on community-driven outcomes.
+## Voting power by tier
 
-<Tip>
-  See the full [Tier Structure](/tokens/tier-structure) for stake requirements
-  and fee-share details.
-</Tip>
+| Tier | Voting weight |
+| --- | ---: |
+| Degenerate | 30 |
+| Diamond | 22 |
+| Platinum | 16 |
+| Gold | 11 |
+| Silver | 7 |
+| Bronze | 3 |
+| Iron | 1 |
+| None | 0 |
+
+Higher tiers carry significantly more weight, both for and against. This
+also means higher tiers have **more $AURA at stake** if they vote with the
+losing side — see below.
+
+## Rewards
+
+Voters who back the **winning outcome** earn a share of the dispute's
+**penalty pool**, paid in **$AURA**.
+
+The pool is funded by slashing two groups:
+
+- **Wrong-side voters** who revealed a vote for the losing outcome.
+- **Silent stakers** who committed but never revealed, or never committed
+  in a market they could have voted on.
+
+Each winning voter's share is proportional to their voting weight relative
+to the total winning weight.
+
+<Warning>
+  Voting on a dispute is not free. If you back the wrong side, **you lose
+  $AURA**. Vote only on markets where you've done the homework.
+</Warning>
+
+## TL;DR
+
+- Commit a hash, then reveal — prevents copy-voting.
+- 65% supermajority required; otherwise a new round runs.
+- `TOO_EARLY` cancels the market.
+- Winners are paid in **$AURA** from slashed wrong-side stakes.
+- Wrong-side and silent voters lose $AURA — vote with care.

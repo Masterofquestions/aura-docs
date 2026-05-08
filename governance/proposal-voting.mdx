@@ -4,56 +4,49 @@ description: "How new market proposals are reviewed and approved by the communit
 ---
 
 Aura relies on community-driven governance to ensure high-quality and
-relevant prediction markets. Proposals submitted by community members
-undergo a transparent review and approval process, guided by the votes of
-users staking $AURA tokens.
+relevant prediction markets. Every new market proposal goes through a
+transparent review and approval process, guided by votes from $AURA
+stakers.
 
 ## How proposals are reviewed and approved
 
-When a new market proposal is submitted, the community evaluates its quality
-and relevance through a structured voting process:
-
 <Steps>
   <Step title="Proposal submission">
-    Users submit a proposal with a clear market question, end time, and
-    market rules.
+    A creator submits a proposal with a clear question, resolution rules,
+    end time, and category. The required ALPH deposit is locked.
   </Step>
   <Step title="Voting period">
-    Proposals enter a 24-hour community voting window. During this period,
-    eligible voters evaluate and vote on each proposal.
+    Proposals enter a **24-hour community voting window**. Eligible voters
+    rank each proposal, weighted by their staking tier.
   </Step>
-  <Step title="Approval criteria">
-    While proposals with the most votes in the 24-hour window are prioritized,
-    the system also considers the platform's current state — including the
-    total number of markets already active, the average daily trading volume,
-    and the number of active proposals — when determining how many proposals
-    to approve. This ensures new markets are added at a sustainable pace
-    based on platform activity.
-  </Step>
-  <Step title="Rejected proposals">
-    Proposals that don't meet the approval criteria (due to insufficient votes
-    or platform limits) are rejected, and the initial deposit is refunded to
-    the proposer minus any transaction costs.
+  <Step title="Curation">
+    After the window closes, the most-supported proposals are reviewed
+    against current platform capacity — number of active markets, recent
+    daily trading volume, and the size of the proposal queue. Proposals
+    that fit the slate are approved and deploy on-chain immediately;
+    others are rejected and the deposit is refunded.
   </Step>
 </Steps>
 
+This balance between **community signal** and **operational curation**
+keeps the market list curated to platform demand while still ensuring the
+community decides what's interesting in the first place.
+
 ## Voting weight by tier
 
-Your ability to influence proposal approvals depends directly on your staking
-tier. Higher tiers yield greater voting power:
+Your influence on proposal approvals scales with your staked $AURA tier.
 
-| Tier | Voting Weight | Stake Requirement |
-| --- | --- | --- |
-| Degenerate | 30 weight | 1,000,000 $AURA |
-| Diamond | 22 weight | 833,333 $AURA |
-| Platinum | 16 weight | 666,667 $AURA |
-| Gold | 11 weight | 500,000 $AURA |
-| Silver | 7 weight | 333,333 $AURA |
-| Bronze | 3 weight | 166,667 $AURA |
-| Iron | 1 weight | 60,000 $AURA |
-| None | 0 weight | &lt;60,000 $AURA |
+| Tier | Voting weight | Stake requirement |
+| --- | ---: | ---: |
+| Degenerate | 30 | 1,000,000 $AURA |
+| Diamond | 22 | 833,333 $AURA |
+| Platinum | 16 | 666,667 $AURA |
+| Gold | 11 | 500,000 $AURA |
+| Silver | 7 | 333,333 $AURA |
+| Bronze | 3 | 166,667 $AURA |
+| Iron | 1 | 60,000 $AURA |
+| None | 0 | &lt;60,000 $AURA |
 
-- Higher tiers grant significantly more voting power, incentivizing larger
-  community contributions and higher engagement.
-- Users without any staked tokens (**None** tier) cannot vote on proposals,
-  ensuring meaningful governance participation.
+- Higher tiers grant significantly more voting power, rewarding stakers
+  who put real skin in the game.
+- Stakers below the Iron threshold can't vote on proposals.
