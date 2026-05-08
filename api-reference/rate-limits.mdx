@@ -1,0 +1,55 @@
+---
+title: "Rate Limits"
+description: "Per-IP and per-key request budgets, with standard `RateLimit-*` response headers."
+---
+
+The Aura API enforces per-minute rate limits on every request.
+
+## Tiers
+
+| Tier      | Reads (req/min) | Writes (req/min) |
+| --------- | --------------: | ---------------: |
+| Anonymous | 60 per IP       | 10 per IP        |
+| API key   | 600 per key     | 60 per key       |
+
+Custom per-key limits can be set in the `api_keys.rate_limit_per_min` column
+of the database — useful for partner integrations that need higher headroom.
+
+## Response headers
+
+Every response carries the standard IETF
+`draft-ietf-httpapi-ratelimit-headers` set:
+
+```http
+RateLimit-Limit: 600
+RateLimit-Remaining: 547
+RateLimit-Reset: 38
+```
+
+| Header | Meaning |
+| --- | --- |
+| `RateLimit-Limit` | Total requests allowed in the current window. |
+| `RateLimit-Remaining` | Requests remaining in the current window. |
+| `RateLimit-Reset` | Seconds until the window resets. |
+
+## Hitting the limit
+
+When you exceed your budget, the API returns `429 Too Many Requests`:
+
+```json
+{
+  "statusCode": 429,
+  "code": "RATE_LIMITED",
+  "message": "Rate limit exceeded. Try again in 38s."
+}
+```
+
+The same `RateLimit-*` headers are returned on the 429 response so your
+client can back off precisely.
+
+<Tip>
+  If you anticipate sustained throughput above the per-key limit (e.g.
+  high-frequency market makers), reach out on
+  [Telegram](https://t.me/AuraMarkets) and we'll provision a higher-budget
+  partner key.
+</Tip>

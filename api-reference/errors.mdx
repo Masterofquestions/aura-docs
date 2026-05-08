@@ -1,0 +1,68 @@
+---
+title: "Errors"
+description: "Standard error envelope and HTTP status codes used across the API."
+---
+
+The Aura API returns errors as JSON with a stable shape:
+
+```json
+{
+  "statusCode": 400,
+  "code": "INVALID_REQUEST",
+  "message": "price must be between 1 and 999",
+  "details": {
+    "field": "price",
+    "received": 1000
+  }
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `statusCode` | HTTP status code (matches the response status). |
+| `code` | Stable, machine-readable error code. Don't switch on `message`. |
+| `message` | Human-readable error description. |
+| `details` | Optional object with structured context (varies by error code). |
+
+## Status codes
+
+| Status | When |
+| --- | --- |
+| `400 Bad Request` | Validation failed — schema, range, or business rule. `details` usually carries the offending field. |
+| `401 Unauthorized` | Missing or malformed `Authorization` header. |
+| `403 Forbidden` | Key valid but lacks the required scope (e.g. `read`-only key calling `/v1/tx/*`). |
+| `404 Not Found` | The resource doesn't exist (or you don't own it, for wallet-scoped reads). |
+| `409 Conflict` | Idempotency / state conflict (e.g. trying to dispute a market past the dispute window). |
+| `422 Unprocessable Entity` | Request was valid but cannot be fulfilled (e.g. insufficient balance for a build-tx call). |
+| `429 Too Many Requests` | Rate limit exceeded. See [Rate Limits](/api-reference/rate-limits). |
+| `500 Internal Server Error` | Bug on our side. Includes a `requestId` in `details` for support. |
+| `502 Bad Gateway` | Upstream chain node or indexer is unhealthy. Retry. |
+| `503 Service Unavailable` | Maintenance window or temporary overload. Retry with backoff. |
+
+## Common error codes
+
+| Code | Meaning |
+| --- | --- |
+| `INVALID_REQUEST` | Request body or query failed schema validation. |
+| `UNAUTHORIZED` | API key required or invalid. |
+| `INSUFFICIENT_SCOPE` | Key lacks the scope this endpoint requires. |
+| `RATE_LIMITED` | Per-IP or per-key rate limit exceeded. |
+| `NOT_FOUND` | Resource doesn't exist. |
+| `MARKET_CLOSED` | Trade attempted on a closed/resolved market. |
+| `INSUFFICIENT_BALANCE` | Build-tx target wallet doesn't have enough collateral. |
+| `INVALID_SIGNATURE` | Auth challenge signature didn't verify. |
+| `CHALLENGE_EXPIRED` | Auth challenge was used past its TTL. |
+| `UPSTREAM_TIMEOUT` | Chain node or indexer didn't respond in time. |
+
+## Idempotency & retries
+
+- All `GET` endpoints are safe to retry.
+- `POST /v1/tx/*` endpoints are **idempotent by request body** — calling
+  twice with the same body returns the same `unsignedTx` and `txId`. This
+  makes it safe to retry on transient network errors without double-spending.
+- `POST /v1/auth/keys` is **not** idempotent (each call mints a new key).
+
+<Tip>
+  Always log the `requestId` from `5xx` errors when reporting bugs. It lets
+  us trace your exact request through our logs.
+</Tip>

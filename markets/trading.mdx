@@ -1,0 +1,128 @@
+---
+title: "Trading on Aura"
+description: "Aura uses a central limit order book. Place market or limit orders, build parlays, and earn from spreads."
+---
+
+Aura uses a **central limit order book (CLOB)**. Prices are shown as
+probabilities (0–100%), and liquidity comes from limit orders posted by
+traders and market makers. When you place a market order, it fills instantly
+against the best available orders on the book. When you place a limit order,
+you choose your price and your order sits on the book until someone matches
+it (or you cancel it).
+
+## Buying outcome shares
+
+<Steps>
+  <Step title="Navigate to your desired market">
+    Select the market you wish to trade from the Aura homepage or search
+    results.
+  </Step>
+  <Step title="Choose outcome">
+    Pick an outcome — typically **YES** or **NO**.
+  </Step>
+  <Step title="Choose order type">
+    <Tabs>
+      <Tab title="Market order (instant fill)">
+        Enter how much USDT (collateral) you want to spend (or the share
+        quantity you want). The order fills immediately against the best
+        available asks on the order book. Your final average price depends
+        on available depth.
+      </Tab>
+      <Tab title="Limit order (set your price)">
+        Enter a price (probability % / 0–100) and a quantity (shares). Your
+        order is posted to the order book and only fills if another trader
+        matches it. You can cancel open orders anytime before they fill.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Confirm transaction">
+    Click **Buy** and confirm via your connected wallet (or passkey flow).
+  </Step>
+</Steps>
+
+## Selling outcome shares
+
+<Steps>
+  <Step title="Switch to Sell tab">
+    On the market page, select the **Sell** tab.
+  </Step>
+  <Step title="Select outcome shares">
+    Choose which shares you want to sell (YES or NO).
+  </Step>
+  <Step title="Choose order type">
+    <Tabs>
+      <Tab title="Market sell (instant fill)">
+        Sells immediately into the best available bids on the book. Your
+        average fill price depends on book depth.
+      </Tab>
+      <Tab title="Limit sell (set your price)">
+        Set a price and quantity to sell. The order sits on the book until a
+        buyer matches it. You can cancel open orders anytime if you change
+        your mind.
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Confirm transaction">
+    Click **Sell** and confirm via your connected wallet (or passkey flow).
+  </Step>
+</Steps>
+
+## Parlay bets (multi-leg trades)
+
+- **Multiple legs** — select 2 to 5 different market outcome positions (legs)
+  to include in one parlay bet.
+- **Combined odds** — the odds of each leg multiply together, yielding a
+  combined payout that can reach **up to 50× the original stake** if all legs
+  are correct.
+- **All-or-nothing payout** — every leg must win for the parlay to pay out.
+  If any leg fails, the entire parlay bet is lost and no payout is given.
+- **Dynamic odds impact** — parlay odds are influenced by execution across the
+  selected markets. As legs are added, the overall odds can shift based on
+  available liquidity and prices at the time of entry.
+
+## Understanding fees & order book pricing
+
+A **2.5% trading fee** is charged in USDT on executed volume.
+
+| Slice | Goes to |
+| --- | --- |
+| Creator fee | A predefined slice goes to the market creator (1–30% based on tier). |
+| Treasury | The remainder goes to the Aura treasury. |
+| Referral | If a referral link is used, **10% of the treasury slice** is paid to the referrer. |
+| Voter | If a market is disputed and resolved by community vote, **10% of the treasury slice** is redirected to voters who backed the ultimately correct outcome. |
+
+<Tip>
+  No other fees exist — no exit tax, hidden spread, or performance fee.
+</Tip>
+
+### Spreads & slippage
+
+- **Spread** — the gap between the best bid and best ask on the book.
+- **Slippage** — when a trade consumes multiple price levels due to limited
+  depth.
+
+## Potential returns
+
+| Market resolves YES | Market resolves NO |
+| --- | --- |
+| Each YES share pays **1 USDT** | Each NO share pays **1 USDT** |
+| All NO shares expire worthless | All YES shares expire worthless |
+
+Once a market outcome is finalized, winning shares are settled and paid out
+in USDT to the same account/wallet that holds the shares. Payouts are
+processed after resolution as part of settlement.
+
+## Collateral & settlement safety
+
+Buy orders lock USDT collateral based on the order's price and size. If an
+order is partially filled or canceled, **any unused locked USDT is refunded**.
+
+## TL;DR
+
+- Aura uses a CLOB order book.
+- Prices are 0–100% probabilities from bids and asks.
+- Market orders cross the book and may partially fill.
+- Limit orders provide liquidity, can be canceled, and release unused
+  collateral if unfilled.
+- A 2.5% fee is charged in USDT on executed volume, with creator / treasury /
+  referral / dispute-voter distribution.

@@ -1,0 +1,116 @@
+---
+title: "Build-tx Flow"
+description: "How non-custodial transaction building works under `/v1/tx/*`."
+---
+
+Aura is non-custodial — the API **never holds private keys**. Endpoints under
+`/v1/tx/*` return an *unsigned* transaction that the caller must sign with
+its own wallet (passkey, mobile wallet, hardware wallet, etc.) and submit to
+an Alephium node.
+
+## Anatomy of a build-tx response
+
+Every `/v1/tx/*` endpoint returns the same shape:
+
+```json
+{
+  "unsignedTx":         "00010001...",
+  "txId":               "abc123...",
+  "fromGroup":          0,
+  "toGroup":            0,
+  "gasAmount":          20000,
+  "gasPrice":           "100000000000",
+  "collateralRequired": "666250000000000000",
+  "attoAlphAmount":     "1000000000000000",
+  "tokens": [
+    { "id": "<usdt-id>", "amount": "666250000000000000" }
+  ]
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `unsignedTx` | Hex-encoded unsigned transaction. Pass directly to your wallet's `signUnsignedTx` helper. |
+| `txId` | The txId your wallet should produce after signing. Useful for client-side optimistic UI. |
+| `fromGroup` / `toGroup` | Alephium shard groups. |
+| `gasAmount`, `gasPrice` | Gas estimate for the transaction. |
+| `collateralRequired` | USDT (or other token) that will be locked by the tx — useful for pre-flight balance checks. |
+| `attoAlphAmount` | ALPH locked by the tx (covers gas + on-chain deposits; auto-swapped from USDT in most cases). |
+| `tokens[]` | Tokens locked by the tx, with raw amounts. |
+
+## End-to-end example: place a limit order
+
+<Steps>
+  <Step title="Build the unsigned tx">
+    ```bash
+    curl -X POST https://api.aurabets.io/v1/tx/markets/<market-address>/orders \
+      -H 'authorization: Bearer aura_live_xxx' \
+      -H 'content-type: application/json' \
+      -d '{
+        "signerAddress":   "1Cef...",
+        "signerPublicKey": "0233...",
+        "side":            "buy",
+        "outcome":         "yes",
+        "price":           650,
+        "quantity":        "1000000000000000000"
+      }'
+    ```
+  </Step>
+  <Step title="Sign with your wallet">
+    <CodeGroup>
+    ```ts @alephium/web3
+    import { web3 } from '@alephium/web3'
+
+    const signed = await wallet.signUnsignedTx({
+      signerAddress,
+      unsignedTx: response.unsignedTx,
+    })
+    ```
+
+    ```ts Passkey
+    const signed = await passkeySigner.signUnsignedTx({
+      signerAddress,
+      unsignedTx: response.unsignedTx,
+    })
+    ```
+    </CodeGroup>
+  </Step>
+  <Step title="Submit to any Alephium node">
+    ```ts
+    const submitted = await nodeProvider.transactions.postTransactionsSubmit({
+      unsignedTx: response.unsignedTx,
+      signature:  signed.signature,
+    })
+
+    console.assert(submitted.txId === response.txId)
+    ```
+
+    Most wallets bundle the sign + submit step into a single
+    `signAndSubmitUnsignedTx` helper.
+  </Step>
+</Steps>
+
+## Why this pattern?
+
+| Custodial API | Aura API |
+| --- | --- |
+| You hand over your key (or sign in to a custodian). | Your wallet signs locally; the API only constructs the tx. |
+| Custodian can freeze, censor, or drain. | Aura cannot move your funds — at all. |
+| Single point of failure. | Aura can go down without affecting your wallet. |
+
+This pattern is identical to how Polymarket, Hyperliquid, and other
+non-custodial trading platforms expose their write paths.
+
+## Build-tx endpoints (by domain)
+
+| Domain | Endpoint prefix |
+| --- | --- |
+| Orders | `POST /v1/tx/markets/{address}/orders` |
+| Order cancel | `DELETE /v1/tx/markets/{address}/orders/{id}` |
+| Vault | `POST /v1/tx/vault/{deposit,unlock,withdraw}` |
+| Oracle | `POST /v1/tx/oracle/{submit,dispute,commit,reveal}` |
+| Voting | `POST /v1/tx/voting/vote` |
+| Proposals | `POST /v1/tx/proposals/{single,linked,parlay}` |
+
+See the **API Reference → Endpoints** tab for the full request/response
+schema of each.

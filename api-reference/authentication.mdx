@@ -1,0 +1,125 @@
+---
+title: "Authentication"
+description: "Mint an API key by signing a one-time challenge with your Alephium wallet."
+---
+
+Every endpoint accepts an optional API key:
+
+```http
+Authorization: Bearer aura_live_<your-key>
+```
+
+Reads work without a key (lower IP-based rate limit). Write endpoints under
+`/v1/tx/*` **require** a key with the `write:tx` scope.
+
+## Minting a key
+
+Two-step wallet-signature flow — no email or password.
+
+<Steps>
+  <Step title="Get a one-time challenge">
+    ```bash
+    curl -X POST https://api.aurabets.io/v1/auth/challenge \
+      -H 'content-type: application/json' \
+      -d '{"address": "1Cef...your-wallet"}'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "challenge": "Sign this message...",
+      "expiresAt": "2026-05-08T19:00:00Z"
+    }
+    ```
+  </Step>
+  <Step title="Sign with your wallet">
+    Use your wallet's `signMessage` helper with `hasher: "alephium"` to sign
+    the `challenge` string. Most Alephium wallets and SDKs support this
+    natively.
+  </Step>
+  <Step title="Submit signature + public key">
+    ```bash
+    curl -X POST https://api.aurabets.io/v1/auth/keys \
+      -H 'content-type: application/json' \
+      -d '{
+        "address":   "1Cef...your-wallet",
+        "publicKey": "0233...your-pubkey",
+        "signature": "abcd...sig",
+        "name":      "my-trading-bot"
+      }'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "key": "aura_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "id":  "8d3e...",
+      "name": "my-trading-bot",
+      "scopes": ["read", "write:tx"],
+      "createdAt": "2026-05-08T18:30:00Z"
+    }
+    ```
+
+    <Warning>
+      The `key` value is shown **once**. Store it securely — it cannot be
+      retrieved later.
+    </Warning>
+  </Step>
+</Steps>
+
+## Using the key
+
+Pass it as a Bearer token on every request:
+
+<CodeGroup>
+```bash curl
+curl https://api.aurabets.io/v1/markets \
+  -H 'authorization: Bearer aura_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+```
+
+```ts TypeScript (fetch)
+const res = await fetch('https://api.aurabets.io/v1/markets', {
+  headers: {
+    Authorization: `Bearer ${process.env.AURA_API_KEY}`,
+  },
+})
+```
+
+```py Python (requests)
+import os, requests
+
+res = requests.get(
+    'https://api.aurabets.io/v1/markets',
+    headers={'Authorization': f'Bearer {os.environ["AURA_API_KEY"]}'},
+)
+```
+</CodeGroup>
+
+## Listing & revoking keys
+
+Once authenticated, you can list and revoke your own keys:
+
+```bash
+# List
+curl https://api.aurabets.io/v1/auth/keys \
+  -H 'authorization: Bearer aura_live_xxx'
+
+# Revoke a specific key by id
+curl -X DELETE https://api.aurabets.io/v1/auth/keys/<key-id> \
+  -H 'authorization: Bearer aura_live_xxx'
+```
+
+See the full schema for these endpoints under the **Auth** group of the API
+Reference.
+
+## Scopes
+
+| Scope | Grants |
+| --- | --- |
+| `read` | All read endpoints (default for newly minted keys). |
+| `write:tx` | Build-tx endpoints under `/v1/tx/*`. |
+
+Keys are issued with both scopes by default. You can request a `read`-only
+key by passing `"scopes": ["read"]` in the mint request.

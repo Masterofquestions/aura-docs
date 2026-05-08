@@ -1,0 +1,70 @@
+---
+title: "Categorical Market Best Practices"
+description: "How to write multi-option markets that resolve cleanly."
+---
+
+## Ideal categorical market example
+
+> **Question:** Who will win the 2025 MLB World Series?
+>
+> **Options:**
+>
+> - Yankees
+> - Braves
+> - Dodgers
+> - Astros
+> - Red Sox
+> - Other
+>
+> **Resolution Date:** November 5, 2025, 11:59 PM
+>
+> **Resolution Rules:** This market resolves to the team officially declared
+> the winner of the 2025 MLB World Series by MLB.com. If the MLB season is
+> canceled or incomplete by the resolution date, all options resolve to
+> **NO**.
+>
+> **Sources:**
+>
+> - [MLB Official Website](https://www.mlb.com/)
+> - [MLB Postseason Bracket](https://www.mlb.com/postseason/bracket)
+
+## Crafting great categorical markets
+
+### Write a clear, singular question
+
+- Clearly specify the event and year.
+- Avoid complex or multi-part questions.
+
+### Provide distinct and comprehensive options
+
+- Clearly list options exactly as they officially appear.
+- Limit to between **2 and 20** options.
+- Always include an **"Other"** option to handle unexpected outcomes.
+
+### Clearly explain resolution rules
+
+- Rules should clearly specify how and when the market resolves.
+- Address special cases such as event cancellations or incompletions.
+- Avoid ambiguity; clear wording is essential.
+
+### Choose a realistic resolution date
+
+- Use the official date of event completion, if available.
+- Clearly indicate the timezone and time cutoff.
+- Date must fall within one year from proposal.
+
+### List official sources separately
+
+- Provide any and all sources mentioned in the rules.
+- Users rely on these sources to confirm market results.
+
+### Option images (optional)
+
+- Add square images or logos for each option.
+- Images should default to the main market image if not provided
+  individually.
+
+<Warning>
+  **Pro tip** — always imagine unexpected outcomes. Your market rules should
+  clearly handle any scenario to avoid confusion.
+</Warning>

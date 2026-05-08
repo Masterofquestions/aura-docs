@@ -1,0 +1,70 @@
+---
+title: "Resolution & Disputes"
+description: "How Aura's optimistic oracle settles markets, and how community voting handles disputes."
+---
+
+Aura emphasizes transparency and fairness through a structured market
+resolution and dispute process, ensuring outcomes reflect community consensus.
+
+## Submitting market outcomes
+
+Once a market reaches its end date, users can submit a proposed outcome
+(e.g. **YES** or **NO**) by posting a **100 USDT bond**. This initiates a
+24-hour dispute window.
+
+- If no one disputes the proposal within 24 hours, the market automatically
+  resolves to that outcome.
+- The proposer's 100 USDT bond is refunded in full.
+
+## How disputes work
+
+If another user disagrees with the proposed outcome, they can initiate a
+dispute by also staking **100 USDT** within the 24-hour window.
+
+- The market then enters a **24-hour community voting period**.
+- During this time, the outcome remains open until the community vote
+  concludes.
+- Both the proposer and disputer now have 100 USDT at stake — for a total of
+  **200 USDT**.
+
+## Voting on outcomes
+
+Only **neutral users** (those with no position in the disputed market) can
+vote on the correct outcome. This maintains fairness.
+
+<Steps>
+  <Step title="Navigate to Voting page">
+    Visit the **Voting** tab, select the **Outcomes** section, and locate the
+    disputed market.
+  </Step>
+  <Step title="Cast your vote">
+    Voting power is determined by your staking tier (1 to 30 votes, depending
+    on tier level — see [Tier Structure](/tokens/tier-structure)).
+  </Step>
+  <Step title="Wait for finalization">
+    Majority votes determine the resolution.
+  </Step>
+</Steps>
+
+### What if there's a tie?
+
+If the vote results in a tie, the market does **not** resolve. Instead:
+
+- A revote is triggered with another 24-hour voting window.
+- This process repeats until a majority is reached.
+
+## Finalizing outcomes
+
+After the voting period concludes:
+
+- **Winning outcome** — determined by majority community votes.
+- **Voters are incentivized** — 10% of the market's fees are split among
+  users who voted for the final winning outcome, proportional to their voting
+  power.
+- **Bonds** — the winning side's representative (proposer or disputer)
+  receives the full 200 USDT bond as a reward.
+- **Outcome enforcement** — winning share holders are automatically paid out
+  in USDT.
+
+This transparent, community-driven process ensures integrity and
+trustworthiness across all prediction markets on Aura.

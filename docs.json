@@ -1,0 +1,142 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Aura",
+  "description": "Decentralized prediction markets on Alephium. User docs, governance specs, and the public REST API.",
+  "colors": {
+    "primary": "#8B5CF6",
+    "light": "#A78BFA",
+    "dark": "#7C3AED"
+  },
+  "favicon": "/favicon.png",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "href": "https://aurabets.io"
+  },
+  "background": {
+    "color": {
+      "light": "#FAFAFA",
+      "dark": "#0A0A0F"
+    }
+  },
+  "appearance": {
+    "default": "dark"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Welcome",
+            "pages": [
+              "index",
+              "overview/introduction",
+              "overview/why-alephium",
+              "overview/roadmap"
+            ]
+          },
+          {
+            "group": "Getting Started",
+            "pages": [
+              "getting-started/connecting",
+              "getting-started/passkeys",
+              "getting-started/bridging"
+            ]
+          },
+          {
+            "group": "Markets",
+            "pages": [
+              "markets/creating-markets",
+              "markets/trading",
+              "markets/resolution-and-disputes",
+              "markets/rewards-and-incentives"
+            ]
+          },
+          {
+            "group": "Tokens & Vault",
+            "pages": [
+              "tokens/alph",
+              "tokens/aura",
+              "tokens/tier-structure",
+              "tokens/staking"
+            ]
+          },
+          {
+            "group": "Governance",
+            "pages": [
+              "governance/outcome-voting",
+              "governance/proposal-voting"
+            ]
+          },
+          {
+            "group": "Tutorials",
+            "pages": [
+              "tutorials/user-tutorials",
+              "tutorials/binary-market-best-practices",
+              "tutorials/categorical-market-best-practices",
+              "tutorials/maximizing-tier-benefits",
+              "tutorials/strategies"
+            ]
+          },
+          {
+            "group": "Support",
+            "pages": [
+              "support/faq",
+              "support/contact"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication",
+              "api-reference/rate-limits",
+              "api-reference/build-tx-flow",
+              "api-reference/errors"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": {
+              "source": "/api-reference/openapi.json",
+              "directory": "api-reference"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Telegram",
+        "href": "https://t.me/AuraMarkets"
+      },
+      {
+        "label": "X",
+        "href": "https://x.com/AuraMarkets"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open App",
+      "href": "https://testnet.aurabets.io"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/AuraMarkets",
+      "telegram": "https://t.me/AuraMarkets"
+    }
+  },
+  "search": {
+    "prompt": "Search Aura docs and API"
+  }
+}

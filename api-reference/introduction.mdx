@@ -1,0 +1,77 @@
+---
+title: "Introduction"
+description: "Public REST API for Aura — markets, prices, vault, oracle, governance, and unsigned tx builders."
+---
+
+The **Aura API** is a public REST service that exposes everything a user can
+see or do in the Aura app:
+
+- **Reads** — markets, prices, the order book, trades, vault state, oracle
+  and governance data, faucet status.
+- **Writes** (`/v1/tx/*`) — build *unsigned* transactions for the client to
+  sign with its own wallet. The API never holds private keys.
+
+The full reference for every endpoint is generated directly from the running
+service's OpenAPI 3.1 spec — so it can never drift from the implementation.
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Mint a key by signing a wallet challenge.
+  </Card>
+  <Card title="Rate limits" icon="gauge-high" href="/api-reference/rate-limits">
+    Anonymous + per-key tiers, IETF `RateLimit-*` headers.
+  </Card>
+  <Card title="Build-tx flow" icon="signature" href="/api-reference/build-tx-flow">
+    Non-custodial transaction building under `/v1/tx/*`.
+  </Card>
+  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Standard error shape and status codes.
+  </Card>
+</CardGroup>
+
+## Base URL
+
+<CodeGroup>
+```bash Mainnet
+https://api.aurabets.io
+```
+
+```bash Testnet
+https://api.testnet.aurabets.io
+```
+
+```bash Local
+http://localhost:3001
+```
+</CodeGroup>
+
+## Discovery
+
+Built for integrators, not for lazy implementers:
+
+- **Faceted lists** — every list endpoint accepts `?facets=true` and returns
+  category / tag / status counts in the same response, so a UI can render
+  filter chips without a second request.
+- **Cursor pagination** — stable across inserts and fast at depth. Offset
+  paging via `?page=` is still supported for compatibility.
+- **Rich filters** — `?q=`, `?category=`, `?tags=`, `?status=`, `?creator=`,
+  `?minVolume=` on `/v1/markets`. Tag matching is AND (all listed tags must
+  be present).
+- **Sortable** — `?sort=created-at|volume|best-bid-yes|recently-traded` with
+  `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.
+- **Field projection** — `?fields=id,question,bestBidYes` trims the wire
+  weight for thin clients.
+- **Unified search** — `/v1/search?q=` runs a strict tsquery first with a
+  fuzzy trigram fallback when nothing matches; result type is a discriminated
+  union so adding events / users later is non-breaking.
+- **Transparent trending** — `/v1/trending` returns the full algorithm and
+  per-market component scores so the ranking is auditable.
+- **Categories + tags as first-class** — `/v1/categories` and `/v1/tags`
+  enumerate the taxonomy with market counts.
+
+## OpenAPI spec
+
+The machine-readable spec is published at
+[`/openapi.json`](https://api.aurabets.io/openapi.json) on the live API and
+is generated directly from the Fastify + zod route definitions, so it can
+never drift from the implementation.
