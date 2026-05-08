@@ -1,0 +1,121 @@
+---
+title: "About the Vault"
+description: "How the Aura Vault works — staking, voting power, and the slashing mechanics that keep the oracle honest."
+---
+
+The **Aura Vault** is the on-chain home of every staked $AURA token. It
+does three jobs at once:
+
+1. **Tracks tier eligibility** — the tier you qualify for (and the
+   benefits that come with it) is computed live from your vaulted
+   balance.
+2. **Powers governance voting** — your voting weight in proposal voting
+   and dispute resolution is read directly from the Vault.
+3. **Backs the optimistic oracle with skin in the game** — when a
+   dispute is resolved, voters who backed the wrong outcome (or who
+   committed a vote and never revealed it) have a portion of their
+   vaulted $AURA **slashed**. That $AURA flows to the voters who got the
+   call right.
+
+This page covers the concepts. For the step-by-step "how do I stake or
+unlock my $AURA?" guide, see [Staking & Vaulting $AURA](/tokens/staking).
+
+## Why slashing exists
+
+A pure governance system that only rewards good behavior — without
+penalizing bad behavior — is easy to game. A whale who votes the same
+way on every dispute earns rewards on the ones they get right and pays
+nothing on the ones they get wrong. That breaks the alignment Aura
+needs: voters should only weigh in on outcomes they actually believe.
+
+Slashing fixes the asymmetry. By making wrong-side votes (and silent
+commits) cost real $AURA, the cost of voting on a market you don't
+understand is roughly equal to the reward of voting on one you do. The
+result is an honest oracle where the most confident, best-informed
+voters get most of the weight.
+
+## How slashing works
+
+Slashing is triggered automatically by the dispute lifecycle — there's
+no manual action required from anyone. After a disputed market's vote
+finalizes:
+
+| Voter behavior | What happens |
+| --- | --- |
+| Revealed a vote for the **winning** outcome | Earns a proportional share of the penalty pool. |
+| Revealed a vote for a **losing** outcome | **0.1% of vaulted $AURA** is slashed. |
+| Committed a vote but **never revealed** | **0.1% of vaulted $AURA** is slashed. |
+| Was eligible (Iron tier+, no position) but **didn't vote at all** | **0.1% of vaulted $AURA** is slashed. |
+
+Every slashed token flows into the **penalty pool** for that specific
+market. Once the pool is finalized, winning voters claim their share —
+weighted by their voting tier — directly into their wallet as $AURA.
+
+<Tip>
+  The slash percentage is small per individual vote (0.1%), but it
+  compounds over time for stakers who consistently vote against the
+  community consensus. Long-term, the only sustainable strategy is to
+  vote on disputes you've actually researched.
+</Tip>
+
+## What slashing does *not* affect
+
+The Vault is built so that slashing only ever touches the **vaulted
+balance** for the user being slashed. It cannot:
+
+- Slash $AURA that's already been requested for unlock past the cooldown
+  (those tokens are pending withdrawal, not active vault collateral).
+- Affect any other user's balance, even pro-rata.
+- Touch your USDT, your open trading positions, or your market shares.
+- Slash more than you have vaulted at the time the penalty is applied.
+
+If your vaulted balance has dropped below your active unlock request
+(because slashing reduced it), the unlock request is automatically
+clamped down to the remaining balance, so you can never end up with a
+"phantom" unlock pointing at $AURA you no longer have.
+
+## Authority over slashing
+
+Only the **Optimistic Oracle contract** can call the Vault's slash
+function — and even then, only as part of a dispute resolution flow
+that's already gone through commit, reveal, and supermajority
+finalization.
+
+This authority is rotated through a **timelocked pointer**: changing
+which contract can slash requires queuing a new slasher address and
+waiting through a delay window before the change takes effect. There
+is no way to push an emergency slash through with no notice.
+
+## Voting power and slashing
+
+Your voting weight in disputes equals your tier voting weight (1 for
+Iron through 30 for Degenerate). Higher tiers carry more influence on
+the outcome **and** more $AURA at risk:
+
+| Tier | Voting weight | Slash if you back the wrong side (per vote) |
+| --- | ---: | ---: |
+| Degenerate | 30 | 1,000 $AURA (0.1% of 1,000,000) |
+| Diamond | 22 | 833 $AURA |
+| Platinum | 16 | 667 $AURA |
+| Gold | 11 | 500 $AURA |
+| Silver | 7 | 333 $AURA |
+| Bronze | 3 | 167 $AURA |
+| Iron | 1 | 60 $AURA |
+
+The trade-off is intentional: bigger stakers get bigger reward shares
+when they're right, and bigger penalties when they're wrong. See
+[Voting on Disputes](/tutorials/voting-on-disputes) for the actual
+voting flow.
+
+## Vault summary
+
+- The Vault holds every staked $AURA token and tracks who stakes how
+  much.
+- Your tier and voting power are computed from your vaulted balance in
+  real time.
+- Wrong-side and silent dispute voters lose 0.1% of vaulted $AURA per
+  vote; that $AURA funds rewards for correct voters.
+- Only the Optimistic Oracle can trigger a slash, and only after a
+  finalized dispute vote.
+- You retain full custody — Aura cannot move, freeze, or arbitrarily
+  reduce your vaulted balance outside the explicit dispute flow.

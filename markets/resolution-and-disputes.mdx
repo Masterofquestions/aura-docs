@@ -118,16 +118,17 @@ Aura's dispute system uses **slashing**, not protocol fees, to reward honest
 voting:
 
 - **Wrong-side voters** — anyone who revealed a vote for the *losing*
-  outcome has a portion of their vaulted $AURA slashed.
+  outcome has **0.1% of their vaulted $AURA** slashed per vote.
 - **Non-revealers** — stakers who committed but never revealed (or never
-  committed at all) are penalized too, since silent voters undermine the
-  oracle.
+  committed at all) are slashed by the same amount, since silent voters
+  undermine the oracle.
 - **Slashed $AURA** flows into a **penalty pool** for that market.
 - **Winning voters** then claim a proportional share of the penalty pool,
   weighted by their voting tier.
 
 Dispute rewards are paid in **$AURA** — the wrong side of a controversial
-market literally funds the right side.
+market literally funds the right side. See [About the Vault](/tokens/vault)
+for the slashing mechanics in detail.
 
 ## Bonds & finalization
 

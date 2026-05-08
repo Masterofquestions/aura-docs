@@ -1,0 +1,177 @@
+---
+title: "Voting on Disputes"
+description: "Step-by-step walkthrough of the commit/reveal voting flow on a disputed market."
+---
+
+When a market outcome is disputed, neutral $AURA stakers settle it
+through a **commit/reveal vote**. This tutorial walks through the
+voter's experience from start to finish.
+
+If you haven't read the conceptual overview yet, start with
+[Resolution & Disputes](/markets/resolution-and-disputes). For the rules
+that govern voting power and slashing, see
+[About the Vault](/tokens/vault).
+
+## Before you start
+
+You need:
+
+- An Alephium wallet connected to Aura (passkey or extension).
+- At least the **Iron** tier — 60,000 vaulted $AURA. See
+  [Staking & Vaulting $AURA](/tokens/staking).
+- **No position** in the disputed market — you must not have placed an
+  order on it. The contract enforces this when you commit.
+
+You should also know:
+
+- Voting is **not free**. If you back the wrong outcome, **0.1% of your
+  vaulted $AURA is slashed** per vote. Vote on markets you've actually
+  researched.
+- The flow is two transactions on two separate days: a **commit** in
+  phase 1, and a **reveal** in phase 2.
+
+## Step 1 — Find a disputed market
+
+<Steps>
+  <Step title="Open the Voting tab">
+    From the top navigation, click **Voting**, then select the
+    **Outcomes** sub-tab.
+  </Step>
+  <Step title="Pick an active dispute">
+    Each disputed market shows the question, the proposed outcome, the
+    challenger's position, and the current phase (Commit / Reveal /
+    Finalizing).
+  </Step>
+  <Step title="Read the resolution rules">
+    Open the market detail and read the original resolution rules and
+    sources. Your job as a voter is to determine which outcome the
+    rules support — not which outcome you'd prefer.
+  </Step>
+</Steps>
+
+## Step 2 — Commit your vote
+
+The commit phase locks in your choice **without revealing what it is**.
+This prevents later voters from copying earlier ones.
+
+<Steps>
+  <Step title="Pick a choice">
+    - **YES** — the rules clearly resolve the market YES.
+    - **NO** — the rules clearly resolve the market NO.
+    - **TOO EARLY** — the underlying event hasn't happened yet, the
+      data source isn't out, or the question is malformed. If this wins,
+      the market is canceled and traders are refunded.
+  </Step>
+  <Step title="Click Commit">
+    Aura generates a random **salt** (a one-time secret), hashes your
+    choice with it (`keccak256(choice || salt)`), and sends the hash
+    on-chain. The salt is stored locally in your wallet — **do not
+    clear your browser data before the reveal phase**, or you'll lose
+    the ability to reveal and your $AURA will be slashed for not
+    revealing.
+  </Step>
+  <Step title="Sign the commit transaction">
+    Confirm in your wallet. The on-chain commit records:
+    - Your hashed vote
+    - Your tier weight at commit time
+    - Your address (so the contract can match it on reveal)
+  </Step>
+</Steps>
+
+<Tip>
+  You can commit any time during the commit window, but only **once per
+  vote round**. If you change your mind after committing, you can't
+  re-commit — but you can choose not to reveal, which costs you the
+  same 0.1% slash as voting wrong. Generally, only commit when you're
+  confident.
+</Tip>
+
+## Step 3 — Reveal your vote
+
+Once the commit window closes, the reveal phase opens. You have a
+shorter window (typically about an hour) to prove what you committed.
+
+<Steps>
+  <Step title="Return to the dispute">
+    Open the same disputed market under **Voting → Outcomes**. The UI
+    will show that the reveal phase is active and prompt you to reveal.
+  </Step>
+  <Step title="Click Reveal">
+    Aura reads the salt from your local storage, sends both your
+    original choice and salt on-chain, and the contract verifies that
+    `keccak256(choice || salt)` matches the commit hash you submitted
+    earlier.
+  </Step>
+  <Step title="Sign the reveal transaction">
+    Confirm in your wallet. Your tier-weighted vote is added to that
+    outcome's tally.
+  </Step>
+</Steps>
+
+<Warning>
+  If you committed but don't reveal in time, you're slashed the same
+  0.1% as a wrong-side voter. The contract treats silent commits as
+  bad-faith participation.
+</Warning>
+
+## Step 4 — Wait for finalization
+
+After the reveal phase, the protocol checks whether any single outcome
+cleared the **65% supermajority** of revealed weight:
+
+- **Cleared 65%** — the market resolves to that outcome, traders are
+  paid out, and the penalty pool is ready for claims.
+- **Did not clear 65%** — a new commit/reveal round starts immediately.
+  You can commit again in the new round.
+
+If `TOO_EARLY` clears 65%, the market is canceled, all traders are
+refunded their collateral, and both bonds (proposer + disputer) go to
+the disputer.
+
+## Step 5 — Claim your reward
+
+If you backed the winning outcome:
+
+- Your proportional share of the **penalty pool** is calculated from
+  your tier weight relative to the total winning weight.
+- Rewards are paid in **$AURA** and distributed automatically to your
+  vault balance — no separate claim transaction is required from you.
+
+If you backed the losing outcome (or didn't reveal):
+
+- 0.1% of your vaulted $AURA is slashed and added to the penalty pool
+  for the winners.
+
+## Things to know
+
+### What "tier weight" means at vote time
+
+The contract reads your tier from the Vault at the moment you commit,
+not at the moment you reveal. So if you stake more $AURA between
+commit and reveal, your additional stake doesn't increase your weight
+for that round — but it does for the next round.
+
+### Why the reveal window is shorter than the commit window
+
+Once commits are locked, the only thing left is bookkeeping. A long
+reveal window adds delay without improving security — anyone who
+genuinely intended to vote should be able to reveal within the window.
+Stakers who never reveal are signaling they wanted to influence the
+hash count without actually voting, which is exactly the bad-faith
+behavior the slashing penalty deters.
+
+### What happens if my position changes during the dispute
+
+You can't add a position to the market during the dispute window
+(stake-holder eligibility is checked at commit time). If you already
+held a position when the dispute opened, you're permanently ineligible
+to vote on that specific market — there's no way to "neutralize"
+yourself.
+
+## Quick checklist
+
+- [ ] I'm at Iron tier or higher.
+- [ ] I have **no position** in the disputed market.
+- [ ] I've read the resolution rules.
+- [ ] I'm confident enough to put 0.1% of my vault on the line.
+- [ ] I'll be able to reveal within the reveal window.

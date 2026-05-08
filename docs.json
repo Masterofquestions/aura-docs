@@ -60,7 +60,8 @@
               "tokens/alph",
               "tokens/aura",
               "tokens/tier-structure",
-              "tokens/staking"
+              "tokens/staking",
+              "tokens/vault"
             ]
           },
           {
@@ -74,6 +75,7 @@
             "group": "Tutorials",
             "pages": [
               "tutorials/user-tutorials",
+              "tutorials/voting-on-disputes",
               "tutorials/binary-market-best-practices",
               "tutorials/categorical-market-best-practices",
               "tutorials/maximizing-tier-benefits",
