@@ -44,7 +44,8 @@ Every `/v1/tx/*` endpoint returns the same shape:
   <Step title="Build the unsigned tx">
     ```bash
     curl -X POST https://api.aurabets.io/v1/tx/markets/<market-address>/orders \
-      -H 'authorization: Bearer aura_live_xxx' \
+      -b cookies.txt \
+      -H "x-csrf-token: $CSRF" \
       -H 'content-type: application/json' \
       -d '{
         "signerAddress":   "1Cef...",

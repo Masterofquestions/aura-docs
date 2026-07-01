@@ -7,7 +7,7 @@ The **Aura API** is a public REST service that exposes everything a user can
 see or do in the Aura app:
 
 - **Reads** — markets, prices, the order book, trades, vault state, oracle
-  and governance data, faucet status.
+  and governance data.
 - **Writes** (`/v1/tx/*`) — build *unsigned* transactions for the client to
   sign with its own wallet. The API never holds private keys.
 
@@ -16,10 +16,10 @@ service's OpenAPI 3.1 spec — so it can never drift from the implementation.
 
 <CardGroup cols={2}>
   <Card title="Authentication" icon="key" href="/api-reference/authentication">
-    Mint a key by signing a wallet challenge.
+    Wallet-bound sessions via a signed challenge — no API keys.
   </Card>
   <Card title="Rate limits" icon="gauge-high" href="/api-reference/rate-limits">
-    Anonymous + per-key tiers, IETF `RateLimit-*` headers.
+    Anonymous + signed-in tiers, IETF `RateLimit-*` headers.
   </Card>
   <Card title="Build-tx flow" icon="signature" href="/api-reference/build-tx-flow">
     Non-custodial transaction building under `/v1/tx/*`.
@@ -34,10 +34,6 @@ service's OpenAPI 3.1 spec — so it can never drift from the implementation.
 <CodeGroup>
 ```bash Mainnet
 https://api.aurabets.io
-```
-
-```bash Testnet
-https://api.testnet.aurabets.io
 ```
 
 ```bash Local

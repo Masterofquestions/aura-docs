@@ -1,20 +1,24 @@
 ---
 title: "Authentication"
-description: "Mint an API key by signing a one-time challenge with your Alephium wallet."
+description: "Establish a wallet-bound session by signing a one-time challenge — no email, password, or API key."
 ---
 
-Every endpoint accepts an optional API key:
+The Aura API uses **passkey (wallet) sessions**, the same mechanism as the
+Aura app. There are no API keys.
 
-```http
-Authorization: Bearer aura_live_<your-key>
-```
+- **Reads are public.** Every `GET` endpoint works without authentication
+  (subject to the anonymous per-IP [rate limits](/api-reference/rate-limits)).
+- **Writes require a session.** Mutating endpoints (comments, watchlist,
+  notifications, profile writes) and the build-tx endpoints under `/v1/tx/*`
+  require a valid session **cookie** plus a **CSRF header**.
 
-Reads work without a key (lower IP-based rate limit). Write endpoints under
-`/v1/tx/*` **require** a key with the `write:tx` scope.
+The session authorises off-chain writes only. On-chain actions are returned
+as *unsigned* transactions that your wallet signs locally — the API never
+holds keys and the session can never move funds.
 
-## Minting a key
+## Establishing a session
 
-Two-step wallet-signature flow — no email or password.
+Two-step wallet-signature flow:
 
 <Steps>
   <Step title="Get a one-time challenge">
@@ -29,24 +33,30 @@ Two-step wallet-signature flow — no email or password.
     ```json
     {
       "challenge": "Sign this message...",
-      "expiresAt": "2026-05-08T19:00:00Z"
+      "expiresAt": "2026-07-01T19:00:00Z"
     }
     ```
+
+    `address` is optional — omit it for passkey login flows where the wallet
+    address is only known after the WebAuthn assertion, then pass the exact
+    `challenge` text in the next step.
   </Step>
   <Step title="Sign with your wallet">
     Use your wallet's `signMessage` helper with `hasher: "alephium"` to sign
-    the `challenge` string. Most Alephium wallets and SDKs support this
-    natively.
+    the `challenge` string. Passkey wallets produce a WebAuthn assertion
+    (`keyType: "gl-webauthn"`, the default); plain secp256k1 wallets use
+    `keyType: "default"`.
   </Step>
-  <Step title="Submit signature + public key">
+  <Step title="Exchange the signature for a session">
     ```bash
-    curl -X POST https://api.aurabets.io/v1/auth/keys \
+    curl -X POST https://api.aurabets.io/v1/auth/session \
       -H 'content-type: application/json' \
+      -c cookies.txt \
       -d '{
         "address":   "1Cef...your-wallet",
         "publicKey": "0233...your-pubkey",
         "signature": "abcd...sig",
-        "name":      "my-trading-bot"
+        "keyType":   "default"
       }'
     ```
 
@@ -54,72 +64,70 @@ Two-step wallet-signature flow — no email or password.
 
     ```json
     {
-      "key": "aura_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      "id":  "8d3e...",
-      "name": "my-trading-bot",
-      "scopes": ["read", "write:tx"],
-      "createdAt": "2026-05-08T18:30:00Z"
+      "address": "1Cef...your-wallet",
+      "csrf": "5f2a...token",
+      "created": false
     }
     ```
 
-    <Warning>
-      The `key` value is shown **once**. Store it securely — it cannot be
-      retrieved later.
-    </Warning>
+    The session itself is set as an **HttpOnly cookie** (30-day TTL with
+    sliding refresh). Keep the `csrf` value — every mutating request must
+    echo it back in the `x-csrf-token` header.
   </Step>
 </Steps>
 
-## Using the key
+## Making authenticated requests
 
-Pass it as a Bearer token on every request:
+Send the session cookie **and** the CSRF header on every mutating request:
 
 <CodeGroup>
 ```bash curl
-curl https://api.aurabets.io/v1/markets \
-  -H 'authorization: Bearer aura_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+curl -X POST https://api.aurabets.io/v1/watchlist \
+  -b cookies.txt \
+  -H "x-csrf-token: $CSRF" \
+  -H 'content-type: application/json' \
+  -d '{"marketId": 42}'
 ```
 
 ```ts TypeScript (fetch)
-const res = await fetch('https://api.aurabets.io/v1/markets', {
+const res = await fetch('https://api.aurabets.io/v1/watchlist', {
+  method: 'POST',
+  credentials: 'include', // sends the HttpOnly session cookie
   headers: {
-    Authorization: `Bearer ${process.env.AURA_API_KEY}`,
+    'content-type': 'application/json',
+    'x-csrf-token': csrf,
   },
+  body: JSON.stringify({ marketId: 42 }),
 })
 ```
 
 ```py Python (requests)
-import os, requests
+import requests
 
-res = requests.get(
-    'https://api.aurabets.io/v1/markets',
-    headers={'Authorization': f'Bearer {os.environ["AURA_API_KEY"]}'},
+s = requests.Session()
+# ...challenge + session calls populate s.cookies...
+res = s.post(
+    'https://api.aurabets.io/v1/watchlist',
+    headers={'x-csrf-token': csrf},
+    json={'marketId': 42},
 )
 ```
 </CodeGroup>
 
-## Listing & revoking keys
+`GET` requests never need the CSRF header — only the cookie, and only on
+endpoints that return caller-specific data.
 
-Once authenticated, you can list and revoke your own keys:
+## Session lifecycle
 
-```bash
-# List
-curl https://api.aurabets.io/v1/auth/keys \
-  -H 'authorization: Bearer aura_live_xxx'
-
-# Revoke a specific key by id
-curl -X DELETE https://api.aurabets.io/v1/auth/keys/<key-id> \
-  -H 'authorization: Bearer aura_live_xxx'
-```
-
-See the full schema for these endpoints under the **Auth** group of the API
-Reference.
-
-## Scopes
-
-| Scope | Grants |
+| Endpoint | Purpose |
 | --- | --- |
-| `read` | All read endpoints (default for newly minted keys). |
-| `write:tx` | Build-tx endpoints under `/v1/tx/*`. |
+| `POST /v1/auth/challenge` | Mint a one-time nonce to sign (5-minute expiry). |
+| `POST /v1/auth/session` | Verify the signature, create/refresh the account, set the session cookie. Sign-in **and** registration. |
+| `GET /v1/auth/session` | Check whether the cookie is still valid and recover the CSRF token. |
+| `POST /v1/auth/logout` | Clear the session + CSRF cookies. |
 
-Keys are issued with both scopes by default. You can request a `read`-only
-key by passing `"scopes": ["read"]` in the mint request.
+<Warning>
+  Build-tx endpoints under `/v1/tx/*` additionally enforce that the
+  transaction's **signer equals the session wallet** — a session for wallet A
+  can never build a transaction that spends from wallet B.
+</Warning>

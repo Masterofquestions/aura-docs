@@ -44,9 +44,9 @@ The Aura API returns errors as JSON with a stable shape:
 | Code | Meaning |
 | --- | --- |
 | `INVALID_REQUEST` | Request body or query failed schema validation. |
-| `UNAUTHORIZED` | API key required or invalid. |
-| `INSUFFICIENT_SCOPE` | Key lacks the scope this endpoint requires. |
-| `RATE_LIMITED` | Per-IP or per-key rate limit exceeded. |
+| `UNAUTHORIZED` | Session required or invalid (sign in via `/v1/auth`). |
+| `FORBIDDEN` | Session is valid but not allowed to perform this action (e.g. CSRF or signer mismatch). |
+| `RATE_LIMITED` | Per-IP or per-wallet rate limit exceeded. |
 | `NOT_FOUND` | Resource doesn't exist. |
 | `MARKET_CLOSED` | Trade attempted on a closed/resolved market. |
 | `INSUFFICIENT_BALANCE` | Build-tx target wallet doesn't have enough collateral. |

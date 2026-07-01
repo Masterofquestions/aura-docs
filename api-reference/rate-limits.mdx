@@ -1,19 +1,21 @@
 ---
 title: "Rate Limits"
-description: "Per-IP and per-key request budgets, with standard `RateLimit-*` response headers."
+description: "Per-IP and per-account request budgets, with standard `RateLimit-*` response headers."
 ---
 
 The Aura API enforces per-minute rate limits on every request.
 
 ## Tiers
 
-| Tier      | Reads (req/min) | Writes (req/min) |
-| --------- | --------------: | ---------------: |
-| Anonymous | 60 per IP       | 10 per IP        |
-| API key   | 600 per key     | 60 per key       |
+| Tier | Reads (req/min) | Writes (req/min) |
+| ------------------------ | --------------: | ---------------: |
+| Anonymous | 60 per IP | 10 per IP |
+| Signed-in (session) | 600 per wallet | 60 per wallet |
 
-Custom per-key limits can be set in the `api_keys.rate_limit_per_min` column
-of the database — useful for partner integrations that need higher headroom.
+Anonymous requests are bucketed by client IP. Requests carrying a valid
+session cookie are bucketed by the session's wallet address instead, so a
+signed-in integration isn't penalised for sharing an IP (and can't dodge
+limits by rotating IPs).
 
 ## Response headers
 
@@ -48,8 +50,7 @@ The same `RateLimit-*` headers are returned on the 429 response so your
 client can back off precisely.
 
 <Tip>
-  If you anticipate sustained throughput above the per-key limit (e.g.
+  If you anticipate sustained throughput above the signed-in limit (e.g.
   high-frequency market makers), reach out on
-  [Telegram](https://t.me/AuraMarkets) and we'll provision a higher-budget
-  partner key.
+  [Telegram](https://t.me/AuraMarkets) and we'll work something out.
 </Tip>
