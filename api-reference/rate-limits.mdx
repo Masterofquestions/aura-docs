@@ -36,13 +36,16 @@ RateLimit-Reset: 38
 
 ## Hitting the limit
 
-When you exceed your budget, the API returns `429 Too Many Requests`:
+When you exceed your budget, the API returns `429 Too Many Requests` with
+the standard error envelope:
 
 ```json
 {
-  "statusCode": 429,
-  "code": "RATE_LIMITED",
-  "message": "Rate limit exceeded. Try again in 38s."
+  "error": {
+    "code": "rate_limited",
+    "message": "rate limit exceeded — 600 req/1 minute",
+    "details": { "max": 600, "ttl": 38000 }
+  }
 }
 ```
 

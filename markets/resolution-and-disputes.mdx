@@ -5,14 +5,15 @@ description: "How Aura's optimistic oracle settles markets, and how the commit/r
 
 Aura uses an **optimistic oracle**: most markets resolve without any vote.
 A bonded proposer states the outcome, and if no one disputes within the
-challenge window, that outcome stands. When a market *is* disputed, neutral
+challenge window, that outcome stands. When a market *is* disputed,
 $AURA stakers settle it through a **tier-weighted commit/reveal vote**.
 
 ## Submitting an outcome
 
 Once a market reaches its end date, anyone can submit a proposed outcome
-(**YES**, **NO**, or one of the categorical options) by posting a refundable
-**proposer bond** in USDT. This opens a dispute window.
+(**YES** or **NO** — `TOO_EARLY` is a dispute-vote option, not a
+submittable outcome) by posting a refundable **proposer bond** in USDT.
+This opens a dispute window.
 
 - If no one disputes the proposal before the dispute deadline, the market
   automatically resolves to that outcome.
@@ -24,8 +25,11 @@ If another user disagrees, they can initiate a dispute by posting an equal
 **disputer bond** in USDT before the dispute deadline. The market then enters
 a structured commit/reveal vote.
 
-Both the proposer and the disputer have funds at stake — the loser's bond is
-forfeit, the winner's is doubled.
+Both the proposer and the disputer have funds at stake — the loser's bond
+is forfeit. The winner gets their own bond back **plus half of the loser's
+bond**; the other half goes to the protocol treasury. (Paying the winner
+the full loser bond would make a self-dispute — propose from one wallet,
+dispute from another — free, enabling risk-free griefing of voters.)
 
 ## The commit/reveal vote
 
@@ -34,9 +38,12 @@ choices:
 
 <Steps>
   <Step title="Commit phase">
-    Eligible voters submit a **hashed vote**: `keccak256(choice || salt)`.
-    The choice is one of `YES`, `NO`, or `TOO_EARLY` (see below). Nobody can
-    see what anyone else voted for during this phase.
+    Eligible voters submit a **hashed vote**:
+    `keccak256(market || voter || choice || salt)` — the hash binds the
+    market and the voter's address so a commit can't be replayed by (or
+    for) anyone else. The choice is one of `YES`, `NO`, or `TOO_EARLY`
+    (see below). Nobody can see what anyone else voted for during this
+    phase.
   </Step>
   <Step title="Reveal phase">
     Once the commit window closes, voters reveal their vote by submitting
@@ -70,20 +77,25 @@ malformed. Voters can pick `TOO_EARLY` to signal this.
 If `TOO_EARLY` clears the 65% supermajority, the market is **canceled**:
 
 - All open positions are unwound; share holders are refunded.
-- Both the proposer's and disputer's bonds go to the **disputer** (the
-  proposer made an avoidable mistake).
+- The disputer gets their own bond back **plus half of the proposer's
+  bond** (the proposer made an avoidable mistake); the other half goes to
+  the treasury.
 - Trading fees collected up to that point go to the treasury.
+- No voter rewards are paid on a `TOO_EARLY` round — the slashed $AURA
+  rolls forward into the penalty pool for the market's next dispute round.
 
 ## Eligibility
 
-Only **neutral $AURA stakers** can vote in a dispute:
+Voting is open to **$AURA stakers**:
 
 - You must hold a vaulted $AURA position above the **None** tier (i.e. at
-  least the **Iron** tier, 60,000 $AURA).
-- You must **not** hold any open position in the disputed market and must
-  not have traded it during the dispute window. The contract enforces this
-  by checking the market's stake-holder registry — any address that placed
-  an order is excluded.
+  least the **Iron** tier, 60,000 $AURA) at commit time.
+- Your staked balance is **snapshotted when you commit** — unstaking
+  between commit and reveal doesn't dodge the slashing risk.
+
+There is no on-chain restriction on voting in markets you've traded; your
+protection against biased voting is the 65% supermajority requirement and
+the slashing economics — a voter risks real $AURA to push a wrong outcome.
 
 ## What happens if no outcome clears 65%?
 
@@ -136,12 +148,13 @@ detail.
 After a vote round resolves with a clear winner:
 
 - **Bonds** — the winning side's representative (proposer or disputer)
-  receives the full **proposer + disputer bond pool**.
+  gets their own bond back plus **50% of the loser's bond**; the remaining
+  50% goes to the treasury.
 - **Settlement** — winning share holders are paid out automatically in
   USDT.
 - **Penalty bookkeeping** — once `applyVotePenalties` and
   `applyNonVoterPenalties` finish slashing, the penalty pool is finalized
-  and winning voters can claim their rewards.
+  and winning voters receive their $AURA rewards.
 
 ## TL;DR
 
@@ -150,4 +163,6 @@ After a vote round resolves with a clear winner:
 - Voters lock a hashed vote, then reveal it; copy-voting is prevented.
 - A **65% supermajority** is required; otherwise a new round runs.
 - `TOO_EARLY` cancels the market and refunds traders.
+- The dispute loser forfeits their bond: half to the winner, half to the
+  treasury.
 - Voters are paid in **$AURA** from a slashing pool, not in USDT fees.

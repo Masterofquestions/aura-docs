@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Aura API",
-    "description": "Public REST API for Aura — prediction markets on Alephium.\n\nThis API exposes everything a user can see or do in the app:\nmarkets, prices, orderbook, trades, vault state, oracle and\ngovernance, plus build-tx endpoints that return unsigned\ntransactions for the client to sign with its own wallet.\n\nInteractive reference: https://docs.aurabets.io/api-reference/introduction\n\n## Discovery\n\nBuilt for integrators, not for lazy implementers:\n\n- **Faceted lists** — every list endpoint accepts `?facets=true`\n  and returns category / tag / status counts in the same response,\n  so a UI can render filter chips without a second request.\n- **Cursor pagination** — stable across inserts and fast at depth.\n  Offset paging via `?page=` is still supported for compat.\n- **Rich filters** — `?q=`, `?category=`, `?tags=`, `?status=`,\n  `?creator=`, `?minVolume=` on `/v1/markets`. Tag matching is\n  AND (all listed tags must be present).\n- **Sortable** — `?sort=created-at|volume|best-bid-yes|recently-traded`\n  with `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.\n- **Field projection** — `?fields=id,question,bestBidYes` trims the\n  wire weight for thin clients.\n- **Unified search** — `/v1/search?q=` runs a strict tsquery first\n  with a fuzzy trigram fallback when nothing matches; result type is\n  a discriminated union so adding events / users later is non-breaking.\n- **Transparent trending** — `/v1/trending` returns the full\n  algorithm + per-market component scores so the ranking is auditable.\n- **Categories + tags as first-class** — `/v1/categories` and\n  `/v1/tags` enumerate the taxonomy with market counts.\n\n## Authentication\n\nAura uses passkey-backed account sessions delivered as an HttpOnly\ncookie. Sign in by signing a one-time challenge with your passkey:\n\n```\nPOST /v1/auth/challenge   { \"address\": \"...\" }\nPOST /v1/auth/session     { \"address\": \"...\", \"publicKey\": \"...\", \"signature\": \"...\", \"passkey\": { ... } }\n```\n\nThe `session` call sets the `aura_session` cookie and returns a CSRF\ntoken; send it back in the `x-csrf-token` header on every mutating\nrequest. `POST /v1/auth/logout` clears the session.\n\nReads are accessible anonymously with low IP-based rate limits;\nwrite endpoints (`/v1/tx/*`, social writes) require a valid session.\n\n## Rate limits\n\n| Tier      | Reads (req/min) | Writes (req/min) |\n|-----------|----------------:|-----------------:|\n| Anonymous | 100000 per IP | 100000 per IP |\n| API key   | 100000 per key | 100000 per key |\n\nStandard `RateLimit-*` response headers are returned on every\nrequest (IETF `draft-ietf-httpapi-ratelimit-headers`).\n\n## Write endpoints\n\nAura is non-custodial — the API never holds private keys.\nEndpoints under `/v1/tx/*` return an *unsigned* transaction\nthat the caller must sign with its own wallet (passkey, mobile\nwallet, hardware wallet, etc.) and submit to an Alephium node.\n\nA typical \"place order\" flow:\n\n1. `POST /v1/tx/markets/{address}/orders` → server returns\n   `{ unsignedTx, gasEstimate, ... }`.\n2. Wallet signs `unsignedTx`.\n3. Wallet submits the signed tx to any Alephium node.",
+    "description": "Public REST API for Aura — prediction markets on Alephium.\n\nThis API exposes everything a user can see or do in the app:\nmarkets, prices, orderbook, trades, vault state, oracle and\ngovernance, plus build-tx endpoints that return unsigned\ntransactions for the client to sign with its own wallet.\n\nInteractive reference: https://docs.aurabets.io/api-reference/introduction\n\n## Discovery\n\nBuilt for integrators, not for lazy implementers:\n\n- **Faceted lists** — every list endpoint accepts `?facets=true`\n  and returns category / tag / status counts in the same response,\n  so a UI can render filter chips without a second request.\n- **Cursor pagination** — stable across inserts and fast at depth.\n  Offset paging via `?page=` is still supported for compat.\n- **Rich filters** — `?q=`, `?category=`, `?tags=`, `?status=`,\n  `?creator=`, `?minVolume=` on `/v1/markets`. Tag matching is\n  AND (all listed tags must be present).\n- **Sortable** — `?sort=created-at|volume|best-bid-yes|recently-traded`\n  with `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.\n- **Field projection** — `?fields=id,question,bestBidYes` trims the\n  wire weight for thin clients.\n- **Unified search** — `/v1/search?q=` runs a strict tsquery first\n  with a fuzzy trigram fallback when nothing matches; result type is\n  a discriminated union so adding events / users later is non-breaking.\n- **Transparent trending** — `/v1/trending` returns the full\n  algorithm + per-market component scores so the ranking is auditable.\n- **Categories + tags as first-class** — `/v1/categories` and\n  `/v1/tags` enumerate the taxonomy with market counts.\n\n## Authentication\n\nAura uses passkey-backed account sessions delivered as an HttpOnly\ncookie. Sign in by signing a one-time challenge with your passkey:\n\n```\nPOST /v1/auth/challenge   { \"address\": \"...\" }\nPOST /v1/auth/session     { \"address\": \"...\", \"publicKey\": \"...\", \"signature\": \"...\", \"passkey\": { ... } }\n```\n\nThe `session` call sets the `aura_session` cookie and returns a CSRF\ntoken; send it back in the `x-csrf-token` header on every mutating\nrequest. `POST /v1/auth/logout` clears the session.\n\nReads are accessible anonymously with low IP-based rate limits;\nwrite endpoints (`/v1/tx/*`, social writes) require a valid session.\n\n## Rate limits\n\n| Tier      | Reads (req/min) | Writes (req/min) |\n|-----------|----------------:|-----------------:|\n| Anonymous | 60 per IP | 10 per IP |\n| Signed-in | 600 per wallet | 60 per wallet |\n\nStandard `RateLimit-*` response headers are returned on every\nrequest (IETF `draft-ietf-httpapi-ratelimit-headers`).\n\n## Write endpoints\n\nAura is non-custodial — the API never holds private keys.\nEndpoints under `/v1/tx/*` return an *unsigned* transaction\nthat the caller must sign with its own wallet (passkey, mobile\nwallet, hardware wallet, etc.) and submit to an Alephium node.\n\nA typical \"place order\" flow:\n\n1. `POST /v1/tx/markets/{address}/orders` → server returns\n   `{ unsignedTx, gasEstimate, ... }`.\n2. Wallet signs `unsignedTx`.\n3. Wallet submits the signed tx to any Alephium node.",
     "version": "0.1.0",
     "license": {
       "name": "MIT"
@@ -7109,11 +7109,11 @@
     },
     "/v1/users/{address}/pending-reveals": {
       "get": {
-        "summary": "Reveal-relay queue for this wallet (salt redacted).",
+        "summary": "Reveal-relay queue for the calling wallet (salt redacted, owner-only).",
         "tags": [
           "Account actions"
         ],
-        "description": "Returns rows the indexer is tracking from `pending_reveals` for this voter. The `salt` column is intentionally NOT exposed — leaking the salt before reveal would let observers reconstruct the still-secret vote choice from the on-chain commit hash.",
+        "description": "Returns rows the indexer is tracking from `pending_reveals` for this voter. OWNER-ONLY: rows include `voteChoice`, which is still secret until the on-chain reveal — exposing it to third parties would defeat the commit/reveal privacy model, so the `:address` must match the signed-in session's wallet. The `salt` column is additionally never exposed (choice + salt reconstructs the commit hash).",
         "parameters": [
           {
             "schema": {
@@ -7152,6 +7152,11 @@
             "name": "address",
             "required": true,
             "description": "Alephium address (base58, optional `:N` group suffix)."
+          }
+        ],
+        "security": [
+          {
+            "SessionCookie": []
           }
         ],
         "responses": {
@@ -7281,6 +7286,76 @@
                   },
                   "required": [
                     "pendingReveals"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
                   ],
                   "additionalProperties": false
                 }
@@ -22680,7 +22755,7 @@
                   "quantity": {
                     "type": "string",
                     "pattern": "^\\d+$",
-                    "description": "Quantity in 18-decimal share base units (string to preserve precision)."
+                    "description": "Quantity in 18-decimal share base units (string to preserve precision). Must be a multiple of 10000000 (1e7) — the contract lot size."
                   },
                   "referer": {
                     "type": "string",
@@ -22996,7 +23071,7 @@
                   "quantity": {
                     "type": "string",
                     "pattern": "^\\d+$",
-                    "description": "Quantity in 18-decimal share base units (string to preserve precision)."
+                    "description": "Quantity in 18-decimal share base units (string to preserve precision). Must be a multiple of 10000000 (1e7) — the contract lot size."
                   },
                   "expectedPrice": {
                     "type": "integer",
@@ -24385,7 +24460,7 @@
         "tags": [
           "Oracle votes"
         ],
-        "description": "Locks the on-chain propose bond (USDT) alongside the proposed outcome. The bond size is read from the oracle contract server-side; `bondAmount` is optional and, when sent, must match it exactly.",
+        "description": "Locks the on-chain propose bond (USDT) alongside the proposed outcome. The bond size is read from the oracle contract server-side; `bondAmount` is optional and, when sent, must match it exactly. Only `yes`/`no` can be proposed — TOO_EARLY is a dispute-vote result, not a submittable outcome.",
         "requestBody": {
           "required": true,
           "content": {
@@ -24429,8 +24504,7 @@
                     "type": "string",
                     "enum": [
                       "yes",
-                      "no",
-                      "too-early"
+                      "no"
                     ]
                   },
                   "bondAmount": {
@@ -25892,9 +25966,9 @@
                     "maxLength": 500
                   },
                   "metadata": {
-                    "description": "JSON-serialised metadata blob.",
+                    "description": "JSON-serialised metadata blob (≤ 2048 UTF-8 bytes — the on-chain cap).",
                     "type": "string",
-                    "maxLength": 4000
+                    "maxLength": 2048
                   }
                 },
                 "required": [
@@ -26209,9 +26283,9 @@
                           "maxLength": 500
                         },
                         "metadata": {
-                          "description": "JSON-serialised structured metadata (e.g. sportsSubMarket payload).",
+                          "description": "JSON-serialised structured metadata (e.g. sportsSubMarket payload; ≤ 2048 UTF-8 bytes — the on-chain cap).",
                           "type": "string",
-                          "maxLength": 4000
+                          "maxLength": 2048
                         }
                       },
                       "required": [
@@ -26465,7 +26539,7 @@
         "tags": [
           "Proposals"
         ],
-        "description": "Locks `amount` USDT and submits a parlay across multiple markets. `marketIds` must be pre-encoded as hex per the contract's expected format.",
+        "description": "Locks `amount` USDT and submits a parlay across multiple markets. Provide the legs as structured `{ marketId, side }` pairs — the api produces the canonical on-chain payload. Duplicate or contradictory (yes+no on the same market) legs are rejected up-front, since they would only end up in the refund queue after settlement.",
         "requestBody": {
           "required": true,
           "content": {
@@ -26508,10 +26582,32 @@
                     "pattern": "^\\d+$",
                     "description": "Amount in token base units (string to preserve precision)."
                   },
-                  "marketIds": {
-                    "type": "string",
-                    "pattern": "^(0x)?[0-9a-fA-F]+$",
-                    "description": "Hex string, with or without `0x` prefix."
+                  "legs": {
+                    "minItems": 2,
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "marketId": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "side": {
+                          "type": "string",
+                          "enum": [
+                            "yes",
+                            "no"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "marketId",
+                        "side"
+                      ]
+                    },
+                    "description": "Parlay legs (2–5). Each market may appear at most once."
                   }
                 },
                 "required": [
@@ -26519,7 +26615,7 @@
                   "signerPublicKey",
                   "amount",
                   "combinedOdds",
-                  "marketIds"
+                  "legs"
                 ]
               }
             }
@@ -26792,9 +26888,15 @@
                     "maximum": 9007199254740991
                   },
                   "linkedIds": {
-                    "type": "string",
-                    "pattern": "^(0x)?[0-9a-fA-F]+$",
-                    "description": "Hex-encoded list of leg proposal ids."
+                    "minItems": 1,
+                    "maxItems": 39,
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "description": "On-chain proposal ids of the sibling legs (the api canonically encodes them)."
                   },
                   "masterQuestion": {
                     "type": "string",

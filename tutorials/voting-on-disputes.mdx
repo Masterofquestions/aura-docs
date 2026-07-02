@@ -3,9 +3,9 @@ title: "Voting on Disputes"
 description: "Step-by-step walkthrough of the commit/reveal voting flow on a disputed market."
 ---
 
-When a market outcome is disputed, neutral $AURA stakers settle it
-through a **commit/reveal vote**. This tutorial walks through the
-voter's experience from start to finish.
+When a market outcome is disputed, $AURA stakers settle it through a
+**commit/reveal vote**. This tutorial walks through the voter's
+experience from start to finish.
 
 If you haven't read the conceptual overview yet, start with
 [Resolution & Disputes](/markets/resolution-and-disputes). For the rules
@@ -19,16 +19,16 @@ You need:
 - An Alephium wallet connected to Aura (passkey or extension).
 - At least the **Iron** tier — 60,000 vaulted $AURA. See
   [Staking & Vaulting $AURA](/tokens/staking).
-- **No position** in the disputed market — you must not have placed an
-  order on it. The contract enforces this when you commit.
 
 You should also know:
 
 - Voting is **not free**. If you back the wrong outcome, **0.1% of your
   vaulted $AURA is slashed** per vote. Vote on markets you've actually
   researched.
-- The flow is two transactions on two separate days: a **commit** in
-  phase 1, and a **reveal** in phase 2.
+- You sign **one transaction** — the commit. Aura's reveal automation
+  submits the matching reveal for you when the reveal window opens.
+- Your staked balance is snapshotted at commit time, so unstaking between
+  commit and reveal doesn't dodge the slashing risk.
 
 ## Step 1 — Find a disputed market
 
@@ -63,12 +63,11 @@ This prevents later voters from copying earlier ones.
       the market is canceled and traders are refunded.
   </Step>
   <Step title="Click Commit">
-    Aura generates a random **salt** (a one-time secret), hashes your
-    choice with it (`keccak256(choice || salt)`), and sends the hash
-    on-chain. The salt is stored locally in your wallet — **do not
-    clear your browser data before the reveal phase**, or you'll lose
-    the ability to reveal and your $AURA will be slashed for not
-    revealing.
+    Aura generates a random **salt** (a one-time secret), computes
+    `keccak256(market || voter || choice || salt)`, and sends the hash
+    on-chain. The salt + choice are also queued with Aura's reveal
+    automation, which will submit the reveal on your behalf during the
+    reveal window — you don't need to come back.
   </Step>
   <Step title="Sign the commit transaction">
     Confirm in your wallet. The on-chain commit records:
@@ -86,32 +85,30 @@ This prevents later voters from copying earlier ones.
   confident.
 </Tip>
 
-## Step 3 — Reveal your vote
+## Step 3 — Reveal (automatic)
 
-Once the commit window closes, the reveal phase opens. You have a
-shorter window (typically about an hour) to prove what you committed.
+Once the commit window closes, the reveal phase opens — a shorter window
+(typically about an hour). Aura's reveal automation submits your original
+choice and salt on-chain, and the contract verifies the hash matches your
+commit before tallying your tier-weighted vote.
 
-<Steps>
-  <Step title="Return to the dispute">
-    Open the same disputed market under **Voting → Outcomes**. The UI
-    will show that the reveal phase is active and prompt you to reveal.
-  </Step>
-  <Step title="Click Reveal">
-    Aura reads the salt from your local storage, sends both your
-    original choice and salt on-chain, and the contract verifies that
-    `keccak256(choice || salt)` matches the commit hash you submitted
-    earlier.
-  </Step>
-  <Step title="Sign the reveal transaction">
-    Confirm in your wallet. Your tier-weighted vote is added to that
-    outcome's tally.
-  </Step>
-</Steps>
+You can watch the status of your queued reveal under **Voting →
+Outcomes** (or via `GET /v1/users/{address}/pending-reveals`, an
+owner-only API endpoint).
+
+<Tip>
+  Prefer not to share your vote choice with Aura's relay before it hits
+  the chain? Commit through the API and reveal yourself with
+  `POST /v1/tx/oracle/reveal` during the reveal window — the contract
+  accepts a reveal from any caller, since the hash binds it to your
+  address.
+</Tip>
 
 <Warning>
-  If you committed but don't reveal in time, you're slashed the same
-  0.1% as a wrong-side voter. The contract treats silent commits as
-  bad-faith participation.
+  If your commit is never revealed in time (for example, a self-managed
+  reveal that misses the window), you're slashed the same 0.1% as a
+  wrong-side voter. The contract treats silent commits as bad-faith
+  participation.
 </Warning>
 
 ## Step 4 — Wait for finalization
@@ -124,9 +121,11 @@ cleared the **65% supermajority** of revealed weight:
 - **Did not clear 65%** — a new commit/reveal round starts immediately.
   You can commit again in the new round.
 
-If `TOO_EARLY` clears 65%, the market is canceled, all traders are
-refunded their collateral, and both bonds (proposer + disputer) go to
-the disputer.
+If `TOO_EARLY` clears 65%, the market is canceled and all traders are
+refunded their collateral. The disputer gets their bond back plus half
+of the proposer's bond; the other half goes to the treasury. No voter
+rewards are paid on a `TOO_EARLY` round — the slashed $AURA rolls
+forward into the market's next dispute round.
 
 ## Step 5 — Claim your reward
 
@@ -134,8 +133,9 @@ If you backed the winning outcome:
 
 - Your proportional share of the **penalty pool** is calculated from
   your tier weight relative to the total winning weight.
-- Rewards are paid in **$AURA** and distributed automatically to your
-  vault balance — no separate claim transaction is required from you.
+- Rewards are paid in **$AURA** directly to your wallet — Aura's
+  automation pushes the payout once penalties are finalized, so no
+  claim transaction is required from you.
 
 If you backed the losing outcome (or didn't reveal):
 
@@ -149,29 +149,30 @@ If you backed the losing outcome (or didn't reveal):
 The contract reads your tier from the Vault at the moment you commit,
 not at the moment you reveal. So if you stake more $AURA between
 commit and reveal, your additional stake doesn't increase your weight
-for that round — but it does for the next round.
+for that round — but it does for the next round. Your staked balance
+is snapshotted at commit time too, so unstaking mid-round doesn't
+reduce your slashing exposure.
 
 ### Why the reveal window is shorter than the commit window
 
 Once commits are locked, the only thing left is bookkeeping. A long
-reveal window adds delay without improving security — anyone who
-genuinely intended to vote should be able to reveal within the window.
-Stakers who never reveal are signaling they wanted to influence the
-hash count without actually voting, which is exactly the bad-faith
-behavior the slashing penalty deters.
+reveal window adds delay without improving security — the automation
+reveals queued votes promptly once the window opens. Stakers whose
+commits never reveal are signaling they wanted to influence the hash
+count without actually voting, which is exactly the bad-faith behavior
+the slashing penalty deters.
 
-### What happens if my position changes during the dispute
+### Can I vote on a market I've traded?
 
-You can't add a position to the market during the dispute window
-(stake-holder eligibility is checked at commit time). If you already
-held a position when the dispute opened, you're permanently ineligible
-to vote on that specific market — there's no way to "neutralize"
-yourself.
+There's no on-chain restriction — the earlier stake-holder gate was
+removed because it was trivially bypassed with a second wallet. What
+keeps votes honest is economics: the 65% supermajority requirement and
+the 0.1% slash for backing a losing outcome.
 
 ## Quick checklist
 
 - [ ] I'm at Iron tier or higher.
-- [ ] I have **no position** in the disputed market.
 - [ ] I've read the resolution rules.
 - [ ] I'm confident enough to put 0.1% of my vault on the line.
-- [ ] I'll be able to reveal within the reveal window.
+- [ ] My reveal is queued (automatic) — or I know I must reveal
+      manually within the window.

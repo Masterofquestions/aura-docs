@@ -3,66 +3,64 @@ title: "Errors"
 description: "Standard error envelope and HTTP status codes used across the API."
 ---
 
-The Aura API returns errors as JSON with a stable shape:
+The Aura API returns every error as JSON with a stable envelope:
 
 ```json
 {
-  "statusCode": 400,
-  "code": "INVALID_REQUEST",
-  "message": "price must be between 1 and 999",
-  "details": {
-    "field": "price",
-    "received": 1000
+  "error": {
+    "code": "invalid_price",
+    "message": "price must be in (0, 1000); got 1000",
+    "details": { "field": "price" }
   }
 }
 ```
 
 | Field | Description |
 | --- | --- |
-| `statusCode` | HTTP status code (matches the response status). |
-| `code` | Stable, machine-readable error code. Don't switch on `message`. |
-| `message` | Human-readable error description. |
-| `details` | Optional object with structured context (varies by error code). |
+| `error.code` | Stable, machine-readable error code in `snake_case`. Don't switch on `message`. |
+| `error.message` | Human-readable error description. |
+| `error.details` | Optional structured context (present on validation and rate-limit errors). |
+
+The HTTP status code is carried on the response itself, not duplicated in
+the body.
 
 ## Status codes
 
 | Status | When |
 | --- | --- |
-| `400 Bad Request` | Validation failed — schema, range, or business rule. `details` usually carries the offending field. |
-| `401 Unauthorized` | Missing or malformed `Authorization` header. |
-| `403 Forbidden` | Key valid but lacks the required scope (e.g. `read`-only key calling `/v1/tx/*`). |
+| `400 Bad Request` | Validation failed — schema, range, or business rule (`details` carries the zod issues for schema failures). |
+| `401 Unauthorized` | No valid session cookie. Sign in via `/v1/auth`. |
+| `403 Forbidden` | Session valid but not allowed — missing/invalid `x-csrf-token`, or the tx signer doesn't match the session wallet. |
 | `404 Not Found` | The resource doesn't exist (or you don't own it, for wallet-scoped reads). |
-| `409 Conflict` | Idempotency / state conflict (e.g. trying to dispute a market past the dispute window). |
-| `422 Unprocessable Entity` | Request was valid but cannot be fulfilled (e.g. insufficient balance for a build-tx call). |
+| `409 Conflict` | Idempotency / state conflict (e.g. a sponsorship `txId` recorded with different parameters). |
 | `429 Too Many Requests` | Rate limit exceeded. See [Rate Limits](/api-reference/rate-limits). |
-| `500 Internal Server Error` | Bug on our side. Includes a `requestId` in `details` for support. |
-| `502 Bad Gateway` | Upstream chain node or indexer is unhealthy. Retry. |
-| `503 Service Unavailable` | Maintenance window or temporary overload. Retry with backoff. |
+| `500 Internal Server Error` | Bug on our side — the original error is logged server-side, never leaked in the response. |
+| `502 Bad Gateway` | The Alephium node refused to build a tx, or an upstream (node / indexer) is unhealthy. Retry. |
+| `503 Service Unavailable` | Database or indexer temporarily unavailable. Retry with backoff. |
 
 ## Common error codes
 
 | Code | Meaning |
 | --- | --- |
-| `INVALID_REQUEST` | Request body or query failed schema validation. |
-| `UNAUTHORIZED` | Session required or invalid (sign in via `/v1/auth`). |
-| `FORBIDDEN` | Session is valid but not allowed to perform this action (e.g. CSRF or signer mismatch). |
-| `RATE_LIMITED` | Per-IP or per-wallet rate limit exceeded. |
-| `NOT_FOUND` | Resource doesn't exist. |
-| `MARKET_CLOSED` | Trade attempted on a closed/resolved market. |
-| `INSUFFICIENT_BALANCE` | Build-tx target wallet doesn't have enough collateral. |
-| `INVALID_SIGNATURE` | Auth challenge signature didn't verify. |
-| `CHALLENGE_EXPIRED` | Auth challenge was used past its TTL. |
-| `UPSTREAM_TIMEOUT` | Chain node or indexer didn't respond in time. |
+| `bad_request` | Request body or query failed schema validation. |
+| `unauthorized` | Session required or invalid (sign in via `/v1/auth`). |
+| `csrf_failed` | Missing or invalid `x-csrf-token` header on a mutating request. |
+| `signer_mismatch` | The session is bound to a different wallet than `signerAddress`. |
+| `rate_limited` | Per-IP or per-wallet rate limit exceeded (`details` carries `max` + `ttl`). |
+| `not_found` / `market_not_found` / `draft_not_found` | Resource doesn't exist. |
+| `invalid_quantity` / `invalid_price` / `invalid_outcome` | Order parameters violate the contract's rules (lot size, price tick range, yes/no). |
+| `field_too_long` | A proposal field exceeds its UTF-8 byte limit (limits mirror the on-chain checks). |
+| `bond_mismatch` | A caller-supplied `bondAmount` doesn't match the on-chain bond. Omit it to use the on-chain value. |
+| `build_failed` | The Alephium node refused to build the unsigned tx (returned as `502`). |
+| `db_error` | Database read/write failed (returned as `503`). |
+| `internal_error` | Unhandled server error (returned as `500`). |
 
 ## Idempotency & retries
 
 - All `GET` endpoints are safe to retry.
-- `POST /v1/tx/*` endpoints are **idempotent by request body** — calling
-  twice with the same body returns the same `unsignedTx` and `txId`. This
-  makes it safe to retry on transient network errors without double-spending.
-- `POST /v1/auth/keys` is **not** idempotent (each call mints a new key).
-
-<Tip>
-  Always log the `requestId` from `5xx` errors when reporting bugs. It lets
-  us trace your exact request through our logs.
-</Tip>
+- `POST /v1/tx/*` endpoints build (never submit) transactions — retrying is
+  always safe. Note the returned `unsignedTx` may differ between calls as
+  the wallet's UTXO set changes; only the transaction your wallet actually
+  signs and submits matters.
+- `POST /v1/rewards/sponsorships` is idempotent on `txId` — repeat calls
+  with the same `txId` return the existing row.

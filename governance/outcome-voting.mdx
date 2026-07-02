@@ -1,10 +1,10 @@
 ---
 title: "Outcome Voting"
-description: "How disputed markets get resolved by neutral $AURA stakers via commit/reveal."
+description: "How disputed markets get resolved by $AURA stakers via commit/reveal."
 ---
 
 When a market outcome is disputed, the protocol runs a **commit/reveal vote**
-among neutral $AURA stakers. This page walks through the voter's
+among $AURA stakers. This page walks through the voter's
 perspective; for the full lifecycle (bonds, penalties, finalization) see
 [Resolution & Disputes](/markets/resolution-and-disputes).
 
@@ -22,16 +22,20 @@ perspective; for the full lifecycle (bonds, penalties, finalization) see
   </Step>
   <Step title="Commit your vote">
     During the commit phase, your wallet sends a **hash** of your choice
-    (`YES`, `NO`, or `TOO_EARLY`) plus a random salt. Nobody — including
-    the protocol — can see what you actually picked yet.
+    (`YES`, `NO`, or `TOO_EARLY`) plus a random salt. Nobody on-chain can
+    see what you actually picked yet.
 
-    The salt is stored locally in your wallet. **Do not lose it** — you'll
-    need it to reveal.
+    Aura also queues your reveal with its automation service at commit
+    time, so the reveal is submitted for you when the window opens —
+    voting is a single tap.
   </Step>
-  <Step title="Reveal your vote">
-    Once the commit window closes, you have a shorter reveal window to
-    submit your choice and salt. The contract verifies the hash matches
-    your earlier commit and tallies your vote at your tier weight.
+  <Step title="Reveal happens automatically">
+    Once the commit window closes, Aura's reveal automation submits your
+    choice and salt during the reveal window. The contract verifies the
+    hash matches your earlier commit and tallies your vote at your tier
+    weight. (Privacy-conscious voters can skip the relay and reveal
+    manually via `POST /v1/tx/oracle/reveal` — just don't miss the
+    window.)
   </Step>
   <Step title="Wait for finalization">
     After the reveal phase, the protocol checks whether any outcome cleared
@@ -43,10 +47,13 @@ perspective; for the full lifecycle (bonds, penalties, finalization) see
 ### Eligibility
 
 - **Vaulted $AURA above None tier** — you must hold at least 60,000 $AURA
-  (Iron tier) at the time of the dispute.
-- **Neutral position** — you cannot have placed any order on the disputed
-  market, including during the dispute itself. The on-chain stake-holder
-  registry is checked when you commit.
+  (Iron tier) when you commit. Your staked balance is snapshotted at
+  commit time, so unstaking before the reveal doesn't dodge the slashing
+  risk.
+
+There is no on-chain restriction on voting in markets you've traded — the
+supermajority threshold and the slashing economics are what keep votes
+honest.
 
 ### Vote choices
 

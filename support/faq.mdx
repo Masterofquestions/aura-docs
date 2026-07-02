@@ -100,8 +100,10 @@ description: "Quick answers to the most common questions about Aura."
     voting.
   </Accordion>
   <Accordion title="Is there a limit on how many markets I can propose?">
-    Yes — tiered users can submit a maximum of 25 market proposals per day,
-    with a cooldown period of 1 minute between proposals.
+    Yes — each proposer can have up to **25 proposals outstanding** at a
+    time. A slot frees up whenever one of your proposals is finalized
+    (approved or rejected). Sibling markets inside a linked bundle don't
+    count against the cap — only the bundle's master proposal does.
   </Accordion>
   <Accordion title="What fees are involved in trading?">
     A small, transparent **2.5%** trading fee is applied to each transaction
@@ -121,8 +123,9 @@ description: "Quick answers to the most common questions about Aura."
     a 24-hour community voting period to resolve the outcome.
   </Accordion>
   <Accordion title="Who can vote on disputed outcomes?">
-    Only neutral voters without active positions in the disputed market,
-    holding vaulted $AURA tokens, may participate in the outcome voting
-    process.
+    Anyone with at least **Iron tier** (60,000 vaulted $AURA) at commit
+    time can vote. Votes are tier-weighted, and backing a losing outcome
+    slashes 0.1% of your vaulted $AURA — the economics, not a position
+    check, keep votes honest.
   </Accordion>
 </AccordionGroup>

@@ -34,9 +34,12 @@ Every `/v1/tx/*` endpoint returns the same shape:
 | `txId` | The txId your wallet should produce after signing. Useful for client-side optimistic UI. |
 | `fromGroup` / `toGroup` | Alephium shard groups. |
 | `gasAmount`, `gasPrice` | Gas estimate for the transaction. |
-| `collateralRequired` | USDT (or other token) that will be locked by the tx — useful for pre-flight balance checks. |
-| `attoAlphAmount` | ALPH locked by the tx (covers gas + on-chain deposits; auto-swapped from USDT in most cases). |
-| `tokens[]` | Tokens locked by the tx, with raw amounts. |
+| `collateralRequired` | USDT that the tx will lock (order endpoints) — use for pre-flight balance checks. |
+| `attoAlphAmount` | ALPH the tx approves, covering dust plus any on-chain map-entry / contract deposits. Unused approval returns to your wallet as change. |
+| `tokens[]` | Tokens the tx approves (id + raw amount strings). |
+
+Fields beyond the common set (`collateralRequired`, `tokens`, `legCount`,
+…) appear only where they're meaningful — see each endpoint's schema.
 
 ## End-to-end example: place a limit order
 
@@ -104,14 +107,29 @@ non-custodial trading platforms expose their write paths.
 
 ## Build-tx endpoints (by domain)
 
-| Domain | Endpoint prefix |
+| Domain | Endpoints |
 | --- | --- |
-| Orders | `POST /v1/tx/markets/{address}/orders` |
-| Order cancel | `DELETE /v1/tx/markets/{address}/orders/{id}` |
-| Vault | `POST /v1/tx/vault/{deposit,unlock,withdraw}` |
-| Oracle | `POST /v1/tx/oracle/{submit,dispute,commit,reveal}` |
-| Voting | `POST /v1/tx/voting/vote` |
-| Proposals | `POST /v1/tx/proposals/{single,linked,parlay}` |
+| Orders | `POST /v1/tx/markets/{address}/orders` (limit), `POST /v1/tx/markets/{address}/market-orders`, `POST /v1/tx/markets/{address}/orders/{orderId}/cancel` |
+| Vault | `POST /v1/tx/vault/{address}/deposit`, `.../unlock-request`, `.../withdraw` |
+| Oracle | `POST /v1/tx/oracle/submit-outcome`, `.../dispute-outcome`, `.../commit`, `.../reveal` |
+| Governance vote | `POST /v1/tx/voting/vote` |
+| Proposals & parlays | `POST /v1/tx/factory/propose-market`, `.../propose-linked-market`, `.../parlay-deposit`, `.../link-proposals` |
+
+A few endpoint-specific notes:
+
+- **Orders** — `quantity` must be a multiple of `10000000` (1e7 base
+  units), the contract's lot size. Buy orders return `collateralRequired`
+  (`price × quantity / 1000` plus the 2.5% fee).
+- **Submit outcome** — only `yes` / `no` can be proposed. `TOO_EARLY` is a
+  dispute-*vote* option, not a submittable outcome. The USDT bond is read
+  from the oracle contract server-side.
+- **Parlay deposit** — pass structured legs
+  (`"legs": [{ "marketId": 12, "side": "yes" }, …]`, 2–5 legs); the API
+  produces the canonical on-chain payload and rejects duplicate or
+  contradictory legs up-front.
+- **Proposals** — string fields are validated against the on-chain UTF-8
+  *byte* limits (question ≤ 300, rules/sources ≤ 1000, metadata ≤ 2048
+  bytes), so multi-byte characters count more than once.
 
 See the **API Reference → Endpoints** tab for the full request/response
 schema of each.

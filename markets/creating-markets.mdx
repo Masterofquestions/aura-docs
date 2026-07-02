@@ -16,9 +16,9 @@ Before submitting a proposal, you'll need:
   [Tier Structure](/tokens/tier-structure) and
   [Staking & Vaulting $AURA](/tokens/staking).
 - **A small ALPH deposit** — covers the on-chain contract storage for the
-  proposal. The deposit is **fully refunded** when the proposal is
-  finalized (whether it's approved or rejected). Typical cost is around
-  0.5 ALPH.
+  proposal (around 0.5 ALPH per market). If the proposal is **rejected**,
+  the deposit is refunded; if it's **approved**, the deposit funds the
+  new market contract's on-chain storage.
 
 ## Market creation flow
 
@@ -56,8 +56,11 @@ Before submitting a proposal, you'll need:
 
 ## Market limits
 
-To keep the platform high-quality and spam-free, each proposer can submit
-**up to 25 proposals per day**.
+To keep the platform high-quality and spam-free, each proposer can have
+**up to 25 proposals outstanding at a time**. A slot frees up whenever one
+of your proposals is finalized (approved or rejected). Sibling markets in
+a linked bundle don't count against the cap — only the bundle's master
+proposal does.
 
 <Tip>
   See [Binary Market Best Practices](/tutorials/binary-market-best-practices)
@@ -69,9 +72,9 @@ To keep the platform high-quality and spam-free, each proposer can submit
 
 For events with multiple related outcomes — election races, league seasons,
 playoff brackets — you can submit a **linked proposal** that bundles up to
-60 related markets into a single voting decision. If the bundle is
-approved, all of its child markets deploy together with shared metadata,
-so the UI can group them into a single "event" page.
+**40 related markets** into a single transaction and voting decision. If
+the bundle is approved, all of its child markets deploy together with
+shared metadata, so the UI can group them into a single "event" page.
 
 Linked proposals are ideal for:
 
