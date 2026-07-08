@@ -135,17 +135,20 @@ voting flow.
 The Vault is built so that slashing only ever touches the **vaulted
 balance** for the user being slashed. It cannot:
 
-- Slash $AURA that's already been requested for unlock past the
-  cooldown (those tokens are pending withdrawal, not active vault
-  collateral).
 - Affect any other user's balance, even pro-rata.
 - Touch your USDT, your open trading positions, or your market shares.
 - Slash more than you have vaulted at the time the penalty is applied.
 
-If your vaulted balance has dropped below your active unlock request
-(because slashing reduced it), the unlock request is automatically
-clamped down to the remaining balance, so you can never end up with a
-"phantom" unlock pointing at $AURA you no longer have.
+Two fairness protections apply on top of that:
+
+- **New stakers are protected.** If your first deposit landed *after* a
+  dispute's vote already started, you can't be slashed as a non-voter of
+  that dispute — you never had a chance to participate.
+- **Pre-dispute unlocks are protected.** $AURA you requested to unlock
+  *before* a dispute started is out of that dispute's slashing reach.
+  Requesting the unlock *after* the dispute started doesn't help — the
+  pending amount stays exposed until the round settles, so "vote and
+  flee" doesn't work.
 
 ### Authority over slashing
 
@@ -158,6 +161,20 @@ This authority is rotated through a **timelocked pointer**: changing
 which contract can slash requires queuing a new slasher address and
 waiting through a delay window before the change takes effect. There
 is no way to push an emergency slash through with no notice.
+
+On top of the slasher gate, the Vault enforces a **global slashing
+circuit breaker**: no more than **1% of the entire vault** can be
+slashed in any rolling 24-hour window, no matter who asks. Legitimate
+dispute penalties never come close to that ceiling (a round slashing
+every staker moves ~0.1% of the vault), so the cap exists purely as
+defense-in-depth — even a fully compromised oracle could not drain
+staked $AURA faster than 1% per day, leaving days of notice to respond.
+
+Finally, staking is restricted to **regular wallet addresses** (EOAs
+and multisigs). Smart contracts cannot stake — several payout and
+refund paths must create outputs directly to the staker, which is
+impossible for contract addresses and could otherwise wedge dispute
+processing.
 
 ## Summary
 

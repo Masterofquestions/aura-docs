@@ -100,9 +100,14 @@ the slashing economics — a voter risks real $AURA to push a wrong outcome.
 ## What happens if no outcome clears 65%?
 
 If neither `YES`, `NO`, nor `TOO_EARLY` clears the supermajority threshold,
-the round is inconclusive. The protocol immediately starts a **new
-commit/reveal round** with the same windows. This repeats until an outcome
-wins decisively.
+the round is inconclusive. The protocol starts a **new commit/reveal
+round** with the same windows. This repeats until an outcome wins
+decisively.
+
+A restart does **not** amnesty silent voters: anyone who committed in the
+inconclusive round and never revealed is slashed *before* the new round
+opens. Only then does the round counter advance — sitting out the reveal
+can't be used to dodge the penalty by forcing a restart.
 
 This is intentional — Aura would rather take longer to resolve a contested
 market than ship a 51/49 result that half the market disagrees with.
@@ -152,9 +157,24 @@ After a vote round resolves with a clear winner:
   50% goes to the treasury.
 - **Settlement** — winning share holders are paid out automatically in
   USDT.
-- **Penalty bookkeeping** — once `applyVotePenalties` and
-  `applyNonVoterPenalties` finish slashing, the penalty pool is finalized
-  and winning voters receive their $AURA rewards.
+- **Penalty bookkeeping** — eligible stakers who never committed are
+  slashed during the reveal window itself; wrong-side voters and
+  non-revealers are slashed after finalization. The penalty pool can only
+  be finalized once **every** committed vote has been revealed or slashed
+  — penalties can't be silently skipped — and only then do winning voters
+  receive their $AURA rewards.
+
+### If the protocol is ever paused
+
+Pausing the oracle (an emergency admin action) freezes the entire dispute
+pipeline — submissions, disputes, votes, finalization, *and* slashing.
+Because on-chain clocks keep ticking through a pause, any dispute round or
+challenge window the pause cut into is **voided and restarted**, not
+silently expired: interrupted vote rounds re-open with full commit/reveal
+windows after unpause (nobody from the voided round can be slashed), and
+interrupted outcome submissions are unwound with the proposer's bond
+refunded. A pause can never burn your voting window or force an outcome
+through unchallenged.
 
 ## TL;DR
 

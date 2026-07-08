@@ -40,7 +40,9 @@ perspective; for the full lifecycle (bonds, penalties, finalization) see
   <Step title="Wait for finalization">
     After the reveal phase, the protocol checks whether any outcome cleared
     the **65% supermajority** of revealed weight. If yes, the market
-    finalises. If not, a new commit/reveal round starts immediately.
+    finalises. If not, a new commit/reveal round starts — but only after
+    every unrevealed commit from the inconclusive round has been slashed
+    (a restart never amnesties silent voters).
   </Step>
 </Steps>
 

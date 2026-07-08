@@ -118,8 +118,10 @@ cleared the **65% supermajority** of revealed weight:
 
 - **Cleared 65%** — the market resolves to that outcome, traders are
   paid out, and the penalty pool is ready for claims.
-- **Did not clear 65%** — a new commit/reveal round starts immediately.
-  You can commit again in the new round.
+- **Did not clear 65%** — a new commit/reveal round starts, and you can
+  commit again in it. Note that anyone who committed in the inconclusive
+  round without revealing is slashed **before** the restart — an
+  inconclusive round doesn't wipe the slate for silent commits.
 
 If `TOO_EARLY` clears 65%, the market is canceled and all traders are
 refunded their collateral. The disputer gets their bond back plus half
