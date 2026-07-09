@@ -1,104 +1,73 @@
 ---
-title: "Passkey Wallets"
-description: "A passwordless, non-custodial wallet secured by your device's biometrics."
+title: "Your Aura Wallet"
+description: "A non-custodial embedded wallet you open with a passkey or email — no seed phrases, no pop-ups."
 ---
 
-Passkeys are a modern, secure, and user-friendly way to create and access your
-Aura wallet. They eliminate the complexity of traditional crypto wallets while
-maintaining full self-custody of your funds.
+Every Aura account comes with a built-in, **non-custodial** wallet. You never
+install anything or write down a seed phrase; you open it with a passkey or
+your email, and it works the same on every device.
 
-## What are passkeys?
+## How it works
 
-Passkeys are a passwordless authentication standard (FIDO2/WebAuthn) supported
-by all major devices and browsers. Instead of remembering a seed phrase or
-password, your device's built-in security (Face ID, Touch ID, Windows Hello,
-fingerprint, or PIN) acts as your key.
+Your keys are generated and held inside **secure hardware enclaves**
+(trusted execution environments operated by [Turnkey](https://www.turnkey.com/),
+the wallet infrastructure used by major exchanges and apps). The important
+part of the design:
 
-When you create a passkey wallet on Aura:
+- **You are the only authority.** Your wallet lives in its own isolated
+  sub-organization where your login methods (passkeys, email) are the sole
+  root users. Aura holds no key that can move your funds.
+- **Logins, not keys.** A passkey or email code proves it's you and opens a
+  short-lived signing session. The private key itself never leaves secure
+  hardware — not to your device, not to Aura.
+- **No transaction pop-ups.** Once you're signed in, trades and votes sign
+  seamlessly in the background. You approve by clicking the action itself,
+  the way you'd expect any app to work.
 
-- A cryptographic keypair is generated securely on your device
-- The private key is stored in your device's secure enclave (it never leaves
-  your device)
-- The public key is used to derive your Alephium wallet address
-- Only you can authorize transactions using your biometrics or device PIN
-
-## How passkeys work
+## Signing in
 
 <Steps>
-  <Step title="Create your wallet">
-    Choose a username and authenticate with your device (Face ID, fingerprint,
-    etc.).
+  <Step title="Passkey">
+    Face ID, Touch ID, Windows Hello, or your device PIN. Passkeys sync
+    across your devices via iCloud Keychain, Google Password Manager, or your
+    Microsoft account.
   </Step>
-  <Step title="Your keys, your control">
-    A unique cryptographic keypair is generated and stored in your device's
-    secure hardware.
-  </Step>
-  <Step title="Sign transactions">
-    Every trade, deposit, or withdrawal requires your biometric confirmation.
-  </Step>
-  <Step title="Cross-device access">
-    Passkeys can sync across your devices via iCloud Keychain, Google Password
-    Manager, or Windows Hello.
+  <Step title="Email">
+    Enter your email and type in the one-time code we send you. Handy on
+    devices that don't share your passkey ecosystem.
   </Step>
 </Steps>
 
-## Are passkeys non-custodial?
+Both methods open the **same wallet** — they are ways in, not separate
+accounts.
 
-Yes, absolutely. Passkeys are fully non-custodial:
+## Your username
 
-- Your private key is stored only on your device's secure enclave
-- Aura never has access to your private keys
-- Only you can authorize transactions with your biometrics
-- You maintain complete control over your funds at all times
+Every new account gets a generated username (like `brisk-otter-42`). It's
+your public identity on Aura — shown on comments, the leaderboard, and your
+profile page. You can rename it, add a profile picture and bio, or make your
+profile private in **Settings**.
 
-This is the same level of security as traditional self-custody wallets, but
-without the risk of losing a seed phrase.
-
-## Security benefits
+## Security properties
 
 | Property | Why it matters |
 | --- | --- |
-| **No seed phrase risk** | Nothing to write down, lose, or have stolen |
-| **Phishing resistant** | Passkeys are bound to a specific website domain, making phishing attacks ineffective |
-| **Hardware-level security** | Keys are protected by your device's secure enclave (TPM, Secure Enclave) |
-| **Biometric protection** | Every transaction requires your face, fingerprint, or PIN |
-| **No browser extensions** | Reduces attack surface compared to browser-based wallets |
+| **No seed phrase** | Nothing to write down, lose, or have stolen |
+| **Phishing resistant** | Passkeys are bound to the Aura domain — fake sites can't use them |
+| **Hardware-backed keys** | Keys live in secure enclaves, never in your browser |
+| **Non-custodial** | Only your login methods can authorize signing — Aura can't move your funds |
+| **Cross-device** | Sign in anywhere with your passkey or email |
 
-## Creating your passkey wallet
+## Losing access
 
-<Steps>
-  <Step title="Open Aura">
-    Visit [aurabets.io](https://aurabets.io/) and click
-    **Connect**.
-  </Step>
-  <Step title="Choose passkey">
-    Select **Create Passkey Wallet**.
-  </Step>
-  <Step title="Pick a username">
-    Enter a username (this is just for your reference).
-  </Step>
-  <Step title="Authenticate">
-    Approve with Face ID, Touch ID, or Windows Hello.
-  </Step>
-  <Step title="Done">
-    Your wallet is created and you're ready to deposit funds.
-  </Step>
-</Steps>
+Because your login methods are independent of any single device:
 
-## Recovering your wallet
-
-Since passkeys sync across your devices:
-
-- **Apple devices** — synced via iCloud Keychain
-- **Android** — synced via Google Password Manager
-- **Windows** — synced via Microsoft account
-
-To access your wallet on a new device, simply click **Sign In** and
-authenticate. Your passkey will be available if you're signed into the same
-account.
+- **Passkey users** — your passkey syncs through your platform account
+  (iCloud, Google, Microsoft). A new phone or laptop just needs that account.
+- **Email users** — sign in with a fresh one-time code from any device.
 
 <Warning>
-  If you lose access to all devices **and** your cloud account, you will lose
-  access to your wallet. Consider adding your passkey to multiple devices as
-  a backup.
+  Your login methods are the only way into your wallet. If you use a single
+  passkey ecosystem, consider also completing an email sign-in once so the
+  two methods back each other up.
 </Warning>

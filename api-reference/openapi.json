@@ -249,50 +249,16 @@
                   "signature": {
                     "type": "string",
                     "pattern": "^(0x)?[0-9a-fA-F]+$",
-                    "description": "Signature produced by `signMessage(challenge, \"alephium\")`. The Alephium WebAuthn blob for passkey wallets."
+                    "description": "Signature produced by `signMessage(challenge, \"alephium\")`."
                   },
                   "keyType": {
-                    "default": "gl-webauthn",
-                    "description": "Wallet key type. `gl-webauthn` = passkey (the only type the app uses).",
+                    "default": "gl-secp256k1",
+                    "description": "Wallet key type. `gl-secp256k1` = groupless embedded wallet (the type the app uses); `gl-webauthn` = legacy passkey; `default` = grouped extension/desktop wallet.",
                     "type": "string",
                     "enum": [
                       "default",
-                      "gl-webauthn"
-                    ]
-                  },
-                  "passkey": {
-                    "description": "Passkey credential metadata, persisted to the account row on first sign-in.",
-                    "type": "object",
-                    "properties": {
-                      "credentialId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 1024
-                      },
-                      "username": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 120
-                      },
-                      "publicKeyHex": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 1024
-                      },
-                      "publicKeyCompressed": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 1024
-                      },
-                      "createdAt": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "credentialId",
-                      "username",
-                      "publicKeyHex",
-                      "publicKeyCompressed"
+                      "gl-webauthn",
+                      "gl-secp256k1"
                     ]
                   },
                   "challenge": {
@@ -312,6 +278,26 @@
                       {
                         "type": "null"
                       }
+                    ]
+                  },
+                  "wallet": {
+                    "description": "Wallet provenance, persisted for support/debugging (embedded = Turnkey; the sub-org id is never signing authority).",
+                    "type": "object",
+                    "properties": {
+                      "provider": {
+                        "type": "string",
+                        "enum": [
+                          "embedded"
+                        ]
+                      },
+                      "turnkeySubOrgId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200
+                      }
+                    },
+                    "required": [
+                      "provider"
                     ]
                   }
                 },
@@ -540,170 +526,6 @@
             }
           },
           "401": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "description": "Machine-readable error code (snake_case)."
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Human-readable error message."
-                        },
-                        "details": {}
-                      },
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/auth/passkey/{credentialId}": {
-      "get": {
-        "summary": "Resolve a wallet from a passkey credential id.",
-        "tags": [
-          "Auth"
-        ],
-        "description": "Returns the public credential metadata (address + public keys + username) for a passkey credential id, read server-side. Used at login to resolve the wallet after a WebAuthn assertion, so the lookup does not depend on client-side state (which logout clears). Returning this metadata grants no session — sign-in still requires a valid assertion.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 1024
-            },
-            "in": "path",
-            "name": "credentialId",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "address": {
-                      "type": "string",
-                      "minLength": 30,
-                      "maxLength": 80,
-                      "pattern": "^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz:]+$",
-                      "description": "Alephium address (base58, optional `:N` group suffix)."
-                    },
-                    "credentialId": {
-                      "type": "string"
-                    },
-                    "username": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "publicKeyHex": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "publicKeyCompressed": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "createdAt": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    }
-                  },
-                  "required": [
-                    "address",
-                    "credentialId",
-                    "username",
-                    "publicKeyHex",
-                    "publicKeyCompressed",
-                    "createdAt"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "description": "Machine-readable error code (snake_case)."
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Human-readable error message."
-                        },
-                        "details": {}
-                      },
-                      "required": [
-                        "code",
-                        "message"
-                      ],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "503": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -7659,6 +7481,668 @@
             }
           },
           "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/me": {
+      "get": {
+        "summary": "The caller's own profile (settings page state).",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "usernameUpdatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bio": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "profilePublic": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "address",
+                    "username",
+                    "usernameUpdatedAt",
+                    "avatarUrl",
+                    "bio",
+                    "profilePublic",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update the caller's profile (username / avatar / bio / privacy).",
+        "tags": [
+          "Users"
+        ],
+        "description": "Username renames are cooldown-limited (14 days) and case-insensitively unique — a pure case change of your own name is always allowed. Avatars must be URLs from the app's own moderated images bucket. `profilePublic: false` hides the aggregated profile and anonymizes leaderboard rows (on-chain activity stays public by nature).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "avatarUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "bio": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 400
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "profilePublic": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "address": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "usernameUpdatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bio": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "profilePublic": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "address",
+                    "username",
+                    "usernameUpdatedAt",
+                    "avatarUrl",
+                    "bio",
+                    "profilePublic",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "description": "Machine-readable error code (snake_case)."
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message."
+                        },
+                        "details": {}
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/users/username-available": {
+      "get": {
+        "summary": "Check whether a username can be claimed.",
+        "tags": [
+          "Users"
+        ],
+        "description": "Format/reserved/uniqueness pre-check for the settings rename flow. Advisory — the PATCH enforces the same rules atomically (unique index), so a race still 409s there.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "in": "query",
+            "name": "name",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "description": "Human-renderable reason when unavailable.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "available"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -18903,11 +19387,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -28798,11 +29283,12 @@
                             "description": "Hex string, with or without `0x` prefix."
                           },
                           "keyType": {
-                            "default": "gl-webauthn",
+                            "default": "gl-secp256k1",
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn"
+                              "gl-webauthn",
+                              "gl-secp256k1"
                             ]
                           }
                         },
@@ -28903,11 +29389,12 @@
                             "description": "Hex string, with or without `0x` prefix."
                           },
                           "keyType": {
-                            "default": "gl-webauthn",
+                            "default": "gl-secp256k1",
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn"
+                              "gl-webauthn",
+                              "gl-secp256k1"
                             ]
                           }
                         },
@@ -29003,11 +29490,12 @@
                             "description": "Hex string, with or without `0x` prefix."
                           },
                           "keyType": {
-                            "default": "gl-webauthn",
+                            "default": "gl-secp256k1",
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn"
+                              "gl-webauthn",
+                              "gl-secp256k1"
                             ]
                           }
                         },
@@ -29080,11 +29568,12 @@
                             "description": "Hex string, with or without `0x` prefix."
                           },
                           "keyType": {
-                            "default": "gl-webauthn",
+                            "default": "gl-secp256k1",
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn"
+                              "gl-webauthn",
+                              "gl-secp256k1"
                             ]
                           }
                         },
@@ -29191,11 +29680,12 @@
                             "description": "Hex string, with or without `0x` prefix."
                           },
                           "keyType": {
-                            "default": "gl-webauthn",
+                            "default": "gl-secp256k1",
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn"
+                              "gl-webauthn",
+                              "gl-secp256k1"
                             ]
                           }
                         },
@@ -29303,11 +29793,12 @@
                             "description": "Hex string, with or without `0x` prefix."
                           },
                           "keyType": {
-                            "default": "gl-webauthn",
+                            "default": "gl-secp256k1",
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn"
+                              "gl-webauthn",
+                              "gl-secp256k1"
                             ]
                           }
                         },
@@ -29946,11 +30437,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -30511,11 +31003,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -31025,11 +31518,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -31582,11 +32076,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -31848,11 +32343,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -32091,11 +32587,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -32348,11 +32845,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -32578,11 +33076,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -32885,11 +33384,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -33137,11 +33637,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -33404,11 +33905,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -33668,11 +34170,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -33967,11 +34470,12 @@
                         "description": "Hex string, with or without `0x` prefix."
                       },
                       "keyType": {
-                        "default": "gl-webauthn",
+                        "default": "gl-secp256k1",
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn"
+                          "gl-webauthn",
+                          "gl-secp256k1"
                         ]
                       }
                     },
@@ -34203,6 +34707,197 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/desk/register": {
+      "post": {
+        "summary": "Register the session wallet with the deposit desk.",
+        "tags": [
+          "Desk"
+        ],
+        "description": "Called once after embedded-wallet signup (idempotent — a repeat with identical values succeeds). The Alephium address comes from the verified session; the desk refuses (409) any attempt to repoint an existing user to a different deposit address or sub-org. From this moment the desk watches the EVM deposit address for stablecoin deposits. Response passes through from the desk (201 with the deposit info block).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "subOrganizationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "The user's Turnkey sub-organization id."
+                  },
+                  "evmDepositAddress": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "The user's EVM deposit address (derived from the same wallet seed)."
+                  }
+                },
+                "required": [
+                  "subOrganizationId",
+                  "evmDepositAddress"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/v1/desk/deposit-info": {
+      "get": {
+        "summary": "Live deposit/withdrawal capacity for the session wallet.",
+        "tags": [
+          "Desk"
+        ],
+        "description": "Passes through the desk deposit-info block: supported chains + tokens, fees, min/max, the LIVE instant-tier window (per-deposit/daily caps shrink as the float drains; `halted` when crediting is paused) and per-chain instant withdrawal capacity, plus the routed tier (enabled/fee/ETA) when the bridge router is live. 404 = wallet not registered with the desk yet.",
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/v1/desk/onramp-url": {
+      "get": {
+        "summary": "Signed card-onramp widget URL for the session wallet.",
+        "tags": [
+          "Desk"
+        ],
+        "description": "The desk mints and HMAC-signs a MoonPay widget URL locked to the wallet's EVM deposit address — the app never holds onramp keys. 503 while the onramp is not configured (pre-MoonPay-approval): hide the card button.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 3
+            },
+            "in": "query",
+            "name": "fiat",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "amount",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "light",
+                "dark"
+              ]
+            },
+            "in": "query",
+            "name": "theme",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "in": "query",
+            "name": "redirectUrl",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/v1/desk/withdrawals": {
+      "post": {
+        "summary": "Quote a withdrawal to an EVM chain.",
+        "tags": [
+          "Desk"
+        ],
+        "description": "Returns the desk quote: tier (instant | routed), ETA, fee, the exact funding amount of USDT to pay on Alephium (with its uniquifier) and the treasury address to pay it to. The quote expires after ~30 minutes if unfunded. Desk 409s pass through with actionable messages (destination inventory short with routing disabled; no routed lane for USDT to a non-CCTP chain — suggest USDC).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "destChain": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "description": "Destination chain key (e.g. base, arbitrum, ethereum, bsc)."
+                  },
+                  "destAddress": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$",
+                    "description": "Destination EVM address."
+                  },
+                  "usdAmount": {
+                    "type": "string",
+                    "pattern": "^\\d+(\\.\\d{1,2})?$",
+                    "description": "Withdrawal amount in USD, e.g. '125.50'."
+                  },
+                  "tokenSymbol": {
+                    "description": "Payout token (default USDC).",
+                    "type": "string",
+                    "enum": [
+                      "USDC",
+                      "USDT"
+                    ]
+                  }
+                },
+                "required": [
+                  "destChain",
+                  "destAddress",
+                  "usdAmount"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/v1/desk/withdrawals/{id}": {
+      "get": {
+        "summary": "Poll a withdrawal by id.",
+        "tags": [
+          "Desk"
+        ],
+        "description": "Status passes through: requested → funded → (routing → bridged →) paid. Ids are desk-issued UUIDs.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }

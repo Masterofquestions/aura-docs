@@ -5,8 +5,8 @@ description: "How non-custodial transaction building works under `/v1/tx/*`."
 
 Aura is non-custodial — the API **never holds private keys**. Endpoints under
 `/v1/tx/*` return an *unsigned* transaction that the caller must sign with
-its own wallet (passkey, mobile wallet, hardware wallet, etc.) and submit to
-an Alephium node.
+its own wallet (the app's embedded wallet, a mobile wallet, a hardware
+wallet, etc.) and submit to an Alephium node.
 
 ## Anatomy of a build-tx response
 
@@ -51,7 +51,7 @@ Fields beyond the common set (`collateralRequired`, `tokens`, `legCount`,
       -H "x-csrf-token: $CSRF" \
       -H 'content-type: application/json' \
       -d '{
-        "signerAddress":   "1Cef...",
+        "signerAddress":   "3Cef...",
         "signerPublicKey": "0233...",
         "side":            "buy",
         "outcome":         "yes",
@@ -71,12 +71,6 @@ Fields beyond the common set (`collateralRequired`, `tokens`, `legCount`,
     })
     ```
 
-    ```ts Passkey
-    const signed = await passkeySigner.signUnsignedTx({
-      signerAddress,
-      unsignedTx: response.unsignedTx,
-    })
-    ```
     </CodeGroup>
   </Step>
   <Step title="Submit to any Alephium node">

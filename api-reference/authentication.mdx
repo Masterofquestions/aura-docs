@@ -3,8 +3,9 @@ title: "Authentication"
 description: "Establish a wallet-bound session by signing a one-time challenge — no email, password, or API key."
 ---
 
-The Aura API uses **passkey (wallet) sessions**, the same mechanism as the
-Aura app. There are no API keys.
+The Aura API uses **wallet-bound sessions**, the same mechanism as the Aura
+app (whose embedded wallet signs the challenge with its groupless secp256k1
+key). There are no API keys.
 
 - **Reads are public.** Every `GET` endpoint works without authentication
   (subject to the anonymous per-IP [rate limits](/api-reference/rate-limits)).
@@ -25,7 +26,7 @@ Two-step wallet-signature flow:
     ```bash
     curl -X POST https://api.aurabets.io/v1/auth/challenge \
       -H 'content-type: application/json' \
-      -d '{"address": "1Cef...your-wallet"}'
+      -d '{"address": "3Cef...your-wallet"}'
     ```
 
     Response:
@@ -37,15 +38,19 @@ Two-step wallet-signature flow:
     }
     ```
 
-    `address` is optional — omit it for passkey login flows where the wallet
-    address is only known after the WebAuthn assertion, then pass the exact
-    `challenge` text in the next step.
+    `address` is optional — omit it when the wallet address is only known
+    after authentication, then pass the exact `challenge` text in the next
+    step.
   </Step>
   <Step title="Sign with your wallet">
     Use your wallet's `signMessage` helper with `hasher: "alephium"` to sign
-    the `challenge` string. Passkey wallets produce a WebAuthn assertion
-    (`keyType: "gl-webauthn"`, the default); plain secp256k1 wallets use
-    `keyType: "default"`.
+    the `challenge` string. `keyType` identifies the signature scheme:
+
+    | `keyType` | Wallet |
+    | --- | --- |
+    | `gl-secp256k1` | Groupless secp256k1 — what the Aura app's embedded wallet uses (addresses start with `3`) |
+    | `default` | Grouped secp256k1 — standard Alephium wallets and tooling |
+    | `gl-webauthn` | Legacy passkey (WebAuthn) signatures — still verified for older signers |
   </Step>
   <Step title="Exchange the signature for a session">
     ```bash
@@ -53,10 +58,10 @@ Two-step wallet-signature flow:
       -H 'content-type: application/json' \
       -c cookies.txt \
       -d '{
-        "address":   "1Cef...your-wallet",
+        "address":   "3Cef...your-wallet",
         "publicKey": "0233...your-pubkey",
         "signature": "abcd...sig",
-        "keyType":   "default"
+        "keyType":   "gl-secp256k1"
       }'
     ```
 
@@ -64,7 +69,7 @@ Two-step wallet-signature flow:
 
     ```json
     {
-      "address": "1Cef...your-wallet",
+      "address": "3Cef...your-wallet",
       "csrf": "5f2a...token",
       "created": false
     }
@@ -73,6 +78,10 @@ Two-step wallet-signature flow:
     The session itself is set as an **HttpOnly cookie** (30-day TTL with
     sliding refresh). Keep the `csrf` value — every mutating request must
     echo it back in the `x-csrf-token` header.
+
+    First sign-in also creates the account server-side with a **generated
+    unique username**; manage it via `GET/PATCH /v1/users/me` and
+    `GET /v1/users/username-available`.
   </Step>
 </Steps>
 

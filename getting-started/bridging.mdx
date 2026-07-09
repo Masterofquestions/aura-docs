@@ -1,154 +1,107 @@
 ---
-title: "Bridging to Aura"
-description: "Move USDT from Ethereum or BSC into Aura via the integrated Wormhole bridge."
+title: "Deposits & Withdrawals"
+description: "Fund your USD balance from Ethereum, Base, Arbitrum, BNB Chain, a card, or directly on Alephium."
 ---
 
-Aura runs on Alephium with **USDT** as the trading currency. If you're coming
-from Ethereum or BNB Chain (BSC), you'll need to bridge your USDT to Alephium
-via our integrated bridge. This process is simple, secure, and typically takes
-**10–20 minutes**.
+Your Aura balance is shown in **USD**. Under the hood trading settles in
+stablecoins on Alephium, but you never need to think about chains, bridges,
+or gas — deposits are credited to your USD balance and withdrawals arrive as
+stablecoins wherever you want them.
 
-## Why bridge?
+## Depositing
 
-Aura uses USDT on Alephium for all trading, deposits, and payouts. If your
-USDT is currently on Ethereum or BSC, bridging moves it to the Alephium
-network where Aura operates. Benefits include:
+Open **Deposit** in the top navigation and pick the path that matches where
+your money is:
 
-- **Lower fees** — Alephium transactions cost a fraction of Ethereum gas fees
-- **Faster trading** — near-instant transaction settlement
-- **Full compatibility** — your bridged USDT works seamlessly across all Aura
-  markets
-
-## Supported chains
-
-You can bridge USDT to Aura from:
-
-- **Ethereum (ETH)** — USDT on Ethereum mainnet
-- **BNB Chain (BSC)** — USDT (BSC-USD) on BNB Smart Chain
-
-## How bridging works
-
-Aura uses the **Wormhole** bridge protocol, one of the most trusted and
-battle-tested cross-chain bridges in crypto. Here's what happens when you
-bridge:
+<CardGroup cols={2}>
+  <Card title="From another chain" icon="arrow-right-arrow-left">
+    Send **USDC or USDT** on Ethereum, Base, Arbitrum, or BNB Chain to your
+    personal deposit address. Most deposits are credited to your USD balance
+    within moments of confirming on the source chain.
+  </Card>
+  <Card title="With a card" icon="credit-card">
+    Buy stablecoins with a debit/credit card through the built-in onramp —
+    they arrive at your deposit address and are credited the same way.
+  </Card>
+  <Card title="On Alephium" icon="bolt">
+    Already on Alephium? Send USDT directly to your wallet address —
+    near-instant, no extra steps.
+  </Card>
+  <Card title="Need help?" icon="life-ring">
+    The deposit dialog shows the exact tokens and chains supported right now,
+    plus live status for each deposit.
+  </Card>
+</CardGroup>
 
 <Steps>
-  <Step title="Lock">
-    Your USDT is locked in a secure Wormhole contract on the source chain
-    (ETH or BSC).
+  <Step title="Open the deposit dialog">
+    Click **Deposit** and choose your source chain.
   </Step>
-  <Step title="Attest">
-    A network of 19 independent Wormhole Guardians verifies and signs the
-    transaction.
+  <Step title="Send to your personal address">
+    Copy your deposit address (or scan the QR) and send USDC/USDT from any
+    wallet or exchange.
   </Step>
-  <Step title="Mint">
-    Once verified, wrapped USDT is minted on Alephium and sent to your Aura
-    wallet.
-  </Step>
-  <Step title="Trade">
-    Your USDT is now ready to use on Aura.
+  <Step title="Get credited in USD">
+    Your balance updates automatically once the deposit confirms — typically
+    within moments. Very large deposits can take longer while they are
+    routed; the dialog shows their status.
   </Step>
 </Steps>
 
-## Step-by-step: depositing via bridge
-
-<Steps>
-  <Step title="Connect to Aura">
-    Sign in with your passkey or Alephium wallet.
-  </Step>
-  <Step title="Click Deposit">
-    Open the deposit modal from the top navigation.
-  </Step>
-  <Step title="Select source chain">
-    Choose Ethereum or BSC depending on where your USDT is.
-  </Step>
-  <Step title="Connect EVM wallet">
-    Connect your MetaMask, WalletConnect, or other EVM wallet.
-  </Step>
-  <Step title="Enter amount">
-    Specify how much USDT you want to bridge.
-  </Step>
-  <Step title="Approve & bridge">
-    Confirm the transaction in your wallet.
-  </Step>
-  <Step title="Wait for completion">
-    The bridge typically takes 10–20 minutes. You'll see status updates:
-    **Transferring → Attesting → Completed**.
-  </Step>
-  <Step title="Start trading">
-    Once complete, your USDT appears in your Aura balance.
-  </Step>
-</Steps>
-
-## Bridge timeline
-
-| Stage | Description | Duration |
-| --- | --- | --- |
-| Transaction | Your deposit transaction is confirmed on ETH/BSC | ~1–3 minutes |
-| Attestation | Wormhole Guardians verify and sign the transfer | ~5–15 minutes |
-| Redemption | USDT is minted on Alephium (automatic on mainnet) | ~1–2 minutes |
-| **Total** | **End-to-end bridge time** | **~10–20 minutes** |
+<Note>
+  Deposit addresses are **yours** — they stay valid, so you can send to the
+  same address again next time or withdraw from an exchange straight to it.
+</Note>
 
 ## Fees
 
-- **Source-chain gas** — you pay the standard gas fee on Ethereum or BSC for
-  the initial transaction.
-- **Aura fee** — none. Aura does not charge any additional deposit fees.
+- **Source-chain gas** — you pay the normal network fee on the chain you
+  send from (or the card provider's fee for card purchases).
+- **Aura deposit fee** — none.
 
-## Is it safe?
+## Withdrawing
 
-The Wormhole bridge is one of the most secure cross-chain protocols:
-
-- **Guardian network** — 19 independent, reputable validators must sign each
-  transfer
-- **Battle-tested** — Wormhole has processed billions of dollars in transfers
-- **Audited** — multiple security audits by top firms
-- **Non-custodial** — your funds move directly from your EVM wallet to your
-  Aura wallet
-
-## Withdrawing (Alephium → ETH/BSC)
-
-To withdraw USDT from Aura back to Ethereum or BSC:
+Open **Withdraw** and choose where you want the funds:
 
 <Steps>
-  <Step title="Click Withdraw">
-    Open the withdraw modal in the Aura app.
+  <Step title="Pick a destination">
+    A supported EVM chain (stablecoins to any address you control) or a
+    direct Alephium transfer.
   </Step>
-  <Step title="Select destination chain">
-    Choose Ethereum or BSC.
-  </Step>
-  <Step title="Enter amount + address">
-    Specify the amount and your EVM wallet address.
+  <Step title="Review the quote">
+    You'll see the exact amount that will arrive, including the network fee,
+    before you confirm.
   </Step>
   <Step title="Confirm">
-    Confirm the transaction with your Aura wallet.
-  </Step>
-  <Step title="Wait for the bridge">
-    USDT will arrive in your MetaMask or other EVM wallet in ~10–20 minutes.
+    Withdrawals within the instant window are paid out right away; larger
+    amounts are queued and the dialog tracks their status until they land.
   </Step>
 </Steps>
 
-## For Alephium users
+## What about gas?
 
-If you're already on Alephium:
-
-- Simply deposit USDT directly — no bridging needed
-- Use the **Alephium** option in the deposit modal
-- Transactions are near-instant
+You don't hold ALPH (Alephium's gas token) and never see gas prompts.
+When an action needs network fees, Aura converts a few cents of your USD
+balance automatically — you'll see it as a small "network fees" line, always
+denominated in USD. See [Alephium (ALPH)](/tokens/alph) for details.
 
 ## Troubleshooting
 
 <AccordionGroup>
-  <Accordion title="Bridge taking longer than expected?">
-    - Check your **Dashboard → Transactions** in Aura to see real-time status
-      of all your bridge transfers.
-    - Ensure you have enough gas on the source chain for the transaction.
-    - Bridge times can vary based on network congestion.
+  <Accordion title="Deposit not credited yet?">
+    - Check the deposit dialog — each deposit shows live status.
+    - Confirm the transaction succeeded on the source chain (block explorer).
+    - Large deposits above the instant window can take longer while routed.
   </Accordion>
-  <Accordion title="Transaction stuck?">
-    - First, check your **Dashboard → Transactions** to see the current status.
-    - Most issues resolve within 30 minutes.
-    - For stuck transactions, contact Aura support on
-      [Telegram](https://t.me/AuraMarkets) with your transaction hash.
+  <Accordion title="Sent an unsupported token or chain?">
+    Only send the tokens and chains listed in the deposit dialog. If you sent
+    something else, contact support on
+    [Telegram](https://t.me/AuraMarkets) with the transaction hash before
+    doing anything else.
+  </Accordion>
+  <Accordion title="Withdrawal pending?">
+    Instant-window withdrawals settle right away; larger ones show a queued
+    status with progress updates. If a withdrawal looks stuck, contact
+    support with its ID from the dialog.
   </Accordion>
 </AccordionGroup>

@@ -18,58 +18,60 @@ description: "Quick answers to the most common questions about Aura."
   </Accordion>
 </AccordionGroup>
 
-## Passkeys & wallets
+## Wallet & sign-in
 
 <AccordionGroup>
-  <Accordion title="What is a passkey wallet?">
-    A passkey wallet is a non-custodial crypto wallet secured by your device's
-    biometrics (Face ID, Touch ID, Windows Hello) instead of a seed phrase.
-    It's the easiest way to get started on Aura.
+  <Accordion title="How do I create a wallet?">
+    You don't install anything — Aura has a built-in wallet. Click
+    **Connect** and sign up with a passkey (Face ID, Touch ID, Windows
+    Hello) or your email. Your account is created in one tap with a
+    generated username you can change in Settings.
   </Accordion>
-  <Accordion title="Are passkey wallets safe?">
-    Yes. Passkeys are fully non-custodial — your private key is stored only
-    in your device's secure enclave. Aura never has access to your keys. This
-    provides the same security as traditional wallets without the risk of
-    losing a seed phrase.
+  <Accordion title="Is the wallet non-custodial?">
+    Yes. Your keys are generated and held in secure hardware enclaves where
+    your login methods (passkeys, email) are the only root authority. Aura
+    never holds a key that can move your funds. See
+    [Your Aura Wallet](/getting-started/passkeys) for the full design.
   </Accordion>
-  <Accordion title="Can I use my existing Alephium wallet?">
-    Absolutely. If you already have an Alephium wallet (browser extension),
-    you can connect it directly. Passkeys are simply an additional option for
-    easier onboarding.
+  <Accordion title="Why don't I see transaction pop-ups?">
+    Once you're signed in, actions sign seamlessly in the background —
+    clicking **Buy** or **Vote** is the approval. Your login (passkey or
+    email code) is what gates access to signing.
   </Accordion>
   <Accordion title="What if I lose my device?">
     Passkeys sync across your devices via iCloud (Apple), Google Password
-    Manager (Android), or Microsoft account (Windows). As long as you have
-    access to your cloud account, you can recover your wallet on a new
-    device.
+    Manager (Android), or your Microsoft account (Windows) — and email
+    sign-in works from any device. As long as you have one login method,
+    you have your wallet.
   </Accordion>
 </AccordionGroup>
 
-## Bridging & deposits
+## Deposits & withdrawals
 
 <AccordionGroup>
-  <Accordion title="How do I deposit USDT from Ethereum or BSC?">
-    Use the **Deposit** button in Aura and select your source chain
-    (Ethereum or BSC). Connect your EVM wallet (MetaMask, etc.), enter the
-    amount, and confirm. The Wormhole bridge will transfer your USDT to Aura
-    automatically.
+  <Accordion title="How do I deposit from Ethereum or another chain?">
+    Click **Deposit**, pick your source chain (Ethereum, Base, Arbitrum, or
+    BNB Chain), and send USDC/USDT to your personal deposit address from any
+    wallet or exchange. Your USD balance updates automatically once the
+    deposit confirms.
   </Accordion>
-  <Accordion title="How long does bridging take?">
-    Typically **10–20 minutes**. The time depends on network congestion and
-    Wormhole Guardian attestation.
+  <Accordion title="How long do deposits take?">
+    Most deposits are credited within moments of confirming on the source
+    chain. Very large deposits can take longer while they're routed — the
+    deposit dialog shows live status either way.
   </Accordion>
-  <Accordion title="Are there fees for bridging?">
-    You pay the standard gas fee on your source chain (ETH or BSC). Aura does
+  <Accordion title="Are there deposit fees?">
+    You pay the standard network fee on the chain you send from. Aura does
     not charge any additional deposit fees.
   </Accordion>
-  <Accordion title="Is the bridge safe?">
-    Yes. Aura uses Wormhole, one of the most trusted bridges in crypto. It's
-    secured by 19 independent Guardian validators and has processed billions
-    of dollars in transfers.
+  <Accordion title="Can I buy in with a card?">
+    Yes — the deposit dialog includes a card onramp that delivers
+    stablecoins straight to your deposit address.
   </Accordion>
-  <Accordion title="Can I withdraw back to Ethereum or BSC?">
-    Yes. Use the **Withdraw** function to bridge your USDT back to Ethereum
-    or BSC. The process takes about 10–20 minutes.
+  <Accordion title="Can I withdraw to Ethereum or another chain?">
+    Yes. Click **Withdraw**, pick the destination chain and address, and
+    review the quote (which shows the exact amount that will arrive,
+    network fee included) before confirming.
   </Accordion>
 </AccordionGroup>
 
