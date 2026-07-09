@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Aura API",
-    "description": "Public REST API for Aura — prediction markets on Alephium.\n\nThis API exposes everything a user can see or do in the app:\nmarkets, prices, orderbook, trades, vault state, oracle and\ngovernance, plus build-tx endpoints that return unsigned\ntransactions for the client to sign with its own wallet.\n\nInteractive reference: https://docs.aurabets.io/api-reference/introduction\n\n## Discovery\n\nBuilt for integrators, not for lazy implementers:\n\n- **Faceted lists** — every list endpoint accepts `?facets=true`\n  and returns category / tag / status counts in the same response,\n  so a UI can render filter chips without a second request.\n- **Cursor pagination** — stable across inserts and fast at depth.\n  Offset paging via `?page=` is still supported for compat.\n- **Rich filters** — `?q=`, `?category=`, `?tags=`, `?status=`,\n  `?creator=`, `?minVolume=` on `/v1/markets`. Tag matching is\n  AND (all listed tags must be present).\n- **Sortable** — `?sort=created-at|volume|best-bid-yes|recently-traded`\n  with `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.\n- **Field projection** — `?fields=id,question,bestBidYes` trims the\n  wire weight for thin clients.\n- **Unified search** — `/v1/search?q=` runs a strict tsquery first\n  with a fuzzy trigram fallback when nothing matches; result type is\n  a discriminated union so adding events / users later is non-breaking.\n- **Transparent trending** — `/v1/trending` returns the full\n  algorithm + per-market component scores so the ranking is auditable.\n- **Categories + tags as first-class** — `/v1/categories` and\n  `/v1/tags` enumerate the taxonomy with market counts.\n\n## Authentication\n\nAura uses passkey-backed account sessions delivered as an HttpOnly\ncookie. Sign in by signing a one-time challenge with your passkey:\n\n```\nPOST /v1/auth/challenge   { \"address\": \"...\" }\nPOST /v1/auth/session     { \"address\": \"...\", \"publicKey\": \"...\", \"signature\": \"...\", \"passkey\": { ... } }\n```\n\nThe `session` call sets the `aura_session` cookie and returns a CSRF\ntoken; send it back in the `x-csrf-token` header on every mutating\nrequest. `POST /v1/auth/logout` clears the session.\n\nReads are accessible anonymously with low IP-based rate limits;\nwrite endpoints (`/v1/tx/*`, social writes) require a valid session.\n\n## Rate limits\n\n| Tier      | Reads (req/min) | Writes (req/min) |\n|-----------|----------------:|-----------------:|\n| Anonymous | 60 per IP | 10 per IP |\n| Signed-in | 600 per wallet | 60 per wallet |\n\nStandard `RateLimit-*` response headers are returned on every\nrequest (IETF `draft-ietf-httpapi-ratelimit-headers`).\n\n## Write endpoints\n\nAura is non-custodial — the API never holds private keys.\nEndpoints under `/v1/tx/*` return an *unsigned* transaction\nthat the caller must sign with its own wallet (passkey, mobile\nwallet, hardware wallet, etc.) and submit to an Alephium node.\n\nA typical \"place order\" flow:\n\n1. `POST /v1/tx/markets/{address}/orders` → server returns\n   `{ unsignedTx, gasEstimate, ... }`.\n2. Wallet signs `unsignedTx`.\n3. Wallet submits the signed tx to any Alephium node.",
+    "description": "Public REST API for Aura — prediction markets on Alephium.\n\nThis API exposes everything a user can see or do in the app:\nmarkets, prices, orderbook, trades, vault state, oracle and\ngovernance, plus build-tx endpoints that return unsigned\ntransactions for the client to sign with its own wallet.\n\nInteractive reference: https://docs.aurabets.io/api-reference/introduction\n\n## Discovery\n\nBuilt for integrators, not for lazy implementers:\n\n- **Faceted lists** — every list endpoint accepts `?facets=true`\n  and returns category / tag / status counts in the same response,\n  so a UI can render filter chips without a second request.\n- **Cursor pagination** — stable across inserts and fast at depth.\n  Offset paging via `?page=` is still supported for compat.\n- **Rich filters** — `?q=`, `?category=`, `?tags=`, `?status=`,\n  `?creator=`, `?minVolume=` on `/v1/markets`. Tag matching is\n  AND (all listed tags must be present).\n- **Sortable** — `?sort=created-at|volume|best-bid-yes|recently-traded`\n  with `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.\n- **Field projection** — `?fields=id,question,bestBidYes` trims the\n  wire weight for thin clients.\n- **Unified search** — `/v1/search?q=` runs a strict tsquery first\n  with a fuzzy trigram fallback when nothing matches; result type is\n  a discriminated union so adding events / users later is non-breaking.\n- **Transparent trending** — `/v1/trending` returns the full\n  algorithm + per-market component scores so the ranking is auditable.\n- **Categories + tags as first-class** — `/v1/categories` and\n  `/v1/tags` enumerate the taxonomy with market counts.\n\n## Authentication\n\nAura uses wallet-bound account sessions delivered as an HttpOnly\ncookie. Sign in by signing a one-time challenge with your wallet:\n\n```\nPOST /v1/auth/challenge   { \"address\": \"...\" }\nPOST /v1/auth/session     { \"address\": \"...\", \"publicKey\": \"...\", \"signature\": \"...\", \"keyType\": \"gl-secp256k1\" }\n```\n\nThe `session` call sets the `aura_session` cookie and returns a CSRF\ntoken; send it back in the `x-csrf-token` header on every mutating\nrequest. `POST /v1/auth/logout` clears the session.\n\nReads are accessible anonymously with low IP-based rate limits;\nwrite endpoints (`/v1/tx/*`, social writes) require a valid session.\n\n## Rate limits\n\n| Tier      | Reads (req/min) | Writes (req/min) |\n|-----------|----------------:|-----------------:|\n| Anonymous | 60 per IP | 10 per IP |\n| Signed-in | 600 per wallet | 60 per wallet |\n\nStandard `RateLimit-*` response headers are returned on every\nrequest (IETF `draft-ietf-httpapi-ratelimit-headers`).\n\n## Write endpoints\n\nAura is non-custodial — the API never holds private keys.\nEndpoints under `/v1/tx/*` return an *unsigned* transaction\nthat the caller must sign with its own wallet (embedded, mobile,\nhardware, etc.) and submit to an Alephium node.\n\nA typical \"place order\" flow:\n\n1. `POST /v1/tx/markets/{address}/orders` → server returns\n   `{ unsignedTx, gasEstimate, ... }`.\n2. Wallet signs `unsignedTx`.\n3. Wallet submits the signed tx to any Alephium node.",
     "version": "0.1.0",
     "license": {
       "name": "MIT"
@@ -5466,7 +5466,7 @@
         "tags": [
           "Users"
         ],
-        "description": "Returns the trading + display columns from `users`. AI-quota, passkey, and vault-template columns are intentionally hidden — they are internal to the FE. Returns a synthesised zero-volume profile for never-traded addresses (no 404).",
+        "description": "Returns the trading + display columns from `users`. AI-quota and vault-template columns are intentionally hidden — they are internal to the FE. Returns a synthesised zero-volume profile for never-traded addresses (no 404).",
         "parameters": [
           {
             "schema": {
@@ -16560,7 +16560,7 @@
         "tags": [
           "Support"
         ],
-        "description": "For visitors who cannot sign in (e.g. passkey problems). Creates a ticket with a contact email instead of a wallet; replies go to the email, there is no in-app thread. Rate-limited by IP via the anonymous write bucket.",
+        "description": "For visitors who cannot sign in (e.g. wallet/sign-in problems). Creates a ticket with a contact email instead of a wallet; replies go to the email, there is no in-app thread. Rate-limited by IP via the anonymous write bucket.",
         "requestBody": {
           "required": true,
           "content": {
@@ -18607,7 +18607,7 @@
         "tags": [
           "Admin"
         ],
-        "description": "Returns the verified admin wallet address from the passkey session. Used by the FE to render the top-bar and to confirm the session is still valid + allowlisted before letting an admin start a flow.",
+        "description": "Returns the verified admin wallet address from the wallet session. Used by the FE to render the top-bar and to confirm the session is still valid + allowlisted before letting an admin start a flow.",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -39320,7 +39320,7 @@
     },
     {
       "name": "Auth",
-      "description": "Passkey account sessions (sign in, sign out)."
+      "description": "Wallet account sessions (sign in, sign out)."
     },
     {
       "name": "Markets",
