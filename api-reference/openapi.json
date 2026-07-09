@@ -22972,7 +22972,7 @@
         "tags": [
           "Admin"
         ],
-        "description": "Wraps admin_user_detail(): user stats, moderation metadata (mute flag + note), AI spend, upload counters, open positions (50), recent fills (50), parlays (20), referral earnings, pending payout-queue rows, support tickets filed, passkeys, and comment counts.",
+        "description": "Wraps admin_user_detail(): user stats, moderation metadata (mute flag + note), AI spend, upload counters, open positions (50), recent fills (50), parlays (20), referral earnings, pending payout-queue rows, support tickets filed, and comment counts.",
         "parameters": [
           {
             "schema": {
