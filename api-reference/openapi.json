@@ -66,7 +66,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Returns a short text the wallet (passkey) must sign to prove ownership. The signed result is then submitted to `POST /v1/auth/session` to establish a session. `address` is optional: omit it for passkey login (where the address is only known after the assertion) to get a generic nonce, which the session call consumes by its exact text.",
+        "description": "Returns a short text the wallet must sign to prove ownership. The signed result is then submitted to `POST /v1/auth/session` to establish a session. `address` is optional: omit it when the address is only known after authentication to get a generic nonce, which the session call consumes by its exact text.",
         "requestBody": {
           "required": true,
           "content": {
@@ -226,7 +226,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Verifies the passkey assertion against the most recent unconsumed challenge for the address, creates or refreshes the account row, and sets an HttpOnly session cookie bound to the verified wallet. The CSRF token is returned in the body (echo it back in the `x-csrf-token` header on subsequent mutating requests) and also set as a readable cookie.",
+        "description": "Verifies the wallet signature against the most recent unconsumed challenge for the address, creates or refreshes the account row, and sets an HttpOnly session cookie bound to the verified wallet. The CSRF token is returned in the body (echo it back in the `x-csrf-token` header on subsequent mutating requests) and also set as a readable cookie.",
         "requestBody": {
           "required": true,
           "content": {
@@ -253,16 +253,15 @@
                   },
                   "keyType": {
                     "default": "gl-secp256k1",
-                    "description": "Wallet key type. `gl-secp256k1` = groupless embedded wallet (the type the app uses); `gl-webauthn` = legacy passkey; `default` = grouped extension/desktop wallet.",
+                    "description": "Wallet key type. `gl-secp256k1` = groupless embedded wallet (the type the app uses); `default` = grouped extension/desktop wallet.",
                     "type": "string",
                     "enum": [
                       "default",
-                      "gl-webauthn",
                       "gl-secp256k1"
                     ]
                   },
                   "challenge": {
-                    "description": "The exact challenge text the assertion signed. Send this for passkey login (where the challenge was issued without an address); the server consumes it by text. Omit it when the challenge was issued for a known address (it is then consumed by address).",
+                    "description": "The exact challenge text that was signed. Send this when the challenge was issued without an address (the server consumes it by text). Omit it when the challenge was issued for a known address (it is then consumed by address).",
                     "type": "string"
                   },
                   "refererAddress": {
@@ -7263,7 +7262,7 @@
         "tags": [
           "Users"
         ],
-        "description": "Creates the `users` row for the authenticated wallet. The address is taken from the verified API key, never the body, so a caller can only ever create their own record. A referrer is captured once on first creation and only if it exists and differs from the caller. Idempotent.",
+        "description": "Creates the `users` row for the authenticated wallet. The address is taken from the verified session, never the body, so a caller can only ever create their own record. A referrer is captured once on first creation and only if it exists and differs from the caller. Idempotent.",
         "requestBody": {
           "required": true,
           "content": {
@@ -7284,40 +7283,6 @@
                       {
                         "type": "null"
                       }
-                    ]
-                  },
-                  "passkey": {
-                    "type": "object",
-                    "properties": {
-                      "credentialId": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 1024
-                      },
-                      "username": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 120
-                      },
-                      "publicKeyHex": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 1024
-                      },
-                      "publicKeyCompressed": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": 1024
-                      },
-                      "createdAt": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "credentialId",
-                      "username",
-                      "publicKeyHex",
-                      "publicKeyCompressed"
                     ]
                   }
                 }
@@ -7351,7 +7316,7 @@
                         }
                       ]
                     },
-                    "passkeyUsername": {
+                    "username": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -7359,7 +7324,8 @@
                         {
                           "type": "null"
                         }
-                      ]
+                      ],
+                      "description": "Generated display username (see /v1/users/me for the full profile)."
                     },
                     "createdAt": {
                       "anyOf": [
@@ -7379,7 +7345,7 @@
                   "required": [
                     "address",
                     "refererAddress",
-                    "passkeyUsername",
+                    "username",
                     "createdAt",
                     "created"
                   ],
@@ -7408,7 +7374,7 @@
                         }
                       ]
                     },
-                    "passkeyUsername": {
+                    "username": {
                       "anyOf": [
                         {
                           "type": "string"
@@ -7416,7 +7382,8 @@
                         {
                           "type": "null"
                         }
-                      ]
+                      ],
+                      "description": "Generated display username (see /v1/users/me for the full profile)."
                     },
                     "createdAt": {
                       "anyOf": [
@@ -7436,7 +7403,7 @@
                   "required": [
                     "address",
                     "refererAddress",
-                    "passkeyUsername",
+                    "username",
                     "createdAt",
                     "created"
                   ],
@@ -19391,7 +19358,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -29287,7 +29253,6 @@
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn",
                               "gl-secp256k1"
                             ]
                           }
@@ -29393,7 +29358,6 @@
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn",
                               "gl-secp256k1"
                             ]
                           }
@@ -29494,7 +29458,6 @@
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn",
                               "gl-secp256k1"
                             ]
                           }
@@ -29572,7 +29535,6 @@
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn",
                               "gl-secp256k1"
                             ]
                           }
@@ -29684,7 +29646,6 @@
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn",
                               "gl-secp256k1"
                             ]
                           }
@@ -29797,7 +29758,6 @@
                             "type": "string",
                             "enum": [
                               "default",
-                              "gl-webauthn",
                               "gl-secp256k1"
                             ]
                           }
@@ -30441,7 +30401,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -31007,7 +30966,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -31522,7 +31480,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -32080,7 +32037,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -32347,7 +32303,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -32591,7 +32546,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -32849,7 +32803,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -33080,7 +33033,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -33388,7 +33340,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -33641,7 +33592,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -33909,7 +33859,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -34174,7 +34123,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
@@ -34474,7 +34422,6 @@
                         "type": "string",
                         "enum": [
                           "default",
-                          "gl-webauthn",
                           "gl-secp256k1"
                         ]
                       }
