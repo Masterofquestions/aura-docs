@@ -37,7 +37,7 @@ needed:
 | `health:indexer` | Indexer heartbeat |
 
 ```bash
-curl -N "https://api.aurabets.io/v1/realtime/stream?topics=market:3abc...:orders,market:3abc...:fills"
+curl -N "https://api.aura.markets/v1/realtime/stream?topics=market:3abc...:orders,market:3abc...:fills"
 ```
 
 Two limits to plan for. An anonymous connection accepts up to **8 topics**, and
@@ -126,13 +126,13 @@ Full status and code tables are in [Errors](/api-reference/errors).
 
 ## Generating a client
 
-The spec at [`/openapi.json`](https://api.aurabets.io/openapi.json) is OpenAPI
+The spec at [`/openapi.json`](https://api.aura.markets/openapi.json) is OpenAPI
 3.1, generated from the live route definitions, so it never drifts from the
 implementation. Point any generator at it:
 
 ```bash
 npx @openapitools/openapi-generator-cli generate \
-  -i https://api.aurabets.io/openapi.json \
+  -i https://api.aura.markets/openapi.json \
   -g python \
   -o ./aura-client
 ```

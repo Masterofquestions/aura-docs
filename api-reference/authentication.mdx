@@ -25,7 +25,7 @@ Two-step wallet-signature flow:
 <Steps>
   <Step title="Get a one-time challenge">
     ```bash
-    curl -X POST https://api.aurabets.io/v1/auth/challenge \
+    curl -X POST https://api.aura.markets/v1/auth/challenge \
       -H 'content-type: application/json' \
       -d '{"address": "3Cef...your-wallet"}'
     ```
@@ -62,7 +62,7 @@ Two-step wallet-signature flow:
   </Step>
   <Step title="Exchange the signature for a session">
     ```bash
-    curl -X POST https://api.aurabets.io/v1/auth/session \
+    curl -X POST https://api.aura.markets/v1/auth/session \
       -H 'content-type: application/json' \
       -c cookies.txt \
       -d '{
@@ -126,7 +126,7 @@ Here is the whole flow in Python, with no Aura or Alephium dependency:
 import hashlib, requests
 from coincurve import PrivateKey  # pip install coincurve requests
 
-API = "https://api.aurabets.io"
+API = "https://api.aura.markets"
 ADDRESS = "3cUq...your-wallet"
 key = PrivateKey(bytes.fromhex("your-32-byte-private-key-hex"))
 
@@ -163,7 +163,7 @@ Cookies are a browser convenience and a nuisance everywhere else. Pass
 token, which you then send as a header:
 
 ```bash
-curl https://api.aurabets.io/v1/users/me \
+curl https://api.aura.markets/v1/users/me \
   -H "authorization: Bearer $AURA_TOKEN"
 ```
 
@@ -195,7 +195,7 @@ Send the session cookie **and** the CSRF header on every mutating request:
 
 <CodeGroup>
 ```bash curl
-curl -X PATCH https://api.aurabets.io/v1/users/me \
+curl -X PATCH https://api.aura.markets/v1/users/me \
   -b cookies.txt \
   -H "x-csrf-token: $CSRF" \
   -H 'content-type: application/json' \
@@ -203,7 +203,7 @@ curl -X PATCH https://api.aurabets.io/v1/users/me \
 ```
 
 ```ts TypeScript (fetch)
-const res = await fetch('https://api.aurabets.io/v1/users/me', {
+const res = await fetch('https://api.aura.markets/v1/users/me', {
   method: 'PATCH',
   credentials: 'include', // sends the HttpOnly session cookie
   headers: {
@@ -220,7 +220,7 @@ import requests
 s = requests.Session()
 # ...challenge + session calls populate s.cookies...
 res = s.patch(
-    'https://api.aurabets.io/v1/users/me',
+    'https://api.aura.markets/v1/users/me',
     headers={'x-csrf-token': csrf},
     json={'bio': 'Sports and elections.'},
 )

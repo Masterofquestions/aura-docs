@@ -46,7 +46,7 @@ Fields beyond the common set (`collateralRequired`, `tokens`, `legCount`,
 <Steps>
   <Step title="Build the unsigned tx">
     ```bash
-    curl -X POST https://api.aurabets.io/v1/tx/markets/<market-address>/orders \
+    curl -X POST https://api.aura.markets/v1/tx/markets/<market-address>/orders \
       -b cookies.txt \
       -H "x-csrf-token: $CSRF" \
       -H 'content-type: application/json' \
