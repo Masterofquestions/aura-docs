@@ -90,15 +90,14 @@ voters get most of the weight.
 
 Slashing follows the dispute lifecycle and needs nothing from you. The penalty
 transactions themselves are permissionless, and Aura's automation submits them
-as each phase closes. After a disputed market's vote
-finalizes:
+as each phase closes:
 
-| Voter behavior | What happens |
-| --- | --- |
-| Revealed a vote for the **winning** outcome | Earns a proportional share of the penalty pool. |
-| Revealed a vote for a **losing** outcome | **0.1% of vaulted $AURA** is slashed. |
-| Committed a vote but **never revealed** | **0.1% of vaulted $AURA** is slashed. |
-| Was eligible (Iron tier+) but **didn't vote at all** | **0.1% of vaulted $AURA** is slashed. |
+| Voter behavior | What happens | When |
+| --- | --- | --- |
+| Revealed a vote for the **winning** outcome | Earns a proportional share of the penalty pool. | After the vote finalizes |
+| Revealed a vote for a **losing** outcome | **0.1% of vaulted $AURA** is slashed. | After the vote finalizes |
+| Committed a vote but **never revealed** | **0.1% of vaulted $AURA** is slashed. | After the vote finalizes |
+| Was eligible (Iron tier+) but **didn't vote at all** | **0.1% of vaulted $AURA** is slashed. | During the reveal window |
 
 Every slashed token flows into the **penalty pool** for that specific
 market. Once the pool is finalized, winning voters claim their share,
