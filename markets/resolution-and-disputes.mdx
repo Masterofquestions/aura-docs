@@ -75,15 +75,24 @@ Some disputes shouldn't resolve in either direction, because the underlying even
 hasn't actually happened yet, the data source isn't out, or the question is
 malformed. Voters can pick `TOO_EARLY` to signal this.
 
-If `TOO_EARLY` clears the 65% supermajority, the market is **canceled**:
+If `TOO_EARLY` clears the 65% supermajority, the submitted outcome is thrown out
+and **the market goes back to open**:
 
-- All open positions are unwound; share holders are refunded.
-- The disputer gets their own bond back **plus half of the proposer's
-  bond** (the proposer made an avoidable mistake); the other half goes to
+- **Trading continues uninterrupted.** Nothing is cancelled, no positions are
+  unwound, and nobody is refunded. Your shares and resting orders stay exactly
+  where they were.
+- **Trading fees stay with the market.** They keep accruing and are only paid
+  out to the creator, treasury, and referrers once the market eventually
+  resolves YES or NO.
+- The disputer won, so they get their own bond back **plus half of the
+  proposer's bond** (the proposer called it too early); the other half goes to
   the treasury.
-- Trading fees collected up to that point go to the treasury.
 - No voter rewards are paid on a `TOO_EARLY` round. The slashed $AURA
   rolls forward into the penalty pool for the market's next dispute round.
+
+Anyone can submit an outcome again later, which opens a fresh dispute window.
+This is what stops a premature or bad-faith submission from killing a live
+market: the worst it can do is cost the proposer half their bond.
 
 ## Eligibility
 
@@ -183,7 +192,7 @@ through unchallenged.
   the commit/reveal flow.
 - Voters lock a hashed vote, then reveal it; copy-voting is prevented.
 - A **65% supermajority** is required; otherwise a new round runs.
-- `TOO_EARLY` cancels the market and refunds traders.
+- `TOO_EARLY` throws out the submission and returns the market to trading.
 - The dispute loser forfeits their bond: half to the winner, half to the
   treasury.
 - Voters are paid in **$AURA** from a slashing pool, not in USDT fees.

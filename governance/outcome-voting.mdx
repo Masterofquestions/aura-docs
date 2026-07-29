@@ -62,7 +62,7 @@ honest.
 | Choice | Meaning |
 | --- | --- |
 | `YES` / `NO` (or category option) | The outcome is decided in this direction. |
-| `TOO_EARLY` | The event hasn't happened yet, the data source isn't out, or the question is malformed. If this wins, the market is canceled and traders are refunded. |
+| `TOO_EARLY` | The event hasn't happened yet, the data source isn't out, or the question is malformed. If this wins, the submitted outcome is thrown out and the market returns to trading. Nothing is cancelled or refunded. |
 
 ## Voting power by tier
 
@@ -104,6 +104,6 @@ to the total winning weight.
 
 - Commit a hash, then reveal, which prevents copy-voting.
 - 65% supermajority required; otherwise a new round runs.
-- `TOO_EARLY` cancels the market.
+- `TOO_EARLY` throws out the submission; the market returns to trading.
 - Winners are paid in **$AURA** from slashed wrong-side stakes.
 - Wrong-side and silent voters lose $AURA, so vote with care.
