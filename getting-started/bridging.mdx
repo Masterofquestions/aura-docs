@@ -5,7 +5,7 @@ description: "Fund your USD balance from Ethereum, Base, Arbitrum, BNB Chain, a 
 
 Your Aura balance is shown in **USD**. Under the hood trading settles in
 stablecoins on Alephium, but you never need to think about chains, bridges,
-or gas — deposits are credited to your USD balance and withdrawals arrive as
+or gas. Deposits are credited to your USD balance, and withdrawals arrive as
 stablecoins wherever you want them.
 
 ## Depositing
@@ -20,12 +20,12 @@ your money is:
     within moments of confirming on the source chain.
   </Card>
   <Card title="With a card" icon="credit-card">
-    Buy stablecoins with a debit/credit card through the built-in onramp —
-    they arrive at your deposit address and are credited the same way.
+    Buy stablecoins with a debit or credit card through the built-in onramp.
+    They arrive at your deposit address and are credited the same way.
   </Card>
   <Card title="On Alephium" icon="bolt">
-    Already on Alephium? Send USDT directly to your wallet address —
-    near-instant, no extra steps.
+    Already on Alephium? Send USDT directly to your wallet address for a
+    near-instant credit with no extra steps.
   </Card>
   <Card title="Need help?" icon="life-ring">
     The deposit dialog shows the exact tokens and chains supported right now,
@@ -42,22 +42,48 @@ your money is:
     wallet or exchange.
   </Step>
   <Step title="Get credited in USD">
-    Your balance updates automatically once the deposit confirms — typically
-    within moments. Very large deposits can take longer while they are
-    routed; the dialog shows their status.
+    Your balance updates automatically once the deposit confirms on the source
+    chain, usually within a couple of minutes. Larger amounts take the routed
+    path and land in 30 to 90 minutes, and the dialog tracks the status of
+    every deposit either way.
   </Step>
 </Steps>
 
 <Note>
-  Deposit addresses are **yours** — they stay valid, so you can send to the
-  same address again next time or withdraw from an exchange straight to it.
+  Deposit addresses are **yours** and stay valid, so you can send to the same
+  address again next time or withdraw from an exchange straight to it.
 </Note>
+
+## How big amounts settle
+
+There is no maximum. Anything you send gets credited, and the size only
+decides how fast and at what rate:
+
+| Tier | Applies to | Arrives in | Fee |
+| --- | --- | --- | --- |
+| **Instant** | Amounts inside the live limits shown in the dialog | 1 to 3 minutes | 0.30% |
+| **Routed** | Anything larger | 30 to 90 minutes | 0.10% plus the actual network cost of moving the funds |
+
+Instant deposits are paid out of stablecoin inventory we hold on Alephium, so
+they land as soon as your source chain confirms. Larger amounts take the routed
+path, where your funds travel the canonical rails themselves and get credited
+on arrival. That path uses none of our inventory, which is why its percentage
+is lower. On a large transfer it usually works out cheaper overall than the
+instant rate.
+
+You never pick a tier. The dialog tells you which one applies, the exact fee,
+and the ETA before you send anything.
 
 ## Fees
 
-- **Source-chain gas** — you pay the normal network fee on the chain you
-  send from (or the card provider's fee for card purchases).
-- **Aura deposit fee** — none.
+| Charge | Amount |
+| --- | --- |
+| Deposit fee | 0.30% instant, or 0.10% plus pass-through costs when routed |
+| Withdrawal fee | Same as deposits |
+| Source-chain gas | Whatever the chain you send from charges, or the card provider's own fee |
+
+Withdrawal quotes show the exact amount that will arrive after fees, and you
+see it before you confirm.
 
 ## Withdrawing
 
@@ -69,29 +95,48 @@ Open **Withdraw** and choose where you want the funds:
     direct Alephium transfer.
   </Step>
   <Step title="Review the quote">
-    You'll see the exact amount that will arrive, including the network fee,
-    before you confirm.
+    You see the fee and the exact amount that will arrive before you commit to
+    anything.
   </Step>
-  <Step title="Confirm">
-    Withdrawals within the instant window are paid out right away; larger
-    amounts are queued and the dialog tracks their status until they land.
+  <Step title="Confirm it's really you">
+    Because the destination sits outside Aura, withdrawals ask for a fresh
+    confirmation with your passkey or an email code. The destination, chain,
+    and amount are shown on that screen, and the approval covers only those
+    exact details.
+  </Step>
+  <Step title="Get paid">
+    Withdrawals settle on the same two tiers as deposits. Most land within a
+    couple of minutes, and larger ones take the routed path and arrive in 30 to
+    90 minutes. The quote tells you which applies, and the dialog tracks the
+    withdrawal until it lands.
   </Step>
 </Steps>
 
+<Note>
+  Withdrawing **USDT** to a chain that has no routed lane for it can be
+  declined with a message suggesting USDC instead. Picking USDC for that
+  destination goes through normally.
+</Note>
+
 ## What about gas?
 
-You don't hold ALPH (Alephium's gas token) and never see gas prompts.
+You don't hold ALPH (Alephium's gas token) and you never see gas prompts.
 When an action needs network fees, Aura converts a few cents of your USD
-balance automatically — you'll see it as a small "network fees" line, always
-denominated in USD. See [Alephium (ALPH)](/tokens/alph) for details.
+balance at a posted rate and shows it as a small "network fees" line, always
+denominated in USD. Your first deposit includes a small starting amount of
+network credit, and its cost comes out of the credited balance. See
+[Alephium (ALPH)](/tokens/alph) for details.
 
 ## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="Deposit not credited yet?">
-    - Check the deposit dialog — each deposit shows live status.
+    - Check the deposit dialog, which shows live status for each deposit.
     - Confirm the transaction succeeded on the source chain (block explorer).
-    - Large deposits above the instant window can take longer while routed.
+    - Large deposits take the routed path, so allow 30 to 90 minutes. The
+      dialog shows which tier your deposit is on.
+    - Deposits below the minimum are paused for review rather than credited.
+      Contact support and we'll sort it out.
   </Accordion>
   <Accordion title="Sent an unsupported token or chain?">
     Only send the tokens and chains listed in the deposit dialog. If you sent
@@ -100,8 +145,8 @@ denominated in USD. See [Alephium (ALPH)](/tokens/alph) for details.
     doing anything else.
   </Accordion>
   <Accordion title="Withdrawal pending?">
-    Instant-window withdrawals settle right away; larger ones show a queued
-    status with progress updates. If a withdrawal looks stuck, contact
-    support with its ID from the dialog.
+    Most withdrawals settle within a couple of minutes. Routed ones take 30 to
+    90 minutes and show progress updates as they go. If a withdrawal looks
+    stuck beyond that, contact support with its ID from the dialog.
   </Accordion>
 </AccordionGroup>

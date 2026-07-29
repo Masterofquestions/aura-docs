@@ -1,6 +1,6 @@
 ---
 title: "Authentication"
-description: "Establish a wallet-bound session by signing a one-time challenge — no email, password, or API key."
+description: "Establish a wallet-bound session by signing a one-time challenge. No email, password, or API key."
 ---
 
 The Aura API uses **wallet-bound sessions**, the same mechanism as the Aura
@@ -13,9 +13,9 @@ key). There are no API keys.
   notifications, profile writes) and the build-tx endpoints under `/v1/tx/*`
   require a valid session **cookie** plus a **CSRF header**.
 
-The session authorises off-chain writes only. On-chain actions are returned
-as *unsigned* transactions that your wallet signs locally — the API never
-holds keys and the session can never move funds.
+The session authorises off-chain writes only. On-chain actions come back as
+*unsigned* transactions that your wallet signs locally, so the API never holds
+keys and the session can never move funds.
 
 ## Establishing a session
 
@@ -38,7 +38,7 @@ Two-step wallet-signature flow:
     }
     ```
 
-    `address` is optional — omit it when the wallet address is only known
+    `address` is optional. Omit it when the wallet address is only known
     after authentication, then pass the exact `challenge` text in the next
     step.
   </Step>
@@ -48,8 +48,12 @@ Two-step wallet-signature flow:
 
     | `keyType` | Wallet |
     | --- | --- |
-    | `gl-secp256k1` | Groupless secp256k1 — what the Aura app's embedded wallet uses (addresses start with `3`) |
-    | `default` | Grouped secp256k1 — standard Alephium wallets and tooling |
+    | `gl-secp256k1` | Groupless secp256k1, which is what the Aura app's embedded wallet uses (addresses start with `3`) |
+    | `default` | Grouped secp256k1, for standard Alephium wallets and tooling (addresses start with `1`) |
+
+    These two are the only accepted values. Build-tx endpoints take the same
+    `signerKeyType` field, and it must match the key your `signerAddress` was
+    derived from.
   </Step>
   <Step title="Exchange the signature for a session">
     ```bash
@@ -75,8 +79,8 @@ Two-step wallet-signature flow:
     ```
 
     The session itself is set as an **HttpOnly cookie** (30-day TTL with
-    sliding refresh). Keep the `csrf` value — every mutating request must
-    echo it back in the `x-csrf-token` header.
+    sliding refresh). Keep the `csrf` value, because every mutating request
+    must echo it back in the `x-csrf-token` header.
 
     First sign-in also creates the account server-side with a **generated
     unique username**; manage it via `GET/PATCH /v1/users/me` and
@@ -122,8 +126,8 @@ res = s.post(
 ```
 </CodeGroup>
 
-`GET` requests never need the CSRF header — only the cookie, and only on
-endpoints that return caller-specific data.
+`GET` requests never need the CSRF header. They need only the cookie, and only
+on endpoints that return caller-specific data.
 
 ## Session lifecycle
 
@@ -136,6 +140,6 @@ endpoints that return caller-specific data.
 
 <Warning>
   Build-tx endpoints under `/v1/tx/*` additionally enforce that the
-  transaction's **signer equals the session wallet** — a session for wallet A
+  transaction's **signer equals the session wallet**, so a session for wallet A
   can never build a transaction that spends from wallet B.
 </Warning>

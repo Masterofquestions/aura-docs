@@ -7,8 +7,8 @@ prediction markets on Alephium.
 
 This repository contains the source of the Aura docs site, which covers:
 
-- **Guides** — getting started, connecting a wallet, bridging USDT, trading,
-  creating markets, dispute resolution, and governance.
+- **Guides** — getting started, how the built-in wallet works, deposits and
+  withdrawals, trading, creating markets, dispute resolution, and governance.
 - **Tokens & Vault** — $AURA tokenomics, the staking tier system, and how
   fees and rewards flow through the protocol.
 - **Tutorials** — step-by-step walkthroughs and best-practice guides for
@@ -29,6 +29,13 @@ welcome.
 
 For substantive content changes (new pages, restructured sections), please
 open an issue first so we can discuss scope before you spend time writing.
+
+`api-reference/openapi.json` is the one file to leave alone. It is generated
+from the API's live route definitions in the private `aura` monorepo and
+overwritten on every sync, so hand edits are lost. It also carries only the
+public subset of the API, since internal endpoint families are filtered out
+before publishing. To change it, change the route and re-run
+`npm run docs:sync-openapi` in the monorepo.
 
 ## Local preview
 
@@ -87,7 +94,7 @@ api-reference/          API tab
   rate-limits.mdx
   build-tx-flow.mdx
   errors.mdx
-  openapi.json          Auto-generated OpenAPI 3.1 spec
+  openapi.json          Generated OpenAPI 3.1 spec. DO NOT EDIT BY HAND.
 
 logo/                   Brand assets (light + dark)
 favicon.png

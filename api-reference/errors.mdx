@@ -28,13 +28,13 @@ the body.
 
 | Status | When |
 | --- | --- |
-| `400 Bad Request` | Validation failed — schema, range, or business rule (`details` carries the zod issues for schema failures). |
+| `400 Bad Request` | Validation failed on a schema, range, or business rule (`details` carries the zod issues for schema failures). |
 | `401 Unauthorized` | No valid session cookie. Sign in via `/v1/auth`. |
-| `403 Forbidden` | Session valid but not allowed — missing/invalid `x-csrf-token`, or the tx signer doesn't match the session wallet. |
+| `403 Forbidden` | Session valid but the action isn't allowed. Missing or invalid `x-csrf-token`, or the tx signer doesn't match the session wallet. |
 | `404 Not Found` | The resource doesn't exist (or you don't own it, for wallet-scoped reads). |
 | `409 Conflict` | Idempotency / state conflict (e.g. a sponsorship `txId` recorded with different parameters). |
 | `429 Too Many Requests` | Rate limit exceeded. See [Rate Limits](/api-reference/rate-limits). |
-| `500 Internal Server Error` | Bug on our side — the original error is logged server-side, never leaked in the response. |
+| `500 Internal Server Error` | Bug on our side. The original error is logged server-side and never leaked in the response. |
 | `502 Bad Gateway` | The Alephium node refused to build a tx, or an upstream (node / indexer) is unhealthy. Retry. |
 | `503 Service Unavailable` | Database or indexer temporarily unavailable. Retry with backoff. |
 
@@ -58,9 +58,9 @@ the body.
 ## Idempotency & retries
 
 - All `GET` endpoints are safe to retry.
-- `POST /v1/tx/*` endpoints build (never submit) transactions — retrying is
-  always safe. Note the returned `unsignedTx` may differ between calls as
-  the wallet's UTXO set changes; only the transaction your wallet actually
+- `POST /v1/tx/*` endpoints build transactions and never submit them, so
+  retrying is always safe. The returned `unsignedTx` can differ between calls
+  as the wallet's UTXO set changes. Only the transaction your wallet actually
   signs and submits matters.
-- `POST /v1/rewards/sponsorships` is idempotent on `txId` — repeat calls
+- `POST /v1/rewards/sponsorships` is idempotent on `txId`, so repeat calls
   with the same `txId` return the existing row.

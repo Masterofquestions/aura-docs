@@ -22,27 +22,30 @@ description: "Quick answers to the most common questions about Aura."
 
 <AccordionGroup>
   <Accordion title="How do I create a wallet?">
-    You don't install anything — Aura has a built-in wallet. Click
-    **Connect** and sign up with a passkey (Face ID, Touch ID, Windows
-    Hello) or your email. Your account is created in one tap with a
-    generated username you can change in Settings.
+    You don't install anything, because Aura has a built-in wallet. Click
+    **Connect** and sign up with your email or Google. Your account is created
+    in one step with a generated username you can change in Settings, and you
+    can add a passkey afterwards for one-tap sign-in.
   </Accordion>
-  <Accordion title="Is the wallet non-custodial?">
-    Yes. Your keys are generated and held in secure hardware enclaves where
-    your login methods (passkeys, email) are the only root authority. Aura
-    never holds a key that can move your funds. See
+  <Accordion title="Where is my private key kept?">
+    Inside a secure enclave, an isolated machine that runs one reviewed program
+    and nothing else. Your key is created there and used there, and it is
+    encrypted at rest so a server or database breach does not expose it. It
+    never reaches your browser or your device. Aura holds no standing
+    credential that can move your funds, because signing requires a short-lived
+    permission issued to your own logged-in session. See
     [Your Aura Wallet](/getting-started/passkeys) for the full design.
   </Accordion>
   <Accordion title="Why don't I see transaction pop-ups?">
-    Once you're signed in, actions sign seamlessly in the background —
-    clicking **Buy** or **Vote** is the approval. Your login (passkey or
-    email code) is what gates access to signing.
+    Once you're signed in, ordinary actions sign in the background, and
+    clicking **Buy** or **Vote** is the approval. Sending funds to an address
+    outside Aura is the exception, and it always asks you to confirm the
+    destination and amount first.
   </Accordion>
-  <Accordion title="What if I lose my device?">
-    Passkeys sync across your devices via iCloud (Apple), Google Password
-    Manager (Android), or your Microsoft account (Windows) — and email
-    sign-in works from any device. As long as you have one login method,
-    you have your wallet.
+  <Accordion title="What if I lose my device or my passkey?">
+    Sign in with your email or Google from any device and your balance is
+    there. A passkey is a faster way in rather than the key to your account, so
+    losing one never locks you out.
   </Accordion>
 </AccordionGroup>
 
@@ -57,16 +60,22 @@ description: "Quick answers to the most common questions about Aura."
   </Accordion>
   <Accordion title="How long do deposits take?">
     Most deposits are credited within moments of confirming on the source
-    chain. Very large deposits can take longer while they're routed — the
-    deposit dialog shows live status either way.
+    chain. Large deposits take a routed path that settles in 30 to 90 minutes,
+    and the deposit dialog shows which tier applies plus live status either
+    way.
   </Accordion>
   <Accordion title="Are there deposit fees?">
-    You pay the standard network fee on the chain you send from. Aura does
-    not charge any additional deposit fees.
+    Yes. Aura charges 0.30% on instant deposits and withdrawals. Large amounts
+    settle on a routed path that charges 0.10% plus the actual network cost of
+    moving the funds, which usually comes out lower overall. You also pay the
+    standard network fee on the chain you send from. The dialog shows the exact
+    fee before you send anything. See
+    [Deposits & Withdrawals](/getting-started/bridging).
   </Accordion>
   <Accordion title="Can I buy in with a card?">
-    Yes — the deposit dialog includes a card onramp that delivers
-    stablecoins straight to your deposit address.
+    Yes. The deposit dialog includes a card onramp that delivers stablecoins
+    straight to your deposit address, where they are credited the same way as
+    any other deposit.
   </Accordion>
   <Accordion title="Can I withdraw to Ethereum or another chain?">
     Yes. Click **Withdraw**, pick the destination chain and address, and
@@ -102,10 +111,10 @@ description: "Quick answers to the most common questions about Aura."
     voting.
   </Accordion>
   <Accordion title="Is there a limit on how many markets I can propose?">
-    Yes — each proposer can have up to **25 proposals outstanding** at a
+    Yes. Each proposer can have up to **25 proposals outstanding** at a
     time. A slot frees up whenever one of your proposals is finalized
     (approved or rejected). Sibling markets inside a linked bundle don't
-    count against the cap — only the bundle's master proposal does.
+    count against the cap, and only the bundle's master proposal does.
   </Accordion>
   <Accordion title="What fees are involved in trading?">
     A small, transparent **2.5%** trading fee is applied to each transaction
@@ -127,7 +136,7 @@ description: "Quick answers to the most common questions about Aura."
   <Accordion title="Who can vote on disputed outcomes?">
     Anyone with at least **Iron tier** (60,000 vaulted $AURA) at commit
     time can vote. Votes are tier-weighted, and backing a losing outcome
-    slashes 0.1% of your vaulted $AURA — the economics, not a position
-    check, keep votes honest.
+    slashes 0.1% of your vaulted $AURA. That cost is what keeps votes honest,
+    so there is no separate check on whether you hold a position.
   </Accordion>
 </AccordionGroup>

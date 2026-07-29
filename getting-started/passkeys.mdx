@@ -1,73 +1,119 @@
 ---
 title: "Your Aura Wallet"
-description: "A non-custodial embedded wallet you open with a passkey or email — no seed phrases, no pop-ups."
+description: "Every account comes with a built-in wallet you open with email, Google, or a passkey. No extensions, no browser key storage."
 ---
 
-Every Aura account comes with a built-in, **non-custodial** wallet. You never
-install anything or write down a seed phrase; you open it with a passkey or
-your email, and it works the same on every device.
+Every Aura account comes with a built-in wallet. You never install an
+extension, and your private key is never stored in your browser or on your
+device. You open the wallet by logging in, and it works the same everywhere
+you sign in.
 
-## How it works
+## Where your key lives
 
-Your keys are generated and held inside **secure hardware enclaves**
-(trusted execution environments operated by [Turnkey](https://www.turnkey.com/),
-the wallet infrastructure used by major exchanges and apps). The important
-part of the design:
+Your wallet's private key is generated inside a **secure enclave**, an
+isolated machine that runs one reviewed program and nothing else. The key is
+created there, used there, and encrypted at rest with a cloud key whose
+policy will only release it back to that same reviewed program.
 
-- **You are the only authority.** Your wallet lives in its own isolated
-  sub-organization where your login methods (passkeys, email) are the sole
-  root users. Aura holds no key that can move your funds.
-- **Logins, not keys.** A passkey or email code proves it's you and opens a
-  short-lived signing session. The private key itself never leaves secure
-  hardware — not to your device, not to Aura.
-- **No transaction pop-ups.** Once you're signed in, trades and votes sign
-  seamlessly in the background. You approve by clicking the action itself,
-  the way you'd expect any app to work.
+What that gives you in practice:
+
+- **The key never reaches your browser.** A malicious script on a web page
+  has nothing to steal, because no key material exists on your device.
+- **Aura staff cannot sign for you.** Signing requires a short-lived
+  permission slip issued to *your* logged-in session. Aura holds no standing
+  credential that authorizes a transfer out of your wallet.
+- **A server breach does not expose your key.** The stored copy is
+  encrypted, and the servers that handle your login never see the decrypted
+  version.
+
+Aura operates the enclave, so this is not the same trust model as a hardware
+wallet you hold yourself. The design goal is that compromising Aura's
+servers, database, or dependencies does not give an attacker your key.
+
+## Two addresses, one wallet
+
+Your wallet gives you two addresses and you can ignore both most of the time:
+
+| Address | What it's for |
+| --- | --- |
+| **Alephium address** | Where your trading balance lives and where every market action settles. Starts with `3`. |
+| **EVM deposit address** | Where you send USDC or USDT from Ethereum, Base, Arbitrum, or BNB Chain. It is a contract that can only forward funds into Aura's treasury, which is enforced on-chain. |
 
 ## Signing in
 
 <Steps>
-  <Step title="Passkey">
-    Face ID, Touch ID, Windows Hello, or your device PIN. Passkeys sync
-    across your devices via iCloud Keychain, Google Password Manager, or your
-    Microsoft account.
+  <Step title="Sign up with email or Google">
+    Enter your email and type the one-time code we send you, or continue with
+    Google. This is always the first step, so your account is recoverable from
+    the moment it exists.
   </Step>
-  <Step title="Email">
-    Enter your email and type in the one-time code we send you. Handy on
-    devices that don't share your passkey ecosystem.
+  <Step title="Add a passkey (optional)">
+    A passkey gives you one-tap sign-in with Face ID, Touch ID, Windows Hello,
+    or your device PIN. It is a faster way in, and skipping it costs you
+    nothing.
   </Step>
 </Steps>
 
-Both methods open the **same wallet** — they are ways in, not separate
+Every method opens the **same wallet**. They are ways in, not separate
 accounts.
+
+## Recovering your account
+
+Recovery works through your login, so there is nothing to write down and
+store:
+
+- **Lost your phone or laptop?** Sign in with email or Google from any
+  device and your balance is there.
+- **Lost your passkey?** Same answer. A passkey is a shortcut, and losing it
+  never locks you out.
+
+<Note>
+  Because email and Google carry account authority, treat those accounts as
+  you would your bank login. Sensitive actions such as changing your recovery
+  email or your passkeys require a fresh confirmation and send you an
+  out-of-band notification, so an unexpected change is visible and
+  reversible.
+</Note>
+
+## Exporting a recovery phrase
+
+If you want the option to hold your own key outside Aura, you must turn it on
+**during signup**, when the wallet creation flow offers to bind an export
+credential. That credential is a passkey the enclave itself checks, so
+exporting works even if Aura's login servers are fully compromised.
+
+<Warning>
+  Binding that export credential during signup is the only chance to enable
+  raw phrase export. Skipping it is permanent for that wallet. Your wallet
+  stays fully usable and fully recoverable either way, and you can always
+  withdraw your balance to any address you control.
+</Warning>
+
+## Signing transactions
+
+Once you are signed in, ordinary activity signs in the background. Placing an
+order, voting, or staking goes through without a biometric prompt, and
+clicking the action is the approval.
+
+Moving money to an address outside Aura is treated differently. Those
+transactions show you the decoded destination and amount on a trusted screen
+and ask you to confirm with your passkey or an email code before anything is
+signed.
 
 ## Your username
 
-Every new account gets a generated username (like `brisk-otter-42`). It's
-your public identity on Aura — shown on comments, the leaderboard, and your
-profile page. You can rename it, add a profile picture and bio, or make your
-profile private in **Settings**.
+Every new account gets a generated username such as `brisk-otter-42`. It is
+your public identity on Aura, shown on comments, the leaderboard, and your
+profile page. Rename it, add a picture and bio, or make your profile private
+in **Settings**.
 
-## Security properties
+## Security summary
 
-| Property | Why it matters |
+| Property | What it means for you |
 | --- | --- |
-| **No seed phrase** | Nothing to write down, lose, or have stolen |
-| **Phishing resistant** | Passkeys are bound to the Aura domain — fake sites can't use them |
-| **Hardware-backed keys** | Keys live in secure enclaves, never in your browser |
-| **Non-custodial** | Only your login methods can authorize signing — Aura can't move your funds |
-| **Cross-device** | Sign in anywhere with your passkey or email |
-
-## Losing access
-
-Because your login methods are independent of any single device:
-
-- **Passkey users** — your passkey syncs through your platform account
-  (iCloud, Google, Microsoft). A new phone or laptop just needs that account.
-- **Email users** — sign in with a fresh one-time code from any device.
-
-<Warning>
-  Your login methods are the only way into your wallet. If you use a single
-  passkey ecosystem, consider also completing an email sign-in once so the
-  two methods back each other up.
-</Warning>
+| **No key in your browser** | Page scripts and browser extensions have no key material to steal |
+| **Enclave-held signing** | Your key is only usable by a reviewed program, through your own login session |
+| **Revocable sessions** | Signing out a device stops it from signing within about a minute |
+| **Recovery through login** | Email or Google always reaches the same wallet |
+| **Phishing-resistant passkeys** | Passkeys are bound to the Aura domain, so a fake site cannot use them |
+| **Confirmation on cash-out** | Sending funds off Aura requires a fresh confirmation on a trusted screen |
