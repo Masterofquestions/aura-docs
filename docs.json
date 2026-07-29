@@ -138,9 +138,23 @@
     "metatags": {
       "og:site_name": "Aura",
       "og:type": "website",
-      "twitter:card": "summary",
-      "twitter:site": "@AuraMarkets"
+      "og:locale": "en_US",
+      "twitter:card": "summary_large_image",
+      "twitter:site": "@AuraMarkets",
+      "canonical": "https://docs.aurabets.io"
+    },
+    "organization": {
+      "id": "https://aurabets.io/#organization",
+      "name": "Aura",
+      "url": "https://aurabets.io",
+      "sameAs": [
+        "https://x.com/AuraMarkets",
+        "https://t.me/AuraMarkets"
+      ]
     }
+  },
+  "metadata": {
+    "timestamp": true
   },
   "navbar": {
     "links": [
