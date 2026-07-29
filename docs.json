@@ -115,6 +115,33 @@
       }
     ]
   },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "assistant",
+      "chatgpt",
+      "claude",
+      "mcp",
+      "cursor",
+      "vscode",
+      "download-spec"
+    ]
+  },
+  "api": {
+    "examples": {
+      "languages": ["bash", "javascript", "python", "go"],
+      "defaults": "required"
+    }
+  },
+  "seo": {
+    "metatags": {
+      "og:site_name": "Aura",
+      "og:type": "website",
+      "twitter:card": "summary",
+      "twitter:site": "@AuraMarkets"
+    }
+  },
   "navbar": {
     "links": [
       {
