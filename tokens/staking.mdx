@@ -6,12 +6,12 @@ description: "Stake $AURA to unlock tier benefits, earn voting power, and put sk
 The **Aura Vault** is the on-chain home of every staked $AURA token. It
 does three jobs at once:
 
-1. **Tracks tier eligibility** — the tier you qualify for (and the
+1. **Tracks tier eligibility.** The tier you qualify for (and the
    benefits that come with it) is computed live from your vaulted
    balance.
-2. **Powers governance voting** — your voting weight in proposal voting
+2. **Powers governance voting.** Your voting weight in proposal voting
    and dispute resolution is read directly from the Vault.
-3. **Backs the optimistic oracle with skin in the game** — when a
+3. **Backs the optimistic oracle with skin in the game.** When a
    dispute is resolved, voters who backed the wrong outcome (or who
    committed a vote and never revealed it) have a portion of their
    vaulted $AURA **slashed**. That $AURA flows to the voters who got
@@ -72,10 +72,10 @@ During this time:
     locked tokens.
 </Warning>
 
-## Slashing — why staking has skin in the game
+## Slashing: why staking has skin in the game
 
-A pure governance system that only rewards good behavior — without
-penalizing bad behavior — is easy to game. A whale who votes the same
+A pure governance system that only rewards good behavior, without
+penalizing bad behavior, is easy to game. A whale who votes the same
 way on every dispute earns rewards on the ones they get right and pays
 nothing on the ones they get wrong. That breaks the alignment Aura
 needs: voters should only weigh in on outcomes they actually believe.
@@ -88,7 +88,7 @@ voters get most of the weight.
 
 ### How slashing works
 
-Slashing is triggered automatically by the dispute lifecycle — there's
+Slashing is triggered automatically by the dispute lifecycle, so there's
 no manual action required from anyone. After a disputed market's vote
 finalizes:
 
@@ -100,8 +100,8 @@ finalizes:
 | Was eligible (Iron tier+) but **didn't vote at all** | **0.1% of vaulted $AURA** is slashed. |
 
 Every slashed token flows into the **penalty pool** for that specific
-market. Once the pool is finalized, winning voters claim their share —
-weighted by their voting tier — directly into their wallet as $AURA.
+market. Once the pool is finalized, winning voters claim their share,
+weighted by their voting tier, directly into their wallet as $AURA.
 
 <Tip>
   The slash percentage is small per individual vote (0.1%), but it
@@ -112,7 +112,7 @@ weighted by their voting tier — directly into their wallet as $AURA.
 
 ### Voting power vs. stake at risk
 
-Higher tiers get more voting weight on disputes — and have more $AURA
+Higher tiers get more voting weight on disputes, and have more $AURA
 at risk if they vote wrong:
 
 | Tier | Voting weight | Slash if you back the wrong side (per vote) |
@@ -143,17 +143,17 @@ Two fairness protections apply on top of that:
 
 - **New stakers are protected.** If your first deposit landed *after* a
   dispute's vote already started, you can't be slashed as a non-voter of
-  that dispute — you never had a chance to participate.
+  that dispute, because you never had a chance to participate.
 - **Pre-dispute unlocks are protected.** $AURA you requested to unlock
   *before* a dispute started is out of that dispute's slashing reach.
-  Requesting the unlock *after* the dispute started doesn't help — the
+  Requesting the unlock *after* the dispute started doesn't help, since the
   pending amount stays exposed until the round settles, so "vote and
   flee" doesn't work.
 
 ### Authority over slashing
 
 Only the **Optimistic Oracle contract** can call the Vault's slash
-function — and even then, only as part of a dispute resolution flow
+function, and even then only as part of a dispute resolution flow
 that's already gone through commit, reveal, and supermajority
 finalization.
 
@@ -167,11 +167,11 @@ circuit breaker**: no more than **1% of the entire vault** can be
 slashed in any rolling 24-hour window, no matter who asks. Legitimate
 dispute penalties never come close to that ceiling (a round slashing
 every staker moves ~0.1% of the vault), so the cap exists purely as
-defense-in-depth — even a fully compromised oracle could not drain
+defense-in-depth: even a fully compromised oracle could not drain
 staked $AURA faster than 1% per day, leaving days of notice to respond.
 
 Finally, staking is restricted to **regular wallet addresses** (EOAs
-and multisigs). Smart contracts cannot stake — several payout and
+and multisigs). Smart contracts cannot stake, because several payout and
 refund paths must create outputs directly to the staker, which is
 impossible for contract addresses and could otherwise wedge dispute
 processing.
@@ -186,5 +186,5 @@ processing.
   vote; that $AURA funds rewards for correct voters.
 - Only the Optimistic Oracle can trigger a slash, and only after a
   finalized dispute vote.
-- You retain full custody — Aura cannot move, freeze, or arbitrarily
+- You retain full custody. Aura cannot move, freeze, or arbitrarily
   reduce your vaulted balance outside the explicit dispute flow.

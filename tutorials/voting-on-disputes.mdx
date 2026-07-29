@@ -16,8 +16,8 @@ that govern voting power and slashing, see
 
 You need:
 
-- An Aura account (sign in with a passkey or email).
-- At least the **Iron** tier — 60,000 vaulted $AURA. See
+- An Aura account (sign in with email or Google).
+- At least the **Iron** tier, meaning 60,000 vaulted $AURA. See
   [Staking & Vaulting $AURA](/tokens/staking).
 
 You should also know:
@@ -25,12 +25,12 @@ You should also know:
 - Voting is **not free**. If you back the wrong outcome, **0.1% of your
   vaulted $AURA is slashed** per vote. Vote on markets you've actually
   researched.
-- You sign **one transaction** — the commit. Aura's reveal automation
+- You sign **one transaction**, the commit. Aura's reveal automation
   submits the matching reveal for you when the reveal window opens.
 - Your staked balance is snapshotted at commit time, so unstaking between
   commit and reveal doesn't dodge the slashing risk.
 
-## Step 1 — Find a disputed market
+## Step 1: Find a disputed market
 
 <Steps>
   <Step title="Open the Voting tab">
@@ -45,20 +45,20 @@ You should also know:
   <Step title="Read the resolution rules">
     Open the market detail and read the original resolution rules and
     sources. Your job as a voter is to determine which outcome the
-    rules support — not which outcome you'd prefer.
+    rules support, rather than which outcome you'd prefer.
   </Step>
 </Steps>
 
-## Step 2 — Commit your vote
+## Step 2: Commit your vote
 
 The commit phase locks in your choice **without revealing what it is**.
 This prevents later voters from copying earlier ones.
 
 <Steps>
   <Step title="Pick a choice">
-    - **YES** — the rules clearly resolve the market YES.
-    - **NO** — the rules clearly resolve the market NO.
-    - **TOO EARLY** — the underlying event hasn't happened yet, the
+    - **YES**. The rules clearly resolve the market YES.
+    - **NO**. The rules clearly resolve the market NO.
+    - **TOO EARLY**. The underlying event hasn't happened yet, the
       data source isn't out, or the question is malformed. If this wins,
       the market is canceled and traders are refunded.
   </Step>
@@ -67,7 +67,7 @@ This prevents later voters from copying earlier ones.
     `keccak256(market || voter || choice || salt)`, and sends the hash
     on-chain. The salt + choice are also queued with Aura's reveal
     automation, which will submit the reveal on your behalf during the
-    reveal window — you don't need to come back.
+    reveal window, so you don't need to come back.
   </Step>
   <Step title="Sign the commit transaction">
     Confirm in your wallet. The on-chain commit records:
@@ -80,14 +80,14 @@ This prevents later voters from copying earlier ones.
 <Tip>
   You can commit any time during the commit window, but only **once per
   vote round**. If you change your mind after committing, you can't
-  re-commit — but you can choose not to reveal, which costs you the
+  re-commit, but you can choose not to reveal, which costs you the
   same 0.1% slash as voting wrong. Generally, only commit when you're
   confident.
 </Tip>
 
-## Step 3 — Reveal (automatic)
+## Step 3: Reveal (automatic)
 
-Once the commit window closes, the reveal phase opens — a shorter window
+Once the commit window closes, the reveal phase opens for a shorter window
 (typically about an hour). Aura's reveal automation submits your original
 choice and salt on-chain, and the contract verifies the hash matches your
 commit before tallying your tier-weighted vote.
@@ -99,7 +99,7 @@ owner-only API endpoint).
 <Tip>
   Prefer not to share your vote choice with Aura's relay before it hits
   the chain? Commit through the API and reveal yourself with
-  `POST /v1/tx/oracle/reveal` during the reveal window — the contract
+  `POST /v1/tx/oracle/reveal` during the reveal window. The contract
   accepts a reveal from any caller, since the hash binds it to your
   address.
 </Tip>
@@ -111,31 +111,31 @@ owner-only API endpoint).
   participation.
 </Warning>
 
-## Step 4 — Wait for finalization
+## Step 4: Wait for finalization
 
 After the reveal phase, the protocol checks whether any single outcome
 cleared the **65% supermajority** of revealed weight:
 
-- **Cleared 65%** — the market resolves to that outcome, traders are
+- **Cleared 65%**. The market resolves to that outcome, traders are
   paid out, and the penalty pool is ready for claims.
-- **Did not clear 65%** — a new commit/reveal round starts, and you can
+- **Did not clear 65%**. A new commit/reveal round starts, and you can
   commit again in it. Note that anyone who committed in the inconclusive
-  round without revealing is slashed **before** the restart — an
+  round without revealing is slashed **before** the restart, so an
   inconclusive round doesn't wipe the slate for silent commits.
 
 If `TOO_EARLY` clears 65%, the market is canceled and all traders are
 refunded their collateral. The disputer gets their bond back plus half
 of the proposer's bond; the other half goes to the treasury. No voter
-rewards are paid on a `TOO_EARLY` round — the slashed $AURA rolls
+rewards are paid on a `TOO_EARLY` round. The slashed $AURA rolls
 forward into the market's next dispute round.
 
-## Step 5 — Claim your reward
+## Step 5: Claim your reward
 
 If you backed the winning outcome:
 
 - Your proportional share of the **penalty pool** is calculated from
   your tier weight relative to the total winning weight.
-- Rewards are paid in **$AURA** directly to your wallet — Aura's
+- Rewards are paid in **$AURA** directly to your wallet, and Aura's
   automation pushes the payout once penalties are finalized, so no
   claim transaction is required from you.
 
@@ -151,14 +151,14 @@ If you backed the losing outcome (or didn't reveal):
 The contract reads your tier from the Vault at the moment you commit,
 not at the moment you reveal. So if you stake more $AURA between
 commit and reveal, your additional stake doesn't increase your weight
-for that round — but it does for the next round. Your staked balance
+for that round, but it does for the next round. Your staked balance
 is snapshotted at commit time too, so unstaking mid-round doesn't
 reduce your slashing exposure.
 
 ### Why the reveal window is shorter than the commit window
 
 Once commits are locked, the only thing left is bookkeeping. A long
-reveal window adds delay without improving security — the automation
+reveal window adds delay without improving security, since the automation
 reveals queued votes promptly once the window opens. Stakers whose
 commits never reveal are signaling they wanted to influence the hash
 count without actually voting, which is exactly the bad-faith behavior
@@ -166,7 +166,7 @@ the slashing penalty deters.
 
 ### Can I vote on a market I've traded?
 
-There's no on-chain restriction — the earlier stake-holder gate was
+There's no on-chain restriction. The earlier stake-holder gate was
 removed because it was trivially bypassed with a second wallet. What
 keeps votes honest is economics: the 65% supermajority requirement and
 the 0.1% slash for backing a losing outcome.
@@ -176,5 +176,5 @@ the 0.1% slash for backing a losing outcome.
 - [ ] I'm at Iron tier or higher.
 - [ ] I've read the resolution rules.
 - [ ] I'm confident enough to put 0.1% of my vault on the line.
-- [ ] My reveal is queued (automatic) — or I know I must reveal
+- [ ] My reveal is queued (automatic), or I know I must reveal
       manually within the window.

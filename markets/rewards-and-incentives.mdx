@@ -12,9 +12,9 @@ community.
 Market creators are essential to the Aura ecosystem and earn a share of
 every trade on the markets they spawn:
 
-- **Tier-scaled share** — creators receive between **1%** and **30%** of
+- **Tier-scaled share**. Creators receive between **1%** and **30%** of
   the 2.5% trading fee, scaling with their staked $AURA tier.
-- **Paid in USDT** — fee shares are distributed in USDT and accrue with
+- **Paid in USDT**. Fee shares are distributed in USDT and accrue with
   every fill, claimable at any time.
 
 | Tier | Creator's cut of the trading fee |
@@ -33,20 +33,20 @@ development.
 
 ## Dispute voter rewards
 
-Aura's dispute system rewards voters who back the correct outcome — but it
-does so through **slashing**, not by skimming USDT fees. The result is
-strictly aligned: the wrong side of a controversial market literally
-funds the right side.
+Aura's dispute system rewards voters who back the correct outcome, and it funds
+those rewards through **slashing** rather than by skimming USDT fees. The result
+is strictly aligned: the wrong side of a controversial market literally funds
+the right side.
 
-- **Wrong-side voters** — anyone who reveals a vote for the losing
+- **Wrong-side voters**. Anyone who reveals a vote for the losing
   outcome has a portion of their vaulted $AURA slashed.
-- **Silent stakers** — voters who committed but never revealed (or never
+- **Silent stakers**. Voters who committed but never revealed (or never
   committed at all) are penalized too, since silent voters undermine the
   oracle.
 - **Slashed $AURA** flows into a per-market **penalty pool**.
 - **Winning voters** claim from the pool, weighted by their voting tier.
 
-Because the pool is denominated in $AURA, dispute voters earn $AURA — a
+Because the pool is denominated in $AURA, dispute voters earn $AURA, giving a
 direct tie between governance participation and protocol ownership. See
 [Resolution & Disputes](/markets/resolution-and-disputes) for the full
 flow.
@@ -120,25 +120,25 @@ Closer quotes earn sharply more rewards.
 | `Spread_m` | Distance from midpoint for market `m` |
 | `Spread_m'` | Distance from midpoint for the complement market |
 
-**Equation 1 — order position score:**
+**Equation 1: order position score:**
 
 $$
 S(v,s) = \left(\frac{v - s}{v}\right)^2 \cdot b
 $$
 
-**Equation 2 — book one points:**
+**Equation 2: book one points:**
 
 $$
 Q_{one} = \sum S(v, Spread_m) \cdot BidSize_m + \sum S(v, Spread_{m'}) \cdot AskSize_{m'}
 $$
 
-**Equation 3 — book two points:**
+**Equation 3: book two points:**
 
 $$
 Q_{two} = \sum S(v, Spread_m) \cdot AskSize_m + \sum S(v, Spread_{m'}) \cdot BidSize_{m'}
 $$
 
-**Equation 4 — two-sided score:**
+**Equation 4: two-sided score:**
 
 If midpoint is between 0.10 and 0.90:
 
@@ -152,19 +152,19 @@ $$
 Q_{min} = \min(Q_{one}, Q_{two})
 $$
 
-**Equation 5 — normalize across makers:**
+**Equation 5: normalize across makers:**
 
 $$
 Q_{normal} = \frac{Q_{min}}{\sum Q_{min}}
 $$
 
-**Equation 6 — sum across the epoch:**
+**Equation 6: sum across the epoch:**
 
 $$
 Q_{epoch} = \sum Q_{normal}
 $$
 
-**Equation 7 — final share of pool:**
+**Equation 7: final share of pool:**
 
 $$
 Q_{final} = \frac{Q_{epoch}}{\sum Q_{epoch}}

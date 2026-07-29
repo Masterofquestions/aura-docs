@@ -11,7 +11,7 @@ $AURA stakers settle it through a **tier-weighted commit/reveal vote**.
 ## Submitting an outcome
 
 Once a market reaches its end date, anyone can submit a proposed outcome
-(**YES** or **NO** — `TOO_EARLY` is a dispute-vote option, not a
+(**YES** or **NO**; `TOO_EARLY` is a dispute-vote option rather than a
 submittable outcome) by posting a refundable **proposer bond** in USDT.
 This opens a dispute window.
 
@@ -25,11 +25,12 @@ If another user disagrees, they can initiate a dispute by posting an equal
 **disputer bond** in USDT before the dispute deadline. The market then enters
 a structured commit/reveal vote.
 
-Both the proposer and the disputer have funds at stake — the loser's bond
+Both the proposer and the disputer have funds at stake, and the loser's bond
 is forfeit. The winner gets their own bond back **plus half of the loser's
 bond**; the other half goes to the protocol treasury. (Paying the winner
-the full loser bond would make a self-dispute — propose from one wallet,
-dispute from another — free, enabling risk-free griefing of voters.)
+the full loser bond would make a self-dispute free, since you could propose
+from one wallet and dispute from another, enabling risk-free griefing of
+voters.)
 
 ## The commit/reveal vote
 
@@ -39,7 +40,7 @@ choices:
 <Steps>
   <Step title="Commit phase">
     Eligible voters submit a **hashed vote**:
-    `keccak256(market || voter || choice || salt)` — the hash binds the
+    `keccak256(market || voter || choice || salt)`. The hash binds the
     market and the voter's address so a commit can't be replayed by (or
     for) anyone else. The choice is one of `YES`, `NO`, or `TOO_EARLY`
     (see below). Nobody can see what anyone else voted for during this
@@ -70,7 +71,7 @@ each voter believed at vote time.
 
 ### The `TOO_EARLY` option
 
-Some disputes shouldn't resolve in either direction — the underlying event
+Some disputes shouldn't resolve in either direction, because the underlying event
 hasn't actually happened yet, the data source isn't out, or the question is
 malformed. Voters can pick `TOO_EARLY` to signal this.
 
@@ -81,7 +82,7 @@ If `TOO_EARLY` clears the 65% supermajority, the market is **canceled**:
   bond** (the proposer made an avoidable mistake); the other half goes to
   the treasury.
 - Trading fees collected up to that point go to the treasury.
-- No voter rewards are paid on a `TOO_EARLY` round — the slashed $AURA
+- No voter rewards are paid on a `TOO_EARLY` round. The slashed $AURA
   rolls forward into the penalty pool for the market's next dispute round.
 
 ## Eligibility
@@ -90,12 +91,12 @@ Voting is open to **$AURA stakers**:
 
 - You must hold a vaulted $AURA position above the **None** tier (i.e. at
   least the **Iron** tier, 60,000 $AURA) at commit time.
-- Your staked balance is **snapshotted when you commit** — unstaking
+- Your staked balance is **snapshotted when you commit**, so unstaking
   between commit and reveal doesn't dodge the slashing risk.
 
 There is no on-chain restriction on voting in markets you've traded; your
 protection against biased voting is the 65% supermajority requirement and
-the slashing economics — a voter risks real $AURA to push a wrong outcome.
+the slashing economics, since a voter risks real $AURA to push a wrong outcome.
 
 ## What happens if no outcome clears 65%?
 
@@ -106,10 +107,10 @@ decisively.
 
 A restart does **not** amnesty silent voters: anyone who committed in the
 inconclusive round and never revealed is slashed *before* the new round
-opens. Only then does the round counter advance — sitting out the reveal
+opens. Only then does the round counter advance, so sitting out the reveal
 can't be used to dodge the penalty by forcing a restart.
 
-This is intentional — Aura would rather take longer to resolve a contested
+This is intentional. Aura would rather take longer to resolve a contested
 market than ship a 51/49 result that half the market disagrees with.
 
 ## Voting power
@@ -134,16 +135,16 @@ See [Tier Structure](/tokens/tier-structure) for stake requirements.
 Aura's dispute system uses **slashing**, not protocol fees, to reward honest
 voting:
 
-- **Wrong-side voters** — anyone who revealed a vote for the *losing*
+- **Wrong-side voters**. Anyone who revealed a vote for the *losing*
   outcome has **0.1% of their vaulted $AURA** slashed per vote.
-- **Non-revealers** — stakers who committed but never revealed (or never
+- **Non-revealers**. Stakers who committed but never revealed (or never
   committed at all) are slashed by the same amount, since silent voters
   undermine the oracle.
 - **Slashed $AURA** flows into a **penalty pool** for that market.
 - **Winning voters** then claim a proportional share of the penalty pool,
   weighted by their voting tier.
 
-Dispute rewards are paid in **$AURA** — the wrong side of a controversial
+Dispute rewards are paid in **$AURA**, so the wrong side of a controversial
 market literally funds the right side. See
 [Staking & Vaulting $AURA](/tokens/staking) for the slashing mechanics in
 detail.
@@ -152,22 +153,22 @@ detail.
 
 After a vote round resolves with a clear winner:
 
-- **Bonds** — the winning side's representative (proposer or disputer)
+- **Bonds**. The winning side's representative (proposer or disputer)
   gets their own bond back plus **50% of the loser's bond**; the remaining
   50% goes to the treasury.
-- **Settlement** — winning share holders are paid out automatically in
+- **Settlement**. Winning share holders are paid out automatically in
   USDT.
-- **Penalty bookkeeping** — eligible stakers who never committed are
+- **Penalty bookkeeping**. Eligible stakers who never committed are
   slashed during the reveal window itself; wrong-side voters and
   non-revealers are slashed after finalization. The penalty pool can only
   be finalized once **every** committed vote has been revealed or slashed
-  — penalties can't be silently skipped — and only then do winning voters
+  (penalties can't be silently skipped), and only then do winning voters
   receive their $AURA rewards.
 
 ### If the protocol is ever paused
 
 Pausing the oracle (an emergency admin action) freezes the entire dispute
-pipeline — submissions, disputes, votes, finalization, *and* slashing.
+pipeline: submissions, disputes, votes, finalization, *and* slashing.
 Because on-chain clocks keep ticking through a pause, any dispute round or
 challenge window the pause cut into is **voided and restarted**, not
 silently expired: interrupted vote rounds re-open with full commit/reveal
@@ -178,7 +179,7 @@ through unchallenged.
 
 ## TL;DR
 
-- Most markets resolve **without** a vote — only disputed ones go through
+- Most markets resolve **without** a vote, and only disputed ones go through
   the commit/reveal flow.
 - Voters lock a hashed vote, then reveal it; copy-voting is prevented.
 - A **65% supermajority** is required; otherwise a new round runs.

@@ -26,21 +26,21 @@ perspective; for the full lifecycle (bonds, penalties, finalization) see
     see what you actually picked yet.
 
     Aura also queues your reveal with its automation service at commit
-    time, so the reveal is submitted for you when the window opens —
-    voting is a single tap.
+    time, so the reveal is submitted for you when the window opens.
+    Voting is a single tap.
   </Step>
   <Step title="Reveal happens automatically">
     Once the commit window closes, Aura's reveal automation submits your
     choice and salt during the reveal window. The contract verifies the
     hash matches your earlier commit and tallies your vote at your tier
     weight. (Privacy-conscious voters can skip the relay and reveal
-    manually via `POST /v1/tx/oracle/reveal` — just don't miss the
+    manually via `POST /v1/tx/oracle/reveal`, but don't miss the
     window.)
   </Step>
   <Step title="Wait for finalization">
     After the reveal phase, the protocol checks whether any outcome cleared
     the **65% supermajority** of revealed weight. If yes, the market
-    finalises. If not, a new commit/reveal round starts — but only after
+    finalises. If not, a new commit/reveal round starts, but only after
     every unrevealed commit from the inconclusive round has been slashed
     (a restart never amnesties silent voters).
   </Step>
@@ -48,12 +48,12 @@ perspective; for the full lifecycle (bonds, penalties, finalization) see
 
 ### Eligibility
 
-- **Vaulted $AURA above None tier** — you must hold at least 60,000 $AURA
+- **Vaulted $AURA above None tier**. You must hold at least 60,000 $AURA
   (Iron tier) when you commit. Your staked balance is snapshotted at
   commit time, so unstaking before the reveal doesn't dodge the slashing
   risk.
 
-There is no on-chain restriction on voting in markets you've traded — the
+There is no on-chain restriction on voting in markets you've traded. The
 supermajority threshold and the slashing economics are what keep votes
 honest.
 
@@ -79,7 +79,7 @@ honest.
 
 Higher tiers carry significantly more weight, both for and against. This
 also means higher tiers have **more $AURA at stake** if they vote with the
-losing side — see below.
+losing side. See below.
 
 ## Rewards
 
@@ -102,8 +102,8 @@ to the total winning weight.
 
 ## TL;DR
 
-- Commit a hash, then reveal — prevents copy-voting.
+- Commit a hash, then reveal, which prevents copy-voting.
 - 65% supermajority required; otherwise a new round runs.
 - `TOO_EARLY` cancels the market.
 - Winners are paid in **$AURA** from slashed wrong-side stakes.
-- Wrong-side and silent voters lose $AURA — vote with care.
+- Wrong-side and silent voters lose $AURA, so vote with care.
