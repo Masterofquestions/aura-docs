@@ -1,0 +1,110 @@
+---
+title: "Creator Rewards"
+sidebarTitle: "Creator Rewards"
+description: "Earn a tier-scaled share of the trading fee on every market you create, paid in USDT automatically at resolution."
+keywords: ["Aura creator rewards", "market creator fees", "earn from creating markets", "tier scaled fees", "prediction market creator"]
+---
+
+Create a market that people want to trade and you earn a slice of every trade on
+it, for the entire life of the market. Your slice is set by your staked $AURA tier.
+
+## What you earn
+
+Between **1% and 30%** of the 2.5% trading fee, scaling with tier:
+
+| Tier | Creator's cut of the trading fee |
+| --- | ---: |
+| Degenerate | 30% |
+| Diamond | 22% |
+| Platinum | 16% |
+| Gold | 11% |
+| Silver | 7% |
+| Bronze | 3% |
+| Iron | 1% |
+
+Paid in USDT. The remainder flows to the treasury, which funds liquidity
+rewards, dispute incentives, referral payouts, and development.
+
+<Note>
+Your cut is the **lower** of your tier when you proposed the market and your tier
+now. Staking more after the fact does not retroactively raise your take, and
+unstaking below your propose-time tier does lower it. See
+[Tier structure](/tokens/tier-structure).
+</Note>
+
+## How it gets paid
+
+Fees accrue inside the market contract on every fill and sit there until the
+market resolves. Once it resolves yes or no, your share is sent to your wallet
+automatically.
+
+There is nothing to claim, no button to press, and no deadline to miss. The
+payout destination is the creator address recorded on the market at proposal time
+and it cannot be changed afterwards, which is also why it cannot be redirected by
+anyone else.
+
+<Warning>
+A market that never resolves never pays. If a dispute returns `TOO_EARLY`, the
+market goes back to trading and your accrued fees stay locked until it reaches a
+real resolution. That is not a loss, just a delay.
+</Warning>
+
+## Making this worth doing
+
+Your earnings are a percentage of volume, so the whole game is attracting volume.
+
+<Steps>
+  <Step title="Stake before you propose, not after">
+    Your cut is fixed at propose time by your tier. Proposing at Iron and
+    staking to Degenerate the next day leaves you on 1% for that market forever.
+  </Step>
+  <Step title="Write rules that cannot be argued with">
+    Ambiguous resolution criteria are the main reason markets end up disputed,
+    and a disputed market pays 10% of its fees to voters instead of building your
+    reputation. Name the exact source and the exact condition. See
+    [Creating markets](/markets/creating-markets).
+  </Step>
+  <Step title="Pick questions with a natural audience">
+    Volume follows interest. A market about something nobody is arguing about
+    will not trade, no matter how cleanly it is written.
+  </Step>
+  <Step title="Give it enough time to trade">
+    A market that resolves in two days has two days to accumulate volume. Longer
+    horizons generally accrue more, as long as the question stays interesting.
+  </Step>
+  <Step title="Seed your own liquidity">
+    A market with an empty book does not attract traders. Quoting it yourself
+    also earns [liquidity rewards](/programs/liquidity-rewards), so the two
+    programs compound.
+  </Step>
+</Steps>
+
+## Costs and limits
+
+| | |
+| --- | --- |
+| Proposals per wallet | 25 open at a time |
+| ALPH deposit | Refundable storage rent, returned when the market is torn down |
+| Minimum tier to propose | See [Tier structure](/tokens/tier-structure) |
+| Acceptance | Proposals go to a governance vote before becoming markets |
+
+Proposing is not the same as creating. Your proposal has to pass a
+[governance vote](/governance/proposal-voting) before it becomes a market, and
+only accepted proposals earn anything.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Creating markets" icon="pen-to-square" href="/markets/creating-markets">
+    The mechanics of writing and submitting a proposal.
+  </Card>
+  <Card title="Tier structure" icon="layer-group" href="/tokens/tier-structure">
+    What each tier costs and what it unlocks.
+  </Card>
+  <Card title="Binary market best practices" icon="circle-half-stroke" href="/tutorials/binary-market-best-practices">
+    How to write a yes-or-no question that resolves cleanly.
+  </Card>
+  <Card title="Liquidity rewards" icon="layer-group" href="/programs/liquidity-rewards">
+    Earn again by quoting your own market.
+  </Card>
+</CardGroup>

@@ -1,0 +1,137 @@
+---
+title: "Dispute Voting Rewards"
+sidebarTitle: "Dispute Voting"
+description: "Vote correctly on contested market outcomes and earn slashed $AURA plus a share of the market's trading fees. Backing a losing outcome costs you stake."
+keywords: ["Aura dispute voting", "voter rewards", "slashing", "oracle rewards", "commit reveal voting", "stake $AURA"]
+---
+
+When a market's outcome is contested, staked $AURA holders settle it by vote.
+Voting with the winning side pays twice. Voting with the losing side costs you.
+
+This is the only Aura program where you can lose money, and that is the entire
+point: it is what makes the oracle trustworthy.
+
+## What you earn
+
+Voting correctly pays in **two different assets**.
+
+<CardGroup cols={2}>
+  <Card title="Slashed $AURA" icon="coins">
+    Every voter on the losing side is slashed 0.1% of their vaulted $AURA. The
+    slashed tokens form a per-market penalty pool, split among the winning voters
+    by vote weight.
+  </Card>
+  <Card title="A USDT cut of the fees" icon="dollar-sign">
+    A market resolved through a dispute vote pays its winning voters **10% of the
+    trading fees that market collected**, split by vote weight.
+  </Card>
+</CardGroup>
+
+The fee share only applies to markets that were actually disputed. An undisputed
+market pays voters nothing, because there was no work to do.
+
+## What you risk
+
+| Situation | Consequence |
+| --- | --- |
+| You voted for the winning outcome | Paid from the penalty pool plus the fee share |
+| You voted for the losing outcome | 0.1% of your vaulted $AURA slashed |
+| You committed but never revealed | Penalized, same as voting wrong |
+| You never committed at all | Penalized |
+| You hold no stake | Cannot vote |
+
+<Warning>
+Committing and then going quiet is treated as a wrong vote, not as abstaining. A
+commit that never reveals stalls resolution for everyone else, so the protocol
+penalizes it rather than letting it be a free option. If you commit, set a
+reminder and reveal.
+</Warning>
+
+Slashing is capped protocol-wide at 1% of everything staked per rolling 24-hour
+window. If penalties would exceed that, they are clamped rather than reverted, so
+a pathological dispute cannot cascade through the vault.
+
+## How voting works
+
+Voting is commit and reveal, in two phases, so nobody can see the tally forming
+and pile onto the likely winner.
+
+<Steps>
+  <Step title="A dispute opens">
+    Someone posts a 100 USDT bond challenging the proposed outcome. That opens a
+    24-hour commit window.
+  </Step>
+  <Step title="Commit your vote (24 hours)">
+    Submit a hash of your vote plus a secret. Nothing about your choice is
+    visible on-chain. Your vote weight is snapshotted from your vault balance at
+    this moment.
+  </Step>
+  <Step title="Reveal your vote (1 hour)">
+    Publish the vote and the secret. The contract checks it against your commit
+    hash. Miss this window and you are penalized.
+  </Step>
+  <Step title="Penalties and rewards finalize">
+    Once every commit has been revealed or penalized, the outcome locks in.
+    Rewards are sent automatically. Nothing to claim.
+  </Step>
+</Steps>
+
+Overturning the proposed outcome requires a **65% supermajority**. Short of that,
+the market restarts rather than flipping on a narrow margin.
+
+<Note>
+Your vote weight is fixed at commit time. Staking more during the reveal window
+does not increase your weight, and unstaking does not shrink your exposure to
+being slashed. See [Outcome voting](/governance/outcome-voting) for the full
+mechanics.
+</Note>
+
+## Voting well
+
+<AccordionGroup>
+  <Accordion title="Read the market's rules, not the question" icon="book-open">
+    Disputes are almost always about wording, not facts. The question might be
+    "Will X happen?" while the rules name a specific source and a specific
+    deadline. The rules are what the vote is on.
+  </Accordion>
+  <Accordion title="Check the resolution source the rules name" icon="magnifying-glass">
+    If the rules say a particular source is authoritative, what that source says
+    is the answer, even if you personally know better.
+  </Accordion>
+  <Accordion title="Do not vote on markets you did not research" icon="triangle-exclamation">
+    Expected value on a coin flip is negative here. You risk 0.1% of your stake
+    to earn a share of other people's mistakes, so voting without an edge just
+    donates to voters who have one.
+  </Accordion>
+  <Accordion title="TOO_EARLY is a real option" icon="clock">
+    If the outcome genuinely is not determinable yet, that is what to vote. It
+    returns the market to trading rather than forcing a wrong resolution. It does
+    not cancel the market or refund anyone.
+  </Accordion>
+</AccordionGroup>
+
+## Can you vote on a market you traded?
+
+Yes. There is no on-chain restriction, and there is no practical way to enforce
+one, because anyone determined to get around it would use a second wallet.
+
+What keeps votes honest is economics rather than gatekeeping: the 65%
+supermajority means one motivated trader cannot swing an outcome, and the 0.1%
+slash means being wrong on purpose has a cost that scales with your stake.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Voting on disputes" icon="gavel" href="/tutorials/voting-on-disputes">
+    Step-by-step walkthrough of a real dispute.
+  </Card>
+  <Card title="Resolution and disputes" icon="scale-balanced" href="/markets/resolution-and-disputes">
+    The full resolution lifecycle, bonds, and windows.
+  </Card>
+  <Card title="Staking $AURA" icon="vault" href="/tokens/staking">
+    How to stake and what vote weight you get.
+  </Card>
+  <Card title="Tier structure" icon="layer-group" href="/tokens/tier-structure">
+    What each tier unlocks.
+  </Card>
+</CardGroup>

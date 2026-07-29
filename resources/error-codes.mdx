@@ -1,0 +1,195 @@
+---
+title: "Error Codes"
+sidebarTitle: "Error Codes"
+description: "Decode an Alephium contract revert from an Aura transaction into the specific assertion that failed, indexed by contract."
+keywords: ["Aura error codes", "Alephium assertion failed", "contract revert", "error code lookup", "transaction failed"]
+---
+
+When an Aura transaction fails on-chain, Alephium reports it as a numeric
+assertion failure rather than a message. This page turns that number back into
+the thing that actually went wrong.
+
+<Note>
+These are **contract** error codes, returned by transactions. If you are getting
+an error back from the REST API instead, you want
+[API errors](/api-reference/errors), which use string codes like
+`INVALID_ARGUMENT`.
+</Note>
+
+## Reading a failed transaction
+
+A reverted Aura transaction reports:
+
+```text
+Assertion Failed in Contract @ <contract-address>, Error Code: <N>
+```
+
+<Steps>
+  <Step title="Identify the contract">
+    Match the address against [Contracts](/resources/contracts). If it is not one
+    of the singletons, it is an individual market, so use the
+    [MarketContract table](#market-contract).
+  </Step>
+  <Step title="Look up the code in that contract's table">
+    The same number means different things in different contracts. Code `4` is
+    `ALREADY_RESOLVED` in a market and `Unauthorized` in the factory. You have to
+    know which contract threw it.
+  </Step>
+</Steps>
+
+Codes are stable and are never reused. Gaps in the numbering are intentional, so
+a decoder that maps by position stays correct across releases.
+
+## MarketContract
+
+Thrown by an individual market: order placement, settlement, claims, and
+teardown.
+
+| Code | Name | What it means |
+| --- | --- | --- |
+| 0 | `INVALID_AMOUNT` | Quantity, amount, outcome, or side failed validation. Also any path where an amount was zero. |
+| 1 | `INSUFFICIENT_SHARES` | A sell order asked for more shares than the trader has free. Check for shares already locked in resting orders. |
+| 3 | `UNAUTHORIZED` | The caller is not permitted on this path. Treasury, creator, and oracle entry points each accept only their own caller. |
+| 4 | `ALREADY_RESOLVED` | Trading attempted after the market resolved, or a second attempt to finalize it. |
+| 6 | `ZERO_RETURN` | A claim computed a payout of zero. Defensive, and should be unreachable in practice. |
+| 7 | `NO_POSITION` | Claim attempted from the losing side, or by an address with no position. |
+| 8 | `MARKET_NOT_RESOLVED` | Claim, fee withdrawal, or teardown attempted before a final outcome was set. |
+| 9 | `ORDER_NOT_FOUND` | A cancel or settle referenced an order id that does not exist. |
+| 10 | `ORDER_CANCELLED` | A cancel or settle referenced an order that was already cancelled. |
+| 11 | `ORDERS_DONT_CROSS` | Settlement was attempted on two orders whose prices do not cross. |
+| 12 | `INVALID_FILL` | Side or outcome mismatch, over-fill, zero-payment fill, or a fill below the minimum precision. |
+| 13 | `INVALID_PRICE` | Order price was outside the valid range. Prices must be between 1 and 999. |
+| 14 | `INSUFFICIENT_COLLATERAL` | Collateral accounting guard. Defensive, and not expected to trip. |
+| 15 | `UNCLAIMED_POSITIONS` | Teardown blocked because winning shares remain unclaimed. |
+| 16 | `OPEN_ORDERS_REMAIN` | Teardown blocked because open orders still hold collateral or shares. |
+| 17 | `INVALID_OUTCOME` | Finalize was called with an outcome other than yes or no. |
+| 18 | `TRADER_NOT_EOA` | The caller is a contract. Only externally owned accounts may trade. |
+
+Codes `2` and `5` are reserved and not thrown.
+
+## MarketFactory
+
+Thrown when proposing markets, linking related proposals, or executing
+governance changes.
+
+| Code | Name | What it means |
+| --- | --- | --- |
+| 4 | `Unauthorized` | Caller is not governance, is not the voting contract, or does not hold the required tier. |
+| 6 | `InvalidAmount` | Proposal field validation failed, a proposal id was not found, or a deposit was zero. |
+| 7 | `ProposalLimitReached` | The proposer already has 25 open proposals. |
+| 8 | `TransferFailed` | Reentrancy guard. Should not be reachable externally. |
+| 9 | `QuestionTooLong` | Question exceeds 400 bytes. |
+| 12 | `RulesTooLong` | Resolution rules exceed 1200 bytes. |
+| 13 | `ProposalNotFound` | Linking referenced a master proposal that does not exist. |
+| 14 | `MetadataTooLong` | Metadata exceeds 2048 bytes. |
+| 15 | `Paused` | The factory is paused. |
+| 16 | `InvalidAddress` | A governance setter was passed an empty or null address. |
+| 18 | `TooManyLinkedIds` | Linked proposal payload exceeds 8192 bytes. Split it across more transactions. |
+| 19 | `CounterUnderflow` | Active market counter guard. Defensive. |
+| 20 | `CategoryTooLong` | Category exceeds 128 bytes. |
+| 21 | `ResolutionSourcesTooLong` | Resolution sources exceed 1200 bytes. |
+| 22 | `ImageUrlTooLong` | Image URL exceeds 512 bytes. |
+| 23 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
+| 24 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
+| 25 | `PendingChangeExists` | A change is already queued. Execute or cancel it first. |
+
+Codes `0` through `3`, `5`, `10`, `11`, and `17` are reserved and not thrown.
+
+## OptimisticOracle
+
+Thrown during outcome submission, disputes, commit and reveal voting, and
+penalty processing.
+
+| Code | Name | What it means |
+| --- | --- | --- |
+| 0 | `MarketClosed` | The relevant window has closed: commit, reveal, or dispute. Also returned when trying to void a dispute round that had already completed. |
+| 1 | `MarketNotFinalized` | The path requires a finalized state that has not been reached yet. |
+| 2 | `MarketAlreadyFinalized` | An outcome was already submitted, or the market was already disputed. |
+| 3 | `MarketNotActive` | Market lookup failed or the market did not validate. |
+| 4 | `Unauthorized` | Caller is not the admin, not the market, or holds no tier and so cannot vote. |
+| 7 | `InvalidVote` | Outcome or vote value out of range, or a commit hash that is not 32 bytes. |
+| 8 | `InvalidReveal` | The revealed vote does not match the committed hash. |
+| 9 | `AlreadyCommitted` | This voter already committed in this round. |
+| 10 | `AlreadyRevealed` | This voter already revealed in this round, or already claimed vote rewards. |
+| 11 | `NoCommit` | Reveal attempted with no matching commit in this round. |
+| 12 | `InvalidOracleResponse` | Commit or reveal attempted before a dispute was opened. |
+| 13 | `PenaltiesAlreadyFinalized` | Penalties are locked in for this round. |
+| 14 | `PenaltiesNotFinalized` | Reward claim attempted before penalties were finalized. |
+| 15 | `NotMajority` | Vote reward claimed by a voter who was not on the winning side. |
+| 16 | `NoMajority` | No majority weight recorded. Defensive. |
+| 17 | `RangeOutOfBounds` | Penalty pagination range is invalid. |
+| 19 | `Paused` | The oracle is paused, which freezes the whole dispute pipeline. |
+| 20 | `InvalidConfig` | A window duration was zero, or a reward percentage exceeded 100. |
+| 21 | `InvalidAddress` | A governance setter was passed a null address. |
+| 22 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
+| 23 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
+| 24 | `PendingChangeExists` | A change is already queued. |
+| 25 | `CommitsNotFullyRevealed` | Some voters committed but have not revealed or been penalized yet. Run the penalty pass before finalizing. |
+| 26 | `InvalidOutcomeVotesNotEmpty` | A losing-side tally is still non-zero, so not every wrong-side voter has been penalized. |
+| 27 | `NotPaused` | The recovery path for voiding an interrupted round only works while paused. |
+
+Codes `5`, `6`, and `18` are reserved and not thrown.
+
+## VaultContract
+
+Thrown when staking, unstaking, or withdrawing $AURA.
+
+| Code | Name | What it means |
+| --- | --- | --- |
+| 1 | `AmountMustBePositive` | Stake or unlock request was for zero. |
+| 2 | `InsufficientVaultedBalance` | Unlock or withdrawal exceeds the staked balance. |
+| 3 | `WithdrawTimeNotReached` | Withdrawal attempted before the unlock period elapsed. |
+| 4 | `NoActiveUnlockRequest` | Withdrawal attempted with no unlock queued. |
+| 5 | `ActiveUnlockRequestExists` | An unlock request is already queued. Complete or wait it out first. |
+| 6 | `Unauthorized` | Caller is not the owner, or not the authorized slasher. |
+| 7 | `InvalidRecipient` | Slashed-token collection was passed a null recipient. |
+| 8 | `InvalidSlasher` | Slasher update was passed a null address. |
+| 9 | `Paused` | The vault is paused, so new stakes are blocked. |
+| 10 | `InvalidOwner` | Owner update was passed a null address. |
+| 11 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
+| 12 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
+| 13 | `PendingChangeExists` | A change is already queued. |
+| 14 | `StakerNotEOA` | The caller is a contract. Only externally owned accounts may stake. |
+
+## Voting
+
+Thrown when voting on market proposals or finalizing the vote.
+
+| Code | Name | What it means |
+| --- | --- | --- |
+| 0 | `InvalidAmount` | The referenced proposal does not exist. |
+| 1 | `MarketNotFinalized` | Finalize called before the voting period ended. |
+| 2 | `MarketAlreadyFinalized` | Vote or finalize on an already-finalized proposal. |
+| 3 | `MarketClosed` | Submission outside the voting period, or a vote after it ended. |
+| 4 | `Unauthorized` | Caller is not the admin, holds no tier, or already voted. |
+| 5 | `RangeOutOfBounds` | Sweep range is invalid. |
+| 6 | `Paused` | Voting is paused. |
+| 7 | `InvalidAddress` | Admin update was passed a null address. |
+| 8 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
+| 9 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
+| 10 | `PendingChangeExists` | A change is already queued. |
+
+## The ones people actually hit
+
+Four codes account for most real failures:
+
+<AccordionGroup>
+  <Accordion title="INSUFFICIENT_SHARES (market, code 1)" icon="circle-minus">
+    You are trying to sell shares that are already committed to a resting sell
+    order. Free balance is what you hold minus what is locked in open orders.
+    Cancel the resting order first, or sell a smaller amount.
+  </Accordion>
+  <Accordion title="INVALID_PRICE (market, code 13)" icon="tag">
+    Prices are integer ticks from 1 to 999, where 500 means 50%. Both 0 and 1000
+    are rejected, because a market at absolute certainty has nothing to trade.
+  </Accordion>
+  <Accordion title="INVALID_FILL (market, code 12)" icon="ban">
+    Usually a quantity that is not a whole multiple of the lot size. Order
+    quantities must be multiples of `10000000` base units.
+  </Accordion>
+  <Accordion title="TRADER_NOT_EOA (market, code 18)" icon="robot">
+    The transaction came from a contract address. Aura requires trades to come
+    from a real account so that penalties and payouts have somewhere to land.
+    Sign from a normal wallet.
+  </Accordion>
+</AccordionGroup>

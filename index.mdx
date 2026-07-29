@@ -1,58 +1,129 @@
 ---
-title: "Welcome to Aura"
-description: "Decentralized prediction markets on Alephium. Trade outcomes, propose markets, govern resolution."
+title: "Aura Documentation"
+sidebarTitle: "Welcome"
+description: "Decentralized prediction markets on Alephium. Trade outcomes, create markets, earn from liquidity and resolution, and build on the public API."
+keywords: ["Aura", "prediction markets", "Alephium", "decentralized betting", "trade outcomes", "prediction market docs"]
 ---
 
-Aura is your gateway to decentralized prediction markets built on Alephium,
-empowering users to predict future events across diverse categories including
-real-world occurrences, sports, elections, and crypto market movements. Aura
-leverages a robust, transparent, and scalable system designed to reward accurate
-predictions, incentivize market creation, and encourage active community
-governance.
+Aura is a prediction market on Alephium. You trade shares in whether something
+will happen, and the winning side pays out $1 per share. Prices are probabilities,
+so a market at $0.64 is the crowd saying 64%.
 
-Whether you're a trader looking to leverage your insights, a creator aiming to
-earn rewards by establishing markets, or an active community member interested
-in governance, Aura has a place for you.
+Everything runs on-chain: the order books, the collateral, the resolution, and the
+payouts. Aura never holds your keys.
 
-## Discover Aura
+## Start here
 
 <CardGroup cols={2}>
-  <Card title="Introduction to Aura" icon="sparkles" href="/overview/introduction">
-    What Aura is and why prediction markets matter.
+  <Card title="How markets work" icon="circle-question" href="/markets/overview">
+    Shares, prices, the dual order book, and the market lifecycle from proposal
+    to payout.
   </Card>
-  <Card title="Why Alephium?" icon="layer-group" href="/overview/why-alephium">
-    Lightning-fast settlement, low fees, and the right architecture.
+  <Card title="Create your account" icon="wallet" href="/getting-started/connecting">
+    Sign up with email or Google. The wallet is built in, with no extension to
+    install.
+  </Card>
+  <Card title="Fund your account" icon="money-bill-transfer" href="/getting-started/bridging">
+    Deposit from Ethereum, Base, Arbitrum, BNB Chain, or a card.
+  </Card>
+  <Card title="Trade markets" icon="chart-candlestick" href="/markets/trading">
+    Order types, fills, and fees on the order book.
   </Card>
 </CardGroup>
 
-## Get Started
+## Earn on Aura
 
-We've put together some helpful guides for you to get set up with Aura quickly
-and easily.
+Four programs, all funded by the same 2.5% trading fee. They stack.
 
 <CardGroup cols={2}>
-  <Card title="Create Your Account" icon="wallet" href="/getting-started/connecting">
-    Sign up with email or Google. The wallet is built in.
+  <Card title="Create markets" icon="lightbulb" href="/programs/creator-rewards">
+    Earn 1% to 30% of the fee on every trade in markets you propose, scaled by
+    your staked tier.
   </Card>
-  <Card title="Deposit Funds" icon="money-bill-transfer" href="/getting-started/bridging">
-    Fund your USD balance from Ethereum, Base, Arbitrum, BNB Chain, or a card.
+  <Card title="Provide liquidity" icon="layer-group" href="/programs/liquidity-rewards">
+    Quote near the midpoint and earn from a daily USDT pool.
   </Card>
-  <Card title="Trade Markets" icon="chart-line" href="/markets/trading">
-    Buy and sell outcome shares on the order book.
+  <Card title="Refer traders" icon="user-plus" href="/programs/referral-program">
+    Earn 10% of the fee on everything your referrals ever trade.
   </Card>
-  <Card title="API Reference" icon="code" href="/api-reference/introduction">
-    Build trading bots and integrations on the public REST API.
+  <Card title="Vote on disputes" icon="scale-balanced" href="/programs/dispute-rewards">
+    Stake $AURA, settle contested outcomes, and earn from the losing side.
   </Card>
 </CardGroup>
 
 ## Build on Aura
 
-The Aura API exposes everything a user can see or do in the app: markets,
-prices, the order book, vault state, oracle and governance data, plus
-**build-tx** endpoints that return *unsigned* transactions for your wallet to
-sign. The API never holds private keys.
+Market data is public and needs no key. Trading is non-custodial: the API builds
+unsigned transactions and your wallet signs them.
 
-<Card title="Open the API Reference" icon="rocket" href="/api-reference/introduction">
-  Authentication, rate limits, build-tx flow, and every endpoint with a live
-  "Try it" panel.
-</Card>
+<CodeGroup>
+```bash cURL
+curl -s "https://api.aura.markets/v1/markets?limit=5&status=open"
+```
+
+```javascript JavaScript
+const { markets } = await fetch(
+  'https://api.aura.markets/v1/markets?limit=5&status=open'
+).then((r) => r.json())
+
+for (const m of markets) console.log(m.question, m.bestBidYes)
+```
+
+```python Python
+import requests
+
+res = requests.get(
+    "https://api.aura.markets/v1/markets",
+    params={"limit": 5, "status": "open"},
+)
+
+for m in res.json()["markets"]:
+    print(m["question"], m["bestBidYes"])
+```
+</CodeGroup>
+
+<CardGroup cols={2}>
+  <Card title="Your first API call" icon="play" href="/api-reference/quickstart">
+    Markets, order books, and prices in a few minutes.
+  </Card>
+  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
+    Authenticate, build, sign, and submit, end to end.
+  </Card>
+  <Card title="Realtime data" icon="bolt" href="/api-reference/realtime">
+    Stream live fills and order updates instead of polling.
+  </Card>
+  <Card title="Integrator guide" icon="robot" href="/api-reference/integrator-guide">
+    Bots, elevated rate limits, and the constraints to design around.
+  </Card>
+</CardGroup>
+
+## Verify for yourself
+
+<CardGroup cols={2}>
+  <Card title="Contracts" icon="file-contract" href="/resources/contracts">
+    Deployed addresses, what each contract does, and how to check a market on the
+    explorer.
+  </Card>
+  <Card title="Security" icon="shield-check" href="/resources/security">
+    Audit scope and findings, the controls that protect funds, the trust
+    assumptions that remain, and how to report a vulnerability.
+  </Card>
+</CardGroup>
+
+## Understand the design
+
+<CardGroup cols={2}>
+  <Card title="Introduction to Aura" icon="sparkles" href="/overview/introduction">
+    What Aura is and why prediction markets matter.
+  </Card>
+  <Card title="Why Alephium" icon="cube" href="/overview/why-alephium">
+    Fast settlement, low fees, and the architecture that makes on-chain order
+    books practical.
+  </Card>
+  <Card title="Resolution and disputes" icon="scale-balanced" href="/markets/resolution-and-disputes">
+    How outcomes get proposed, challenged, and settled.
+  </Card>
+  <Card title="Tokens and staking" icon="coins" href="/tokens/aura">
+    What $AURA does and what staking unlocks.
+  </Card>
+</CardGroup>

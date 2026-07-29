@@ -1,0 +1,197 @@
+---
+title: "Liquidity Rewards"
+sidebarTitle: "Liquidity Rewards"
+description: "Earn from a daily USDT pool by posting resting limit orders near the midpoint on Aura markets. Scoring formula and qualification rules."
+keywords: ["Aura liquidity rewards", "market making rewards", "LP program", "daily rewards pool", "maker rewards", "prediction market liquidity"]
+---
+
+Aura pays makers daily to keep books tight. Post resting limit orders near a
+market's true midpoint and you earn a share of that day's USDT reward pool.
+Quoting on the book is the only qualification, so there is nothing to sign up for.
+
+## The pool
+
+| | |
+| --- | --- |
+| Trading fee | 2.5% on executed volume, collected in USDT |
+| Liquidity rewards pool | 10% of trading fees |
+| Daily pool | 0.25% of the day's executed volume |
+| Payouts | Daily, sent automatically to the wallet that provided the liquidity |
+
+Unlike creator and referral fees, liquidity rewards do **not** wait for market
+resolution. They are scored per day and paid the next day.
+
+## What the program rewards
+
+The scoring is built to pay for liquidity that is actually useful to traders:
+
+- Tight quotes, close to the midpoint
+- Two-sided quotes rather than one-sided
+- Liquidity that persists through the day rather than appearing in bursts
+- Size that a real trader could actually hit
+
+And built to not pay for liquidity that only exists to farm:
+
+- Dust orders that never intend to fill
+- Quotes parked far from the midpoint
+- One-sided quoting, which is penalized rather than banned
+
+## The adjusted midpoint
+
+Scoring measures your distance from the midpoint, so the midpoint has to be
+manipulation-resistant. Aura computes it **after** filtering out dust orders below
+a minimum incentive size.
+
+Without that filter, a maker could post a tiny order at an extreme price to drag
+the midpoint towards their own resting quotes and score as if they were tight. The
+filter removes that.
+
+## Scoring
+
+Orders are scored by distance from the adjusted midpoint and by size. Closer
+quotes earn sharply more, because the score falls off with the square of the
+distance.
+
+| Variable | Description |
+| --- | --- |
+| `S` | Order position scoring function |
+| `v` | Max spread from midpoint |
+| `s` | Spread from adjusted midpoint |
+| `b` | Market multiplier |
+| `c` | Single-sided penalty (`3.0`) |
+| `Q_one` | Points on book one |
+| `Q_two` | Points on book two |
+| `Q_min` | Two-sided score |
+| `Q_normal` | Normalized score |
+| `Q_epoch` | Epoch score |
+| `Q_final` | Final reward share |
+| `BidSize` | Size of bid orders at a price level |
+| `AskSize` | Size of ask orders at a price level |
+| `Spread_m` | Distance from midpoint for market `m` |
+| `Spread_m'` | Distance from midpoint for the complement market |
+
+**Equation 1: order position score**
+
+$$
+S(v,s) = \left(\frac{v - s}{v}\right)^2 \cdot b
+$$
+
+**Equation 2: book one points**
+
+$$
+Q_{one} = \sum S(v, Spread_m) \cdot BidSize_m + \sum S(v, Spread_{m'}) \cdot AskSize_{m'}
+$$
+
+**Equation 3: book two points**
+
+$$
+Q_{two} = \sum S(v, Spread_m) \cdot AskSize_m + \sum S(v, Spread_{m'}) \cdot BidSize_{m'}
+$$
+
+**Equation 4: two-sided score**
+
+If the midpoint is between 0.10 and 0.90:
+
+$$
+Q_{min} = \max\!\left( \min(Q_{one}, Q_{two}),\ \max(Q_{one}/c,\ Q_{two}/c) \right)
+$$
+
+If the midpoint is below 0.10 or above 0.90:
+
+$$
+Q_{min} = \min(Q_{one}, Q_{two})
+$$
+
+**Equation 5: normalize across makers**
+
+$$
+Q_{normal} = \frac{Q_{min}}{\sum Q_{min}}
+$$
+
+**Equation 6: sum across the epoch**
+
+$$
+Q_{epoch} = \sum Q_{normal}
+$$
+
+**Equation 7: final share of pool**
+
+$$
+Q_{final} = \frac{Q_{epoch}}{\sum Q_{epoch}}
+$$
+
+**Daily reward for a maker**
+
+$$
+Reward = Q_{final} \cdot DailyPool
+$$
+
+### Reading the formula
+
+Three things do most of the work:
+
+<AccordionGroup>
+  <Accordion title="Distance is squared, so tightness compounds" icon="ruler">
+    Equation 1 squares the normalized distance from the midpoint. Halving your
+    distance roughly quadruples your score for the same size. Moving from 5 ticks
+    out to 2 ticks out is worth far more than doubling your size at 5 ticks.
+  </Accordion>
+  <Accordion title="Two-sided quoting is what the min() is for" icon="scale-balanced">
+    Equation 4 takes the minimum of your two book scores, so a maker quoting only
+    one side scores near zero on the other and gets pulled down. The
+    `max(Q/c)` term softens that to a penalty rather than a wipeout, with `c = 3.0`.
+    At extreme midpoints, below 0.10 or above 0.90, the softening is removed and
+    the raw minimum applies.
+  </Accordion>
+  <Accordion title="Rewards are relative, not absolute" icon="chart-pie">
+    Equations 5 through 7 normalize your score against every other maker. Your
+    payout depends on how you quoted compared to everyone else that day, so the
+    same quoting behavior earns less on a crowded market than a neglected one.
+  </Accordion>
+</AccordionGroup>
+
+## Practical approach
+
+<Steps>
+  <Step title="Quote both sides">
+    The single largest factor. One-sided quoting is penalized by a factor of 3.
+  </Step>
+  <Step title="Stay close to the midpoint">
+    The squared falloff means tightness beats size. Being close matters more than
+    being big.
+  </Step>
+  <Step title="Leave orders resting">
+    Scoring samples through the day. Orders that exist for an hour earn for an
+    hour.
+  </Step>
+  <Step title="Go where the competition is not">
+    Your share is relative to other makers on the same market. An underquoted
+    market with real volume is worth more than the busiest one.
+  </Step>
+  <Step title="Size above the dust floor">
+    Orders below the minimum incentive size are filtered out of the midpoint
+    calculation and do not earn.
+  </Step>
+</Steps>
+
+<Warning>
+Resting orders are real orders. They fill, and you take the position. Liquidity
+rewards are compensation for taking that risk, not a substitute for managing it.
+</Warning>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="How trading works" icon="chart-candlestick" href="/markets/trading">
+    Order types, the dual-book model, and how fills work.
+  </Card>
+  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
+    Quote programmatically through the API.
+  </Card>
+  <Card title="Realtime data" icon="bolt" href="/api-reference/realtime">
+    Track the midpoint live instead of polling for it.
+  </Card>
+  <Card title="Integrator guide" icon="plug" href="/api-reference/integrator-guide">
+    Running a maker bot against Aura, including elevated rate limits.
+  </Card>
+</CardGroup>

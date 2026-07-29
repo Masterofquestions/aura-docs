@@ -1,0 +1,147 @@
+---
+title: "Contracts"
+sidebarTitle: "Contracts"
+description: "Aura smart contract addresses on Alephium, what each contract does, and how to verify them on the explorer."
+keywords: ["Aura contracts", "Alephium contract address", "MarketFactory", "OptimisticOracle", "prediction market contracts", "verify contract"]
+---
+
+Every part of Aura that touches your money runs on-chain. This page lists the contracts, tells you what each one is responsible for, and gives you the explorer links so you can verify what you are trading against before you trade against it.
+
+<Note>
+Aura is not yet deployed to Alephium mainnet. The addresses below are live on testnet. Mainnet addresses will be published here at launch, and this page is the canonical source. Treat any mainnet address you see anywhere else as unverified.
+</Note>
+
+## The contracts
+
+Aura is five contracts. Four are long-lived singletons and one is a template that gets cloned once per market.
+
+<CardGroup cols={2}>
+  <Card title="MarketFactory" icon="industry">
+    The registry and entry point. Accepts market proposals, deploys a market
+    contract for each accepted proposal, and holds the live addresses of the
+    treasury, oracle, vault, and voting contracts. Governance changes flow
+    through here behind a timelock.
+  </Card>
+  <Card title="MarketContract" icon="chart-candlestick">
+    The order book for a single market. Holds orders, collateral, and share
+    balances, runs settlement, tracks the fee buckets, and pays out claims once
+    an outcome is final. This is a template: each live market is its own
+    subcontract cloned from it.
+  </Card>
+  <Card title="OptimisticOracle" icon="scale-balanced">
+    Resolution. Takes a proposed outcome plus a bond, runs the dispute window,
+    and if the outcome is challenged, runs commit-and-reveal voting to settle
+    it. Applies bond forfeits and voter penalties.
+  </Card>
+  <Card title="VaultContract" icon="vault">
+    The $AURA staking vault. Tracks staked balances, derives your tier and your
+    vote weight, runs the unlock queue, and applies slashing when a voter backs
+    a losing outcome.
+  </Card>
+  <Card title="Voting" icon="check-to-slot">
+    Governance voting on market proposals. Runs the open period, weights votes
+    by staked tier, and finalizes which proposals become real markets.
+  </Card>
+</CardGroup>
+
+## Addresses
+
+### Mainnet
+
+<Warning>
+Not yet deployed. Aura has not launched on Alephium mainnet.
+</Warning>
+
+| Contract | Address |
+| --- | --- |
+| MarketFactory | Published at launch |
+| MarketContract (template) | Published at launch |
+| OptimisticOracle | Published at launch |
+| VaultContract | Published at launch |
+| Voting | Published at launch |
+| $AURA token | Published at launch |
+
+### Testnet
+
+All in group 0. Use these for integration work against `https://api.testnet.aura.markets`.
+
+| Contract | Address |
+| --- | --- |
+| MarketFactory | `26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs` |
+| MarketContract (template) | `25zK3Dry7jGTPnZKDCGXrb4oPJzGTRqDofxdYGDLdvXSw` |
+| OptimisticOracle | `vDbyQVnXESry4Qj8mCweDTFyv6x3ui9SHUrwWCgGAUrb` |
+| VaultContract | `29jKnVjZR4MzbBv9vEwWWTEcv8Jvh1bgGBWof55NvNzw9` |
+| Voting | `vsLDh3Fy6KZymkAr3Kd9HoniNSsXdqHyQNvXdHH4dZpB` |
+| DEGEN (test stand-in for $AURA) | `2BG9HqmwW9TfVgozTT8ECjA2Zx5SJYH38iVn48ZzvHYb1` |
+
+<Note>
+`DEGEN` exists on testnet only. It stands in for $AURA so you can exercise
+staking and tier logic without real tokens. Mainnet uses the real $AURA token.
+</Note>
+
+## Why individual markets are not listed here
+
+Each market is a subcontract of the market template, deployed when its proposal
+is accepted. There is no fixed list, because new markets appear whenever
+governance accepts a proposal.
+
+To get the address of a specific market, read it from the API rather than
+guessing. Every market in the list response carries its own `marketAddress`:
+
+```bash
+curl -s "https://api.testnet.aura.markets/v1/markets?limit=5" \
+  | jq '.markets[] | {question, marketAddress}'
+```
+
+That address is the contract you are trading against, and you can look it up on
+the explorer the same way as any of the singletons above.
+
+## Verifying on the explorer
+
+Alephium's explorer takes an address directly:
+
+<CodeGroup>
+```text Mainnet
+https://explorer.alephium.org/addresses/<address>
+```
+
+```text Testnet
+https://testnet.alephium.org/addresses/<address>
+```
+</CodeGroup>
+
+What is worth checking before you trust a market:
+
+<Steps>
+  <Step title="Confirm the factory deployed it">
+    A real Aura market is a subcontract of the market template listed above. A
+    contract that did not come from `MarketFactory` is not an Aura market, no
+    matter what it claims in its question text.
+  </Step>
+  <Step title="Check the collateral token">
+    Aura markets settle in USDT. Confirm the token id on the market matches the
+    USDT you expect, not a lookalike token with the same symbol.
+  </Step>
+  <Step title="Read the resolution rules">
+    The rules text is stored with the market and cannot be edited after the
+    proposal is accepted. If the rules are vague, that ambiguity is what the
+    dispute process will have to resolve later.
+  </Step>
+</Steps>
+
+## Source and reproducibility
+
+The contracts are written in Ralph, Alephium's contract language. Source lives
+in the Aura monorepo under `contracts/alephium/src/`, and the compiled artifacts
+are committed alongside it so a build can be reproduced and byte-compared
+against what is deployed.
+
+<CardGroup cols={2}>
+  <Card title="Security and audits" icon="shield-check" href="/resources/security">
+    Audit scope, the controls that protect funds, and how to report a
+    vulnerability.
+  </Card>
+  <Card title="Error codes" icon="triangle-exclamation" href="/resources/error-codes">
+    Decode a contract revert into the assertion that actually failed.
+  </Card>
+</CardGroup>

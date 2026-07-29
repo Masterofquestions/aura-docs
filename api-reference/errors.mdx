@@ -1,6 +1,8 @@
 ---
-title: "Errors"
-description: "Standard error envelope and HTTP status codes used across the API."
+title: "API Errors"
+sidebarTitle: "API Errors"
+description: "Standard error envelope and HTTP status codes used across the Aura REST API."
+keywords: ["Aura API errors", "error envelope", "HTTP status codes", "error handling"]
 ---
 
 The Aura API returns every error as JSON with a stable envelope:
@@ -64,3 +66,19 @@ the body.
   signs and submits matters.
 - `POST /v1/rewards/sponsorships` is idempotent on `txId`, so repeat calls
   with the same `txId` return the existing row.
+
+## On-chain failures are different
+
+Everything above covers errors the API returns. Once you submit a signed
+transaction, the API is out of the loop, and a failure comes back from Alephium as
+a numeric assertion code rather than this envelope:
+
+```text
+Assertion Failed in Contract @ <contract-address>, Error Code: 13
+```
+
+Those are contract errors, and they need a different lookup table.
+
+<Card title="Contract error codes" icon="triangle-exclamation" href="/resources/error-codes">
+  Decode an on-chain revert into the assertion that failed, indexed by contract.
+</Card>

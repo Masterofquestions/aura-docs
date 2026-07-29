@@ -1,48 +1,107 @@
 ---
-title: "Introduction"
-description: "Public REST API for Aura. Markets, prices, vault, oracle, governance, and unsigned tx builders."
+title: "API Overview"
+sidebarTitle: "Overview"
+description: "Public REST API for Aura prediction markets. Market data, order books, realtime streams, and non-custodial transaction building."
+keywords: ["Aura API", "prediction market API", "REST API", "market data API", "trading API", "Alephium API"]
 ---
 
-The **Aura API** is a public REST service that exposes everything a user can
-see or do in the Aura app:
+Build on Aura. Market data is public and needs no key, and everything a user can
+do in the app is available over the same API.
 
-- **Reads.** Markets, prices, the order book, trades, vault state, oracle
-  and governance data.
-- **Writes** (`/v1/tx/*`). Build *unsigned* transactions for the client to
-  sign with its own wallet. The API never holds private keys.
+## Make your first request
 
-The full reference for every endpoint is generated directly from the running
-service's OpenAPI 3.1 spec, so it cannot drift from the implementation.
+<CodeGroup>
+```bash cURL
+curl -s "https://api.aura.markets/v1/markets?limit=5&status=open"
+```
+
+```javascript JavaScript
+const { markets } = await fetch(
+  'https://api.aura.markets/v1/markets?limit=5&status=open'
+).then((r) => r.json())
+
+for (const m of markets) console.log(m.question, m.bestBidYes)
+```
+
+```python Python
+import requests
+
+res = requests.get(
+    "https://api.aura.markets/v1/markets",
+    params={"limit": 5, "status": "open"},
+)
+
+for m in res.json()["markets"]:
+    print(m["question"], m["bestBidYes"])
+```
+</CodeGroup>
+
+That is the whole setup. No signup, no key, no header.
+
+<CardGroup cols={2}>
+  <Card title="Your first API call" icon="play" href="/api-reference/quickstart">
+    Read markets, order books, and prices in a few minutes.
+  </Card>
+  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
+    Authenticate, build, sign, and submit an order end to end.
+  </Card>
+</CardGroup>
+
+## How it is shaped
+
+- **Reads.** Markets, prices, the order book, trades, vault state, oracle and
+  governance data. All public.
+- **Realtime.** One SSE endpoint multiplexes live order, fill, dispute, and
+  account events with lossless reconnects.
+- **Writes** (`/v1/tx/*`). The API builds **unsigned** transactions for your
+  client to sign with its own wallet. Aura never holds private keys, so a
+  compromised API cannot move your funds. It also means you always need a local
+  signer.
+
+The endpoint reference is generated from the running service's OpenAPI 3.1 spec,
+so it cannot drift from the implementation.
 
 <CardGroup cols={2}>
   <Card title="Authentication" icon="key" href="/api-reference/authentication">
-    Wallet-bound sessions via a signed challenge. No API keys.
+    Wallet-bound sessions from a signed challenge. Bearer tokens for bots.
   </Card>
-  <Card title="Rate limits" icon="gauge-high" href="/api-reference/rate-limits">
-    Anonymous + signed-in tiers, IETF `RateLimit-*` headers.
+  <Card title="Realtime data" icon="bolt" href="/api-reference/realtime">
+    Subscribe to live events instead of polling.
   </Card>
   <Card title="Build-tx flow" icon="signature" href="/api-reference/build-tx-flow">
-    Non-custodial transaction building under `/v1/tx/*`.
+    Every transaction the API can build for you.
+  </Card>
+  <Card title="Rate limits" icon="gauge-high" href="/api-reference/rate-limits">
+    Anonymous, signed-in, and elevated tiers.
   </Card>
   <Card title="Integrator guide" icon="robot" href="/api-reference/integrator-guide">
     Bots, streaming, and the constraints to design around.
   </Card>
-  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
-    Standard error shape and status codes.
+  <Card title="API errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Error envelope and status codes.
   </Card>
 </CardGroup>
 
-## Base URL
+## Base URLs
 
 <CodeGroup>
 ```bash Mainnet
 https://api.aura.markets
 ```
 
+```bash Testnet
+https://api.testnet.aura.markets
+```
+
 ```bash Local
 http://localhost:3001
 ```
 </CodeGroup>
+
+<Tip>
+Build against testnet first. Same API, test tokens, real transactions. See
+[Contracts](/resources/contracts#testnet).
+</Tip>
 
 ## Discovery
 

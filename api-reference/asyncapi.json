@@ -1,0 +1,243 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Aura Realtime Stream",
+    "version": "1.0.0",
+    "description": "Live market, dispute, and account events from Aura over Server-Sent Events.\n\nOne endpoint carries every topic. Pass a comma-separated `topics` query parameter and the server multiplexes them onto a single connection. Public topics need no session; `user:` topics require a session belonging to that wallet.\n\nReconnects are lossless within the retention window: send the last event id you processed as `Last-Event-ID` (or `?lastEventId=`) and the server replays what you missed. If you were away longer than retention allows, it sends a `replay-reset` instead of leaving a silent gap.\n\nSee the [Realtime data guide](https://docs.aura.markets/api-reference/realtime) for client patterns.",
+    "contact": {
+      "name": "Aura",
+      "url": "https://docs.aura.markets"
+    }
+  },
+  "servers": {
+    "mainnet": {
+      "host": "api.aura.markets",
+      "protocol": "https",
+      "description": "Production."
+    },
+    "testnet": {
+      "host": "api.testnet.aura.markets",
+      "protocol": "https",
+      "description": "Testnet. Same API against test tokens."
+    }
+  },
+  "channels": {
+    "realtimeStream": {
+      "address": "/v1/realtime/stream",
+      "title": "Realtime stream",
+      "description": "Server-Sent Events endpoint. Subscribe with `?topics=a,b,c`. Anonymous connections accept up to 8 topics, signed-in connections up to 20.",
+      "messages": {
+        "auraEvent": { "$ref": "#/components/messages/auraEvent" },
+        "auraReset": { "$ref": "#/components/messages/auraReset" },
+        "auraError": { "$ref": "#/components/messages/auraError" },
+        "heartbeat": { "$ref": "#/components/messages/heartbeat" }
+      }
+    }
+  },
+  "operations": {
+    "subscribe": {
+      "action": "receive",
+      "channel": { "$ref": "#/channels/realtimeStream" },
+      "title": "Subscribe to topics",
+      "summary": "Open an SSE connection and receive events for the requested topics.",
+      "description": "Public topics: `market:{address}:orders`, `market:{address}:fills`, `dispute:{marketId}`, `settings:banner`, `health:indexer`.\n\nSession-scoped topics: `user:{address}:orders`, `user:{address}:fills`, `user:{address}:parlays`, `user:{address}:notifications`, `user:{address}:reveals:{marketId}`, `user:{address}:rewards:{marketId}`.\n\nRequesting a `user:` topic for a wallet other than the authenticated one returns 403.",
+      "messages": [
+        { "$ref": "#/channels/realtimeStream/messages/auraEvent" },
+        { "$ref": "#/channels/realtimeStream/messages/auraReset" },
+        { "$ref": "#/channels/realtimeStream/messages/auraError" },
+        { "$ref": "#/channels/realtimeStream/messages/heartbeat" }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "auraEvent": {
+        "name": "aura",
+        "title": "Data event",
+        "summary": "A row changed on a subscribed topic.",
+        "description": "Delivered as SSE event type `aura` with the event id set to the monotonic `id` field. Treat unknown `entity` values and unrecognized `payload` fields as forward compatibility rather than errors.",
+        "contentType": "application/json",
+        "payload": { "$ref": "#/components/schemas/realtimeEvent" },
+        "examples": [
+          {
+            "name": "Trade executed",
+            "summary": "A fill on a market's yes book",
+            "payload": {
+              "v": 1,
+              "id": "84213",
+              "seq": "84213",
+              "topic": "market:26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs:fills",
+              "operation": "insert",
+              "entity": "trade",
+              "key": { "tradeId": "9182" },
+              "payload": {
+                "price": 640,
+                "quantity": "2000000000000000000",
+                "outcome": "yes"
+              },
+              "timestamp": "2026-07-29T19:12:04.881Z",
+              "source": "indexer"
+            }
+          },
+          {
+            "name": "Order cancelled",
+            "summary": "A resting order removed from the book",
+            "payload": {
+              "v": 1,
+              "id": "84214",
+              "seq": "84214",
+              "topic": "market:26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs:orders",
+              "operation": "delete",
+              "entity": "order",
+              "key": { "orderId": "5521" },
+              "payload": { "reason": "cancelled" },
+              "timestamp": "2026-07-29T19:12:41.002Z",
+              "source": "indexer"
+            }
+          }
+        ]
+      },
+      "auraReset": {
+        "name": "aura-reset",
+        "title": "Replay reset",
+        "summary": "Replay was not possible; refetch state from REST.",
+        "description": "Sent when the requested `Last-Event-ID` falls outside the retention window. The server cannot guarantee you have seen every event since then, so it tells you explicitly instead of leaving a gap.\n\nHandle it by refetching a snapshot for that topic from REST and resuming from live. Ignoring this message means running on stale state indefinitely.",
+        "contentType": "application/json",
+        "payload": { "$ref": "#/components/schemas/realtimeReset" },
+        "examples": [
+          {
+            "name": "Retention exceeded",
+            "payload": {
+              "v": 1,
+              "type": "replay-reset",
+              "topic": "market:26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs:fills",
+              "afterEventId": "84213",
+              "reason": "retention-exceeded"
+            }
+          }
+        ]
+      },
+      "auraError": {
+        "name": "aura-error",
+        "title": "Stream error",
+        "summary": "A mid-stream failure. The connection closes after this.",
+        "description": "Reconnect without a cursor and refetch a snapshot.",
+        "contentType": "application/json",
+        "payload": {
+          "type": "object",
+          "required": ["code"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Machine-readable failure reason.",
+              "examples": ["replay_unavailable"]
+            },
+            "topic": {
+              "type": "string",
+              "description": "The topic the failure applies to, when scoped to one."
+            }
+          }
+        }
+      },
+      "heartbeat": {
+        "name": "heartbeat",
+        "title": "Heartbeat",
+        "summary": "SSE comment sent every 15 seconds.",
+        "description": "Delivered as an SSE comment line, not an event: `: heartbeat 2026-07-29T19:12:19.402Z`. Standard `EventSource` clients ignore comments automatically. If you parse frames yourself, skip lines beginning with `:`.\n\nHeartbeats keep intermediate proxies from closing an idle connection, and they double as a liveness signal: no frame of any kind for more than 30 seconds means the connection is dead even if the socket still looks open.",
+        "contentType": "text/plain"
+      }
+    },
+    "schemas": {
+      "realtimeEvent": {
+        "type": "object",
+        "title": "RealtimeEvent",
+        "required": [
+          "v",
+          "id",
+          "seq",
+          "topic",
+          "operation",
+          "entity",
+          "key",
+          "payload",
+          "timestamp",
+          "source"
+        ],
+        "properties": {
+          "v": {
+            "type": "integer",
+            "const": 1,
+            "description": "Protocol version."
+          },
+          "id": {
+            "type": "string",
+            "description": "Monotonic event id. Persist the last one you applied and send it as `Last-Event-ID` on reconnect."
+          },
+          "seq": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Sequence number. Same value as `id`."
+          },
+          "topic": {
+            "type": "string",
+            "description": "The subscription that produced this event."
+          },
+          "operation": {
+            "type": "string",
+            "enum": ["insert", "update", "delete"],
+            "description": "What happened to the underlying row."
+          },
+          "entity": {
+            "type": "string",
+            "pattern": "^[a-z_][a-z0-9_]*$",
+            "description": "The kind of record that changed. New entity types are added without a version bump.",
+            "examples": ["order", "trade", "dispute", "notification"]
+          },
+          "key": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Identifiers for the affected record."
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The changed fields. New fields are added without a version bump."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO-8601 timestamp of the change."
+          },
+          "source": {
+            "type": "string",
+            "enum": ["outbox", "api", "indexer"],
+            "description": "Which subsystem emitted the event."
+          }
+        }
+      },
+      "realtimeReset": {
+        "type": "object",
+        "title": "RealtimeReset",
+        "required": ["v", "type", "topic", "afterEventId", "reason"],
+        "properties": {
+          "v": { "type": "integer", "const": 1 },
+          "type": { "type": "string", "const": "replay-reset" },
+          "topic": {
+            "type": "string",
+            "description": "The topic that could not be replayed."
+          },
+          "afterEventId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "The cursor you supplied, which was too old to serve."
+          },
+          "reason": {
+            "type": "string",
+            "const": "retention-exceeded",
+            "description": "Why replay failed."
+          }
+        }
+      }
+    }
+  }
+}

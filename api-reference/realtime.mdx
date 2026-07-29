@@ -1,0 +1,235 @@
+---
+title: "Realtime Data"
+sidebarTitle: "Realtime Data"
+description: "Subscribe to live Aura order, fill, dispute, and account events over Server-Sent Events, with lossless reconnects."
+keywords: ["Aura realtime", "SSE stream", "live order book", "prediction market websocket", "server-sent events", "market data stream"]
+---
+
+Aura pushes live events over Server-Sent Events on a single endpoint. One
+connection, many topics, plain HTTP.
+
+SSE rather than WebSocket is a deliberate choice: it runs over ordinary HTTP, it
+reconnects automatically in every browser, and it has replay built into the
+protocol through `Last-Event-ID`. You do not need a client library, and `curl`
+works as a debugging tool.
+
+<Tip>
+If you are polling REST endpoints in a loop, switch to this. Polling burns your
+rate-limit budget to re-fetch data that mostly did not change, and it is slower
+at noticing the changes that matter.
+</Tip>
+
+## Connect
+
+```bash
+curl -N "https://api.aura.markets/v1/realtime/stream?topics=market:26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs:fills"
+```
+
+```javascript
+const market = '26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs'
+
+const stream = new EventSource(
+  `https://api.aura.markets/v1/realtime/stream?topics=market:${market}:orders,market:${market}:fills`
+)
+
+stream.addEventListener('aura', (e) => {
+  const event = JSON.parse(e.data)
+  console.log(event.entity, event.operation, event.payload)
+})
+```
+
+`topics` is a comma-separated list and is the only required parameter.
+
+## Topics
+
+### Public, no session needed
+
+| Topic | Fires when |
+| --- | --- |
+| `market:{address}:orders` | An order is placed, updated, or cancelled in that market. |
+| `market:{address}:fills` | A trade executes in that market. |
+| `dispute:{marketId}` | A dispute on that market changes state: opened, committed, revealed, resolved. |
+| `settings:banner` | The platform announcement banner changes. |
+| `health:indexer` | Indexer liveness changes. Useful for knowing whether your data is current. |
+
+### Requires a session
+
+These only work for the wallet you authenticated as. Requesting another wallet's
+topics returns `403`.
+
+| Topic | Fires when |
+| --- | --- |
+| `user:{address}:orders` | Your order is placed, filled, or cancelled. |
+| `user:{address}:fills` | One of your orders trades. |
+| `user:{address}:parlays` | A parlay you hold changes state. |
+| `user:{address}:notifications` | You get a notification. |
+| `user:{address}:reveals:{marketId}` | Your commit-reveal state changes in a dispute. |
+| `user:{address}:rewards:{marketId}` | Rewards become claimable for you on that market. |
+
+Authenticate with a bearer token the same way as any other request:
+
+```javascript
+// EventSource cannot set headers, so in Node use fetch with a streaming body,
+// or pass the session cookie in a browser.
+const res = await fetch(`${API}/v1/realtime/stream?topics=user:${address}:fills`, {
+  headers: { authorization: `Bearer ${token}` },
+})
+```
+
+<Note>
+The browser `EventSource` API cannot send an `Authorization` header. In a browser,
+rely on the session cookie, which is sent automatically. In Node or a bot, use
+`fetch` with a streaming response and parse the frames yourself.
+</Note>
+
+## Topic limits
+
+| Connection | Max topics |
+| --- | --- |
+| Anonymous | 8 |
+| Signed in | 20 |
+
+Covering more than that means opening more connections. The limit exists because
+each topic is a live subscription on the server, not a filter applied to a
+firehose.
+
+## Event format
+
+Every data frame arrives as event type `aura` with a JSON body:
+
+```text
+id: 84213
+event: aura
+data: {"v":1,"id":"84213","seq":"84213","topic":"market:26tk...:fills","operation":"insert","entity":"trade","key":{"tradeId":"9182"},"payload":{"price":640,"quantity":"2000000000000000000","outcome":"yes"},"timestamp":"2026-07-29T19:12:04.881Z","source":"indexer"}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `v` | Protocol version. Currently `1`. |
+| `id` | Monotonic event id. Keep the last one you saw for reconnects. |
+| `seq` | Sequence number, same value as `id`. |
+| `topic` | Which subscription produced this. |
+| `operation` | `insert`, `update`, or `delete`. |
+| `entity` | What kind of row changed, for example `order`, `trade`, `dispute`. |
+| `key` | Identifiers for the affected record. |
+| `payload` | The changed fields. |
+| `timestamp` | ISO-8601, when the change happened. |
+| `source` | `outbox`, `api`, or `indexer`. |
+
+<Warning>
+Treat unknown `entity` values and unknown `payload` fields as forward
+compatibility rather than errors. New entities and fields get added without a
+version bump, and a client that throws on anything unrecognized will break on a
+routine release.
+</Warning>
+
+## Heartbeats
+
+Every 15 seconds the server sends an SSE comment:
+
+```text
+: heartbeat 2026-07-29T19:12:19.402Z
+```
+
+Comments are ignored by `EventSource` automatically. If you are parsing frames
+yourself, skip lines starting with `:`. Their purpose is to keep proxies from
+timing out an idle connection, and they double as a liveness signal: no heartbeat
+for over 30 seconds means the connection is dead even if the socket looks open.
+
+## Reconnecting without gaps
+
+This is the part worth getting right. Every event carries an `id`, and passing the
+last one you processed replays what you missed.
+
+```javascript
+const stream = new EventSource(url) // EventSource does this for you
+
+// Doing it manually:
+const res = await fetch(url, { headers: { 'last-event-id': lastSeenId } })
+```
+
+You can also pass it as `?lastEventId=84213` if setting headers is awkward.
+
+Browsers handle this natively. `EventSource` remembers the last `id` it saw and
+sends it on reconnect with no code from you, which is a large part of why SSE is
+worth the tradeoff here.
+
+### When replay is not possible
+
+Replay works within a retention window. If you were disconnected longer than that,
+you get a reset frame instead of a gap:
+
+```text
+event: aura-reset
+data: {"v":1,"type":"replay-reset","topic":"market:26tk...:fills","afterEventId":"84213","reason":"retention-exceeded"}
+```
+
+Handle it by refetching current state from REST and resuming the stream from live:
+
+```javascript
+stream.addEventListener('aura-reset', async (e) => {
+  const { topic } = JSON.parse(e.data)
+  await resyncFromRest(topic) // your snapshot refetch
+})
+```
+
+<Warning>
+Silently ignoring `aura-reset` means running on stale state indefinitely. It is
+the one frame you must handle, because it is the server telling you it can no
+longer guarantee you have seen everything.
+</Warning>
+
+## Recommended pattern
+
+<Steps>
+  <Step title="Snapshot first, then stream">
+    Fetch the order book from REST, then open the stream. Buffer events that
+    arrive during the snapshot and apply them afterwards, discarding any whose
+    `id` predates the snapshot.
+  </Step>
+  <Step title="Track the last id you applied">
+    Persist it. On reconnect, send it as `Last-Event-ID`.
+  </Step>
+  <Step title="Handle aura-reset by resnapshotting">
+    Go back to step one for that topic. Do not try to reason about what you
+    missed.
+  </Step>
+  <Step title="Watch the heartbeat">
+    If more than 30 seconds pass with no frame of any kind, tear down and
+    reconnect rather than trusting the socket.
+  </Step>
+</Steps>
+
+## Errors
+
+| Status | Code | Cause |
+| --- | --- | --- |
+| `400` | `invalid_realtime_cursor` | `lastEventId` was not a positive integer. |
+| `403` | `realtime_topic_forbidden` | Unknown topic, over the topic cap, or a `user:` topic for a wallet you are not signed in as. |
+| `503` | `realtime_unavailable` | Realtime delivery is not configured on this deployment. |
+
+A mid-stream failure arrives as an `aura-error` frame and the connection closes:
+
+```text
+event: aura-error
+data: {"code":"replay_unavailable","topic":"market:26tk...:fills"}
+```
+
+Reconnect without a cursor and resnapshot.
+
+## Connection limits
+
+Stream connections are limited to 600 per minute per IP, which is sized for
+reconnect storms rather than steady state. A normal client holds one connection
+open indefinitely and never approaches it.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Integrator guide" icon="plug" href="/api-reference/integrator-guide">
+    Streaming versus polling, elevated rate limits, and bot patterns.
+  </Card>
+  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
+    Get an order on-chain, then watch it fill on the stream.
+  </Card>
+</CardGroup>

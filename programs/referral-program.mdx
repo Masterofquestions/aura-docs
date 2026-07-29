@@ -1,0 +1,86 @@
+---
+title: "Referral Program"
+sidebarTitle: "Referral Program"
+description: "Earn 10% of the trading fee on every trade your referrals ever make on Aura, paid in USDT automatically."
+keywords: ["Aura referral program", "referral rewards", "affiliate", "earn referring traders", "referral link"]
+---
+
+Share your referral link. Everyone who signs up through it earns you **10% of the
+trading fee** on every trade they make, for as long as they keep trading.
+
+## What you earn
+
+| | |
+| --- | --- |
+| Your cut | 10% of the 2.5% trading fee |
+| Effective rate | 0.25% of your referral's volume |
+| Paid in | USDT |
+| Duration | Every trade they ever make, with no expiry |
+| Comes out of | The treasury's share of the fee |
+
+That last row matters. Your referral fee is carved out of the protocol's own
+slice. It never reduces the creator's cut, and it never touches any trader's
+payout, so referring somebody costs them nothing and costs the market's creator
+nothing.
+
+## How it gets paid
+
+Referral fees accrue inside each market contract as your referrals trade, then
+pay out to your wallet automatically once that market resolves.
+
+Your dashboard shows history rather than a claim button, because there is nothing
+for you to sign. The payout goes to the wallet recorded as the referrer, and it
+cannot be redirected.
+
+<Note>
+Because payout happens at market resolution, fees from a long-dated market arrive
+when that market resolves, not when the trade happened. Volume on markets
+resolving next week pays next week.
+</Note>
+
+## Getting your link
+
+Your referral link is tied to your wallet address:
+
+```text
+https://aura.markets/invite/<your-address>
+```
+
+Anyone who lands on Aura through it and creates an account is attributed to you
+permanently. Attribution happens at signup, so an existing user cannot be
+re-attributed later.
+
+## What works
+
+<AccordionGroup>
+  <Accordion title="Refer people who would trade anyway" icon="user-check">
+    Your earnings are a percentage of volume, so one active trader is worth more
+    than fifty signups who never place an order. Quality of attention beats
+    quantity of clicks.
+  </Accordion>
+  <Accordion title="Pair it with markets you create" icon="lightbulb">
+    If you [create markets](/programs/creator-rewards) on a subject and bring the
+    audience for that subject, you earn on both sides of the same volume.
+  </Accordion>
+  <Accordion title="Lead with a specific market" icon="link">
+    A link to a market someone already has an opinion about converts better than
+    a link to a homepage.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+Self-referral does not work. Attribution requires a distinct account, and
+wash-trading between your own wallets to generate referral fees costs you 2.5% per
+round trip to earn 0.25% back. The math does not favor it.
+</Warning>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Creator rewards" icon="lightbulb" href="/programs/creator-rewards">
+    Earn on the markets you bring your audience to.
+  </Card>
+  <Card title="Programs overview" icon="gift" href="/programs/overview">
+    How all four earning programs fit together.
+  </Card>
+</CardGroup>

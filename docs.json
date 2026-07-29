@@ -29,56 +29,69 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Welcome",
+            "group": "Get Started",
             "pages": [
               "index",
               "overview/introduction",
               "overview/why-alephium",
-              "overview/roadmap"
-            ]
-          },
-          {
-            "group": "Getting Started",
-            "pages": [
               "getting-started/connecting",
-              "getting-started/passkeys",
-              "getting-started/bridging"
+              "getting-started/bridging",
+              "getting-started/passkeys"
             ]
           },
           {
             "group": "Markets",
             "pages": [
-              "markets/creating-markets",
+              "markets/overview",
               "markets/trading",
-              "markets/resolution-and-disputes",
-              "markets/rewards-and-incentives"
+              "markets/creating-markets",
+              "markets/resolution-and-disputes"
             ]
           },
           {
-            "group": "Tokens & Vault",
+            "group": "Tokens & Staking",
             "pages": [
-              "tokens/alph",
               "tokens/aura",
+              "tokens/staking",
               "tokens/tier-structure",
-              "tokens/staking"
+              "tokens/alph"
             ]
           },
           {
             "group": "Governance",
             "pages": [
-              "governance/outcome-voting",
-              "governance/proposal-voting"
+              "governance/proposal-voting",
+              "governance/outcome-voting"
+            ]
+          },
+          {
+            "group": "Programs",
+            "pages": [
+              "programs/overview",
+              "programs/creator-rewards",
+              "programs/liquidity-rewards",
+              "programs/referral-program",
+              "programs/dispute-rewards"
             ]
           },
           {
             "group": "Tutorials",
             "pages": [
               "tutorials/user-tutorials",
-              "tutorials/voting-on-disputes",
+              "tutorials/strategies",
               "tutorials/binary-market-best-practices",
               "tutorials/categorical-market-best-practices",
               "tutorials/maximizing-tier-benefits",
-              "tutorials/strategies"
+              "tutorials/voting-on-disputes"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "resources/contracts",
+              "resources/security",
+              "resources/error-codes",
+              "overview/roadmap"
             ]
           },
           {
@@ -94,13 +107,26 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Overview",
+            "group": "Get Started",
             "pages": [
               "api-reference/introduction",
+              "api-reference/quickstart",
+              "api-reference/place-your-first-order"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
               "api-reference/authentication",
-              "api-reference/rate-limits",
               "api-reference/build-tx-flow",
-              "api-reference/integrator-guide",
+              "api-reference/realtime",
+              "api-reference/rate-limits",
+              "api-reference/integrator-guide"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
               "api-reference/errors"
             ]
           },
@@ -110,11 +136,35 @@
               "source": "/api-reference/openapi.json",
               "directory": "api-reference"
             }
+          },
+          {
+            "group": "Realtime Stream",
+            "asyncapi": {
+              "source": "/api-reference/asyncapi.json",
+              "directory": "api-reference"
+            }
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog"
+            ]
           }
         ]
       }
     ]
   },
+  "redirects": [
+    {
+      "source": "/markets/rewards-and-incentives",
+      "destination": "/programs/overview"
+    }
+  ],
   "contextual": {
     "options": [
       "copy",
@@ -177,7 +227,45 @@
     "socials": {
       "x": "https://x.com/AuraMarkets",
       "telegram": "https://t.me/AuraMarkets"
-    }
+    },
+    "links": [
+      {
+        "header": "Trade",
+        "items": [
+          { "label": "How markets work", "href": "https://docs.aura.markets/markets/overview" },
+          { "label": "Trade markets", "href": "https://docs.aura.markets/markets/trading" },
+          { "label": "Create a market", "href": "https://docs.aura.markets/markets/creating-markets" },
+          { "label": "Fund your account", "href": "https://docs.aura.markets/getting-started/bridging" }
+        ]
+      },
+      {
+        "header": "Earn",
+        "items": [
+          { "label": "Creator rewards", "href": "https://docs.aura.markets/programs/creator-rewards" },
+          { "label": "Liquidity rewards", "href": "https://docs.aura.markets/programs/liquidity-rewards" },
+          { "label": "Referral program", "href": "https://docs.aura.markets/programs/referral-program" },
+          { "label": "Dispute voting", "href": "https://docs.aura.markets/programs/dispute-rewards" }
+        ]
+      },
+      {
+        "header": "Build",
+        "items": [
+          { "label": "API reference", "href": "https://docs.aura.markets/api-reference/introduction" },
+          { "label": "Your first API call", "href": "https://docs.aura.markets/api-reference/quickstart" },
+          { "label": "Realtime data", "href": "https://docs.aura.markets/api-reference/realtime" },
+          { "label": "Changelog", "href": "https://docs.aura.markets/changelog" }
+        ]
+      },
+      {
+        "header": "Security",
+        "items": [
+          { "label": "Contracts", "href": "https://docs.aura.markets/resources/contracts" },
+          { "label": "Security and audits", "href": "https://docs.aura.markets/resources/security" },
+          { "label": "Report a vulnerability", "href": "mailto:security@aura.markets" },
+          { "label": "Support", "href": "https://docs.aura.markets/support/contact" }
+        ]
+      }
+    ]
   },
   "search": {
     "prompt": "Search Aura docs and API"

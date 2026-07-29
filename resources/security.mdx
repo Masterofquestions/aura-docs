@@ -1,0 +1,195 @@
+---
+title: "Security"
+sidebarTitle: "Security"
+description: "How Aura's contracts are audited, the on-chain controls that protect user funds, the trust assumptions that remain, and how to report a vulnerability."
+keywords: ["Aura security", "smart contract audit", "prediction market security", "timelock", "slashing", "responsible disclosure", "bug bounty"]
+---
+
+Aura holds user collateral in on-chain contracts, so the honest version of a
+security page has to cover three things: what has been reviewed, what the
+contracts do to protect funds without trusting us, and what still depends on
+trusting us. All three are below.
+
+## Audit status
+
+<Info>
+Aura's contracts have been through an independent third-party audit. The report
+is detailed enough that publishing it verbatim would function as a map of the
+system's most sensitive paths, so a condensed summary lives here instead. The
+full report will be published alongside the mainnet deployment.
+</Info>
+
+| | |
+| --- | --- |
+| Independent external audit | Complete |
+| Critical findings | None outstanding |
+| High findings | One, accepted with mitigation (see below) |
+| Medium findings | One, fixed |
+| Mainnet deployment | Not yet live |
+
+Two things are worth being explicit about.
+
+**The audit covered a specific commit.** Six changes landed after the audited
+baseline: dispute-fee accounting, the operator registry, liquidity-reward bucket
+bounds, and event layout corrections among them. Those changes were reviewed
+in-house against the same criteria rather than by the external auditor. That
+review found no critical issues and cleared the delta for mainnet. It is still an
+internal review, and we would rather say so than imply the external audit covered
+code it never saw.
+
+**One high finding was accepted rather than fixed.** Accounts holding the
+treasury operator role can direct protocol revenue withdrawals on already-resolved
+markets. The scope is protocol revenue only. It cannot reach user collateral,
+user positions, or unclaimed winnings, because those payout destinations are
+fixed in the contract and cannot be passed in by a caller. The role is custodied
+at the same grade as the primary treasury key and can be revoked instantly with
+no timelock. We accepted it because closing it would have meant a contract change
+after the audited baseline, in exchange for removing a capability the key already
+effectively has.
+
+## What protects funds without trusting Aura
+
+These are properties of the contracts. They hold whether or not we behave.
+
+<AccordionGroup>
+  <Accordion title="Payout destinations are fixed in the contract" icon="lock">
+    Winnings go to the position holder. Creator fees go to the recorded market
+    creator. Trading fees go to the treasury address the factory currently
+    points at. None of these accept a destination from the caller, so there is
+    no admin call that redirects a user's payout somewhere else.
+  </Accordion>
+  <Accordion title="A market cannot be destroyed with money still in it" icon="shield">
+    Tearing down a resolved market requires every fee bucket to be empty and no
+    unclaimed winnings to remain. The contract refuses otherwise. Cleanup cannot
+    be used to strand funds.
+  </Accordion>
+  <Accordion title="Fee buckets are isolated" icon="grid-2">
+    Creator fees, treasury fees, and referral fees accrue in separate buckets
+    with independent bounds. Draining or miscounting one cannot reach into
+    another or into trader collateral.
+  </Accordion>
+  <Accordion title="Resolution does not require an admin" icon="unlock">
+    Finalizing an outcome, running the penalty passes, and cleaning up voter
+    records are all permissionless. If Aura went dark tomorrow, anyone could
+    still push a resolved market through to the point where winners can claim.
+  </Accordion>
+  <Accordion title="Governance changes are timelocked" icon="clock">
+    Every governance setter follows propose, wait, then execute. Mainnet delay is
+    24 hours, and there is no setter that shortens it. You get a full day of
+    visible warning before a treasury, oracle, vault, or voting pointer changes.
+  </Accordion>
+  <Accordion title="Slashing has a global circuit breaker" icon="gauge-high">
+    Total slashing is capped at 1% of everything staked per rolling 24-hour
+    window. Past the cap the contract clamps the penalty rather than reverting,
+    so a bug or an attack in the penalty path cannot cascade into the vault.
+    Individual voters risk 0.1% of their committed balance per losing vote.
+  </Accordion>
+  <Accordion title="Only real accounts can trade or stake" icon="user-check">
+    Traders and stakers must be externally owned accounts, not contracts. This
+    keeps the slashing and reward paths solvent, and it stops a contract from
+    being used to hold a position that penalties cannot reach.
+  </Accordion>
+</AccordionGroup>
+
+## Dispute economics
+
+Resolution is optimistic: someone proposes an outcome with a bond and it stands
+unless challenged. The numbers are what make lying unprofitable.
+
+| Parameter | Mainnet value |
+| --- | --- |
+| Outcome proposal bond | 100 USDT |
+| Dispute bond | 100 USDT |
+| Dispute window | 24 hours |
+| Commit period | 24 hours |
+| Reveal period | 1 hour |
+| Supermajority to overturn | 65% |
+| Slash for backing a losing outcome | 0.1% of committed stake |
+
+A false outcome costs the proposer their bond. Disputing a correct outcome costs
+the challenger theirs. Voting with the losing side costs stakers a slice of their
+vault balance. See [Resolution and disputes](/markets/resolution-and-disputes) for
+the full mechanics.
+
+## Emergency controls
+
+Pausing is deliberately **not** timelocked. If something is actively going wrong,
+waiting 24 hours to stop it is worse than the risk of having a fast switch. The
+factory, oracle, vault, and voting contracts can each be paused immediately.
+
+Pausing stops new activity. It does not seize funds, change any recorded
+position, or alter an outcome that has already been finalized.
+
+Because a pause can interrupt a dispute round mid-flight, there is a matching
+recovery path that voids the interrupted round and refunds its bonds. It cannot
+void a round that already completed, so a pause cannot be used to erase a
+resolution that went against the operator.
+
+## Trust assumptions that remain
+
+Being straight about the parts that are not trustless:
+
+- **Governance keys** can rotate the treasury, oracle, vault, and voting
+  addresses, subject to the 24-hour timelock. Intended to be a multisig in
+  production.
+- **The pause switch** is immediate and has no timelock by design.
+- **Treasury operators** can route protocol revenue on resolved markets, as
+  described in the audit section. Not user funds.
+- **The indexer and API** are operated by Aura. They are a convenience layer over
+  chain state, not a source of truth. Every balance, position, and outcome can be
+  read directly from the contracts, and you should verify against the chain if the
+  stakes justify it.
+- **Market resolution rules** are written by whoever proposed the market. A badly
+  worded market is a real risk that no amount of contract security fixes. Read the
+  rules before trading.
+
+## Reporting a vulnerability
+
+If you have found something, please report it privately first. We will not
+pursue action against anyone acting in good faith under this policy.
+
+<Card title="security@aura.markets" icon="envelope">
+  Include enough detail to reproduce: affected contract or endpoint, the impact
+  you believe it has, and the steps to trigger it. A proof of concept against
+  testnet is welcome and makes triage much faster.
+</Card>
+
+What we ask:
+
+- Report privately and give us a chance to ship a fix before disclosing.
+- Test on [testnet](/resources/contracts#testnet), not mainnet. Do not test
+  against other people's funds or positions.
+- No social engineering of Aura staff or users, no denial of service, no spam.
+
+What you can expect: acknowledgement within 72 hours, an assessment with a
+severity call, and credit in the fix announcement if you want it.
+
+<Note>
+A formal bug bounty program is not live yet. Reports are triaged and rewarded at
+our discretion in the meantime, and the program details will be published here
+when it launches.
+</Note>
+
+## Protecting yourself
+
+Most losses in crypto are not contract exploits.
+
+<Steps>
+  <Step title="Verify addresses against this site">
+    [Contracts](/resources/contracts) is the canonical list. An address from a
+    DM, a reply, or a lookalike domain is not.
+  </Step>
+  <Step title="Nobody at Aura will ask for your seed phrase">
+    Not support, not a moderator, not a giveaway. There is no situation where
+    Aura needs it. Anyone asking is stealing.
+  </Step>
+  <Step title="Back up your seed phrase before it matters">
+    If you use the embedded wallet, export and store your seed offline. It is the
+    only way back into your funds if you lose access to your login. See
+    [Passkeys and recovery](/getting-started/passkeys).
+  </Step>
+  <Step title="Read what you sign">
+    Every trade, stake, and vote is a transaction you approve. Check the amount
+    and the contract before confirming.
+  </Step>
+</Steps>

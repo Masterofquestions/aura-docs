@@ -1,0 +1,227 @@
+---
+title: "Your First API Call"
+sidebarTitle: "Your First API Call"
+description: "Fetch live Aura prediction markets with a single unauthenticated request, then read an order book and current prices."
+keywords: ["Aura API quickstart", "prediction market API", "list markets", "order book API", "get started API"]
+---
+
+Market data on Aura is public. No key, no signup, no auth header. You can have
+real market data back in one request, so start there and add authentication later
+only when you need to place orders.
+
+## Base URLs
+
+<CodeGroup>
+```text Mainnet
+https://api.aura.markets
+```
+
+```text Testnet
+https://api.testnet.aura.markets
+```
+</CodeGroup>
+
+<Note>
+Build against testnet first. It runs the same API against test tokens, so you can
+place real orders without real money. See
+[Contracts](/resources/contracts#testnet) for the testnet deployment.
+</Note>
+
+## List open markets
+
+<CodeGroup>
+```bash cURL
+curl -s "https://api.aura.markets/v1/markets?limit=5&status=open&sort=volume&order=desc"
+```
+
+```javascript JavaScript
+const res = await fetch(
+  'https://api.aura.markets/v1/markets?limit=5&status=open&sort=volume&order=desc'
+)
+const { markets, pagination } = await res.json()
+
+for (const m of markets) {
+  console.log(m.question, m.bestBidYes, m.marketAddress)
+}
+```
+
+```python Python
+import requests
+
+res = requests.get(
+    "https://api.aura.markets/v1/markets",
+    params={"limit": 5, "status": "open", "sort": "volume", "order": "desc"},
+)
+data = res.json()
+
+for m in data["markets"]:
+    print(m["question"], m["bestBidYes"], m["marketAddress"])
+```
+
+```go Go
+resp, err := http.Get(
+    "https://api.aura.markets/v1/markets?limit=5&status=open&sort=volume&order=desc",
+)
+if err != nil {
+    log.Fatal(err)
+}
+defer resp.Body.Close()
+```
+</CodeGroup>
+
+You get back a `markets` array and a `pagination` object:
+
+```json
+{
+  "markets": [
+    {
+      "id": 412,
+      "marketAddress": "26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs",
+      "question": "Will ALPH close above $5 on December 31?",
+      "category": "Crypto",
+      "tags": ["alephium", "price"],
+      "resolved": false,
+      "finalOutcome": null,
+      "volume": "184920000000000000000",
+      "bestBidYes": 640,
+      "bestAskYes": 655,
+      "bestBidNo": 345,
+      "bestAskNo": 360,
+      "createdAt": "2026-07-12T18:04:11.000Z"
+    }
+  ],
+  "pagination": { "limit": 5, "nextCursor": "eyJpZCI6NDEyfQ" }
+}
+```
+
+Three things to notice, because they trip people up:
+
+<CardGroup cols={3}>
+  <Card title="Prices are ticks" icon="hashtag">
+    `bestBidYes: 640` means 64%, not $640. Ticks run 0 to 1000. Divide by 10 for
+    a percentage, or by 1000 for a probability.
+  </Card>
+  <Card title="Amounts are strings" icon="quote-left">
+    `volume` is base units at 18 decimals, as a string. Parse it as a big
+    integer, never as a float.
+  </Card>
+  <Card title="Two different ids" icon="key">
+    `id` is a database integer. `marketAddress` is the on-chain contract. Trading
+    always uses `marketAddress`.
+  </Card>
+</CardGroup>
+
+### Useful filters
+
+| Parameter | Values | Notes |
+| --- | --- | --- |
+| `limit` | 1 to 200 | Defaults to 50. |
+| `status` | `open`, `resolved`, `all` | Defaults to `open`. |
+| `sort` | `created-at`, `volume`, `best-bid-yes`, `recently-traded` | |
+| `order` | `asc`, `desc` | |
+| `category` | Category name | |
+| `tags` | Comma-separated | |
+| `q` | Free text | Searches the question. |
+| `cursor` | Opaque string | Pass back `pagination.nextCursor`. |
+| `facets` | `true` | Adds category and tag counts to the response. |
+
+Paginate by feeding `nextCursor` back as `cursor`. When it comes back `null`, you
+have reached the end.
+
+## Read the order book
+
+Take a `marketAddress` from that response and ask for its book:
+
+<CodeGroup>
+```bash cURL
+MARKET="26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs"
+
+curl -s "https://api.aura.markets/v1/markets/${MARKET}/orderbook?depth=10"
+```
+
+```javascript JavaScript
+const market = '26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs'
+
+const book = await fetch(
+  `https://api.aura.markets/v1/markets/${market}/orderbook?depth=10`
+).then((r) => r.json())
+
+console.log('best yes bid', book.bestBidYes)
+console.log('top ask', book.yes.asks[0])
+```
+
+```python Python
+market = "26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs"
+
+book = requests.get(
+    f"https://api.aura.markets/v1/markets/{market}/orderbook",
+    params={"depth": 10},
+).json()
+
+print("best yes bid", book["bestBidYes"])
+```
+</CodeGroup>
+
+```json
+{
+  "marketAddress": "26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs",
+  "yes": {
+    "bids": [{ "price": 640, "totalQuantity": "12000000000000000000", "orderCount": 3 }],
+    "asks": [{ "price": 655, "totalQuantity": "8000000000000000000", "orderCount": 2 }]
+  },
+  "no": { "bids": [], "asks": [] },
+  "bestBidYes": 640,
+  "bestAskYes": 655,
+  "bestBidNo": 345,
+  "bestAskNo": 360
+}
+```
+
+Every Aura market has **two** books, one for yes shares and one for no shares.
+They are linked: buying a yes at 640 and buying a no at 360 together mint a
+complete share pair, which is how the matcher can fill both sides at once. See
+[How trading works](/markets/trading) for the mechanics.
+
+`depth` defaults to 20 and caps at 100.
+
+## Get a simple price
+
+If you just want the current probability and not a whole book:
+
+```bash
+curl -s "https://api.aura.markets/v1/markets/${MARKET}/prices"
+```
+
+```json
+{ "yesPrice": 0.64, "noPrice": 0.36, "priceTimestamp": 1720000000 }
+```
+
+These come back as floats between 0 and 1, which is friendlier for display than
+ticks. A market with no trade history reports `0.5` on both sides with a
+timestamp of `0`.
+
+## Rate limits
+
+Anonymous reads are limited to **60 requests per minute per IP**. That is plenty
+for exploring and thin for a production bot, so if you are polling, sign in to
+get a per-account limit, or better, stop polling and use the
+[realtime stream](/api-reference/realtime). See
+[Rate limits](/api-reference/rate-limits).
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
+    Add authentication and go from a market address to a live on-chain order.
+  </Card>
+  <Card title="Realtime stream" icon="bolt" href="/api-reference/realtime">
+    Subscribe to order, fill, and resolution events instead of polling.
+  </Card>
+  <Card title="Integrator guide" icon="plug" href="/api-reference/integrator-guide">
+    Practical guidance for bots: which auth you need, error handling, elevated
+    limits.
+  </Card>
+  <Card title="Full endpoint reference" icon="list" href="/api-reference/introduction">
+    Every published endpoint, with schemas and try-it examples.
+  </Card>
+</CardGroup>

@@ -1,0 +1,125 @@
+---
+title: "Markets Overview"
+sidebarTitle: "Overview"
+description: "How Aura prediction markets work: yes and no shares, the dual order book, how markets are created, and how they resolve."
+keywords: ["how prediction markets work", "Aura markets", "yes no shares", "order book", "market resolution", "binary market"]
+---
+
+An Aura market is a question with a deadline and two sides. You buy shares in the
+outcome you think is right, and if you are right, each share pays out $1.
+
+Everything else on this page is detail hanging off that sentence.
+
+## Shares, prices, and probability
+
+A market on "Will ALPH close above $5 on December 31?" has two share types, yes
+and no. Exactly one of them will be worth $1 when the market resolves. The other
+will be worth nothing.
+
+Because the winning share pays $1, its price is a probability. A yes share
+trading at $0.64 means the market collectively thinks there is a 64% chance.
+
+<CardGroup cols={3}>
+  <Card title="Buy at 0.64" icon="cart-shopping">
+    You pay $0.64 for a yes share.
+  </Card>
+  <Card title="Right" icon="circle-check">
+    The share pays $1. You made $0.36 on $0.64 risked.
+  </Card>
+  <Card title="Wrong" icon="circle-xmark">
+    The share pays nothing. You lost the $0.64.
+  </Card>
+</CardGroup>
+
+You do not have to hold to resolution. Shares trade continuously, so if your
+market moves from 0.64 to 0.80 you can sell and take the difference without
+waiting to find out who was right.
+
+## Why yes and no prices add to $1
+
+A yes share and a no share together are guaranteed to pay exactly $1, because one
+of them wins. That is what links the two prices: yes at 0.64 implies no at 0.36.
+
+It also enables something that looks strange at first. If someone wants to buy yes
+at 0.64 and someone else wants to buy no at 0.36, no existing shares need to change
+hands at all. Their $1 combined mints a fresh pair of shares, one to each of them.
+Aura's matcher does this automatically, which means a market can have real
+liquidity on both sides without anyone holding inventory first.
+
+This is why every market has **two** order books rather than one, and why the API
+returns `yes` and `no` books separately. See
+[How trading works](/markets/trading).
+
+## The lifecycle
+
+<Steps>
+  <Step title="Someone proposes it">
+    A staker writes the question, the resolution rules, and the source that will
+    settle it. Proposing requires stake, which is what makes spam expensive. See
+    [Create a market](/markets/creating-markets).
+  </Step>
+  <Step title="Governance votes on it">
+    Stakers vote on whether the proposal should become a real market. Accepted
+    proposals get a contract deployed for them. See
+    [Proposal voting](/governance/proposal-voting).
+  </Step>
+  <Step title="It trades">
+    The order books open. Anyone can buy or sell either side. Every fill pays a
+    2.5% fee that funds the [reward programs](/programs/overview).
+  </Step>
+  <Step title="Someone proposes the outcome">
+    After the event happens, anyone can submit the outcome with a 100 USDT bond.
+    If nobody disputes it within 24 hours, it stands.
+  </Step>
+  <Step title="Or it gets disputed">
+    A challenger posts their own bond, and staked $AURA holders settle it by
+    commit-and-reveal vote. See
+    [Resolution and disputes](/markets/resolution-and-disputes).
+  </Step>
+  <Step title="Winners claim">
+    Once the outcome is final, winning shares are redeemable for $1 each. Creator
+    fees, referral fees, and voter rewards pay out automatically at the same time.
+  </Step>
+</Steps>
+
+## What makes a market good
+
+The single biggest determinant of whether a market works is whether its rules can
+be argued with.
+
+<AccordionGroup>
+  <Accordion title="A bad market" icon="circle-xmark">
+    "Will AI be a big deal in 2026?"
+
+    There is no definition of "big deal" and no source that settles it. This ends
+    in a dispute no matter who proposes the outcome, and the vote becomes a
+    referendum on interpretation rather than fact.
+  </Accordion>
+  <Accordion title="A good market" icon="circle-check">
+    "Will ALPH's closing price on CoinGecko on December 31, 2026 at 23:59 UTC be
+    above $5.00?"
+
+    One source, one timestamp, one threshold. There is exactly one right answer
+    and anyone can check it.
+  </Accordion>
+</AccordionGroup>
+
+That difference is why [creating markets](/markets/creating-markets) spends most
+of its length on writing rules rather than on the mechanics of submitting them.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Trade markets" icon="chart-candlestick" href="/markets/trading">
+    Order types, the dual book, fills, and fees.
+  </Card>
+  <Card title="Create a market" icon="pen-to-square" href="/markets/creating-markets">
+    Write a proposal that passes and resolves cleanly.
+  </Card>
+  <Card title="Resolution and disputes" icon="scale-balanced" href="/markets/resolution-and-disputes">
+    How outcomes get settled and challenged.
+  </Card>
+  <Card title="Earn on Aura" icon="gift" href="/programs/overview">
+    The four reward programs and who each is for.
+  </Card>
+</CardGroup>

@@ -1,0 +1,95 @@
+---
+title: "Programs Overview"
+sidebarTitle: "Overview"
+description: "The four ways to earn on Aura: creating markets, providing liquidity, referring traders, and voting correctly on disputes."
+keywords: ["Aura rewards", "earn on Aura", "creator fees", "liquidity rewards", "referral program", "dispute voting rewards"]
+---
+
+Aura pays out to the people who make the market work. There are four programs,
+each aimed at a different job, and they stack: nothing stops you from creating
+markets, quoting on them, referring traders, and voting on disputes.
+
+All of them are funded from the same place, the **2.5% trading fee** charged on
+executed volume and collected in USDT. Nothing here is paid by minting tokens.
+
+<CardGroup cols={2}>
+  <Card title="Creator rewards" icon="lightbulb" href="/programs/creator-rewards">
+    Propose a market, earn a tier-scaled slice of every trade on it for as long
+    as it lives. Between 1% and 30% of the trading fee.
+  </Card>
+  <Card title="Liquidity rewards" icon="layer-group" href="/programs/liquidity-rewards">
+    Post resting limit orders near the midpoint and earn from a daily USDT pool
+    worth 0.25% of the day's volume.
+  </Card>
+  <Card title="Referral program" icon="user-plus" href="/programs/referral-program">
+    Bring traders in and earn 10% of the trading fee on everything they ever
+    trade.
+  </Card>
+  <Card title="Dispute voting" icon="scale-balanced" href="/programs/dispute-rewards">
+    Stake $AURA, vote correctly on contested outcomes, and get paid from the
+    losing side's slashed stake plus a cut of the market's fees.
+  </Card>
+</CardGroup>
+
+## Where the fee goes
+
+Every fill pays 2.5%. That single fee funds all four programs:
+
+| Slice | Goes to |
+| --- | --- |
+| 1% to 30% | The market's creator, scaled by their staked tier |
+| 10% | The daily liquidity rewards pool |
+| 10% | The referrer of the trader, if they have one |
+| 10% | Winning dispute voters, on disputed markets only |
+| Remainder | Protocol treasury, which funds development and the programs above |
+
+Because the creator's slice scales with tier, the treasury's share is what
+flexes. A market created by a Degenerate-tier staker gives more to the creator
+and less to the treasury.
+
+## How payouts reach you
+
+Two different timings, and it is worth knowing which is which.
+
+<CardGroup cols={2}>
+  <Card title="At market resolution" icon="flag-checkered">
+    Creator fees, referral fees, and dispute voter rewards accrue inside the
+    market contract as trades happen, then pay out automatically once the market
+    resolves. No claim, no button, no deadline.
+  </Card>
+  <Card title="Daily" icon="calendar-day">
+    Liquidity rewards are scored per day and paid the next day, independent of
+    whether any market resolved.
+  </Card>
+</CardGroup>
+
+<Note>
+Fees stay locked in the market until it resolves yes or no. This is why a
+`TOO_EARLY` dispute outcome pays nobody: the market returns to trading and its
+fees keep accruing until there is a real resolution. See
+[Resolution and disputes](/markets/resolution-and-disputes).
+</Note>
+
+## Which program fits you
+
+<AccordionGroup>
+  <Accordion title="I have good ideas for markets" icon="lightbulb">
+    [Creator rewards](/programs/creator-rewards). Your earnings scale with how
+    much volume your market attracts, so this rewards judgment about what people
+    want to trade. Stake $AURA first, since your tier at propose time sets your
+    cut.
+  </Accordion>
+  <Accordion title="I have capital and want yield" icon="layer-group">
+    [Liquidity rewards](/programs/liquidity-rewards). Quote both sides near the
+    midpoint. Paid daily regardless of resolution, so the cycle is short.
+  </Accordion>
+  <Accordion title="I have an audience" icon="user-plus">
+    [Referral program](/programs/referral-program). One link, and you earn on
+    everything your referrals trade for as long as they trade.
+  </Accordion>
+  <Accordion title="I follow a subject closely" icon="scale-balanced">
+    [Dispute voting](/programs/dispute-rewards). The highest rate of return and
+    the only one that can lose you money. Backing a losing outcome costs you
+    staked $AURA.
+  </Accordion>
+</AccordionGroup>

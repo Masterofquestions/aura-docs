@@ -1,0 +1,85 @@
+---
+title: "Changelog"
+sidebarTitle: "Changelog"
+description: "Changes to the Aura API, contracts, and documentation, newest first."
+keywords: ["Aura changelog", "API changes", "release notes", "breaking changes", "API versioning"]
+mode: "center"
+---
+
+Changes that affect integrators, newest first. Breaking changes are called out
+explicitly and are announced before they ship.
+
+<Note>
+Aura has not launched on mainnet yet, so entries before launch describe the API
+and contracts as they are being finalized. Once mainnet is live, this page
+becomes the record of what changed and when.
+</Note>
+
+<Update label="July 2026" tags={["API", "Docs"]}>
+
+## Bearer tokens for programmatic clients
+
+`POST /v1/auth/session` now accepts `issueToken: true` and returns the session
+JWT in the response body. Bots no longer need to manage a cookie jar.
+
+Bearer sessions are exempt from CSRF, since the header cannot be attached by a
+browser cross-origin. Cookie sessions still require `x-csrf-token` on mutating
+requests.
+
+Bearer sessions do not slide. Cookie sessions refresh on use, bearer sessions do
+not, so re-authenticate on a `401` rather than assuming the token is still good.
+
+See [Authentication](/api-reference/authentication).
+
+## Elevated rate limits for integrators
+
+Added a third rate-limit tier above anonymous and signed-in. Wallets on the
+elevated allowlist get higher read and write ceilings, intended for market makers
+and data consumers whose usage is legitimately above the default.
+
+See [Rate limits](/api-reference/rate-limits).
+
+## The published API surface is now an allowlist
+
+`GET /openapi.json` and the spec behind this documentation are filtered to the
+endpoints intended for public use. Operator and app-internal families are
+withheld.
+
+The filter is default-deny, so a new internal route is private unless it is
+explicitly published. Nothing that was public became private.
+
+## Documentation restructure
+
+New pages:
+
+- [Contracts](/resources/contracts), with deployed addresses and verification
+  steps
+- [Security](/resources/security), covering audit scope, on-chain controls, and
+  responsible disclosure
+- [Error codes](/resources/error-codes), for decoding an on-chain revert
+- [Your first API call](/api-reference/quickstart) and
+  [Place your first order](/api-reference/place-your-first-order)
+- [Realtime data](/api-reference/realtime), documenting the SSE stream and its
+  replay semantics
+- The [Programs](/programs/overview) section, splitting creator, liquidity,
+  referral, and dispute-voting rewards into their own pages
+
+`/markets/rewards-and-incentives` now redirects to
+[Programs overview](/programs/overview).
+
+</Update>
+
+<Update label="Earlier" tags={["Contracts"]}>
+
+## Contracts audited
+
+The Alephium contracts completed an independent third-party audit. A condensed
+summary of scope and findings is published in [Security](/resources/security),
+with the full report to follow at the mainnet deployment.
+
+## Signing key types narrowed
+
+`signerKeyType` accepts `default` and `gl-secp256k1`. The `gl-webauthn` variant
+was removed along with its verifier and is no longer accepted.
+
+</Update>

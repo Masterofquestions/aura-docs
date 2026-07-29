@@ -1,0 +1,344 @@
+---
+title: "Place Your First Order"
+sidebarTitle: "Place Your First Order"
+description: "End-to-end walkthrough: authenticate with a wallet signature, build an unsigned order transaction, sign it locally, and submit it to Alephium."
+keywords: ["place order Aura API", "prediction market bot", "sign transaction Alephium", "wallet authentication", "limit order API"]
+---
+
+This walks the whole path, from an empty script to a resting limit order on-chain.
+Six steps, four of them HTTP calls to Aura.
+
+The important structural point up front: **Aura never holds your keys and never
+submits your transaction.** The API builds an unsigned transaction, you sign it
+locally, and you submit it to an Alephium node yourself. That means a compromised
+Aura API cannot move your funds, and it also means you cannot place an order
+without a local signer.
+
+<Info>
+Run this against testnet first. Same API, same flow, test tokens.
+Base URL `https://api.testnet.aura.markets`, node
+`https://node.testnet.alephium.org`.
+</Info>
+
+## Before you start
+
+You need three things:
+
+<CardGroup cols={3}>
+  <Card title="A wallet key" icon="key">
+    An Alephium private key you can sign with in your process. A browser
+    extension works for interactive apps, but a bot needs a local key.
+  </Card>
+  <Card title="USDT for collateral" icon="dollar-sign">
+    Buy orders lock collateral. Aura settles in USDT at 18 decimals.
+  </Card>
+  <Card title="A little ALPH" icon="gas-pump">
+    Around 0.21 ALPH per order covers gas plus the refundable storage deposits
+    Alephium charges for the order entries.
+  </Card>
+</CardGroup>
+
+```bash
+npm install @alephium/web3
+```
+
+## Step 1: Request a challenge
+
+Authentication is a wallet signature. Ask for a challenge string first.
+
+```javascript
+const API = 'https://api.testnet.aura.markets'
+
+const { challenge } = await fetch(`${API}/v1/auth/challenge`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ address: wallet.address }),
+}).then((r) => r.json())
+```
+
+The challenge is human-readable and includes a nonce and an expiry, so what you
+sign is legible rather than an opaque hash:
+
+```text
+Sign in to Aura.
+
+Wallet:  1GUgKXvPNkgEa6MBDXsKMGvpyyJnzwVMc1Zrzz2N78PiL
+Nonce:   7f3a9c...
+Expires: 2026-07-29T19:45:00.000Z
+```
+
+## Step 2: Sign the challenge
+
+Sign it with Alephium's message hasher. The `'alephium'` prefix matters, and
+signing the raw bytes instead will be rejected.
+
+```javascript
+import { hashMessage, sign } from '@alephium/web3'
+
+const signature = sign(hashMessage(challenge, 'alephium'), wallet.privateKey)
+```
+
+<Warning>
+Sign the challenge string **exactly** as returned, including newlines. Trimming
+whitespace or normalizing line endings changes the hash and the signature will
+fail to verify.
+</Warning>
+
+If you are working in a language without an Alephium SDK, the signing scheme is
+specified byte by byte in [Authentication](/api-reference/authentication).
+
+## Step 3: Create a session
+
+Exchange the signature for a session. Bots should pass `issueToken: true` to get
+a bearer token in the response body instead of relying on cookies.
+
+```javascript
+const session = await fetch(`${API}/v1/auth/session`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    address: wallet.address,
+    publicKey: wallet.publicKey,
+    signature,
+    keyType: 'default',
+    issueToken: true,
+  }),
+}).then((r) => r.json())
+
+const token = session.token
+```
+
+<Note>
+`keyType` must match your address. Use `default` for a standard Alephium wallet
+(addresses starting `1`), or `gl-secp256k1` for an Aura embedded wallet
+(addresses starting `3`). The same value has to be passed again in step 4.
+</Note>
+
+Tokens last 30 days. Bearer sessions are exempt from CSRF, which is the main
+reason to prefer them for automation. Cookie sessions require an `x-csrf-token`
+header on every mutating request.
+
+## Step 4: Build the unsigned transaction
+
+Now the actual order. Pick a market from
+[your first API call](/api-reference/quickstart), then:
+
+```javascript
+const market = '26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs'
+
+const built = await fetch(`${API}/v1/tx/markets/${market}/orders`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    signerAddress: wallet.address,
+    signerPublicKey: wallet.publicKey,
+    signerKeyType: 'default',
+    side: 'buy',
+    outcome: 'yes',
+    price: 500,
+    quantity: '1000000000000000000',
+  }),
+}).then((r) => r.json())
+```
+
+That is a bid for 1 yes share at 50%. The response hands back everything you need
+to sign and everything you should check first:
+
+```json
+{
+  "unsignedTx": "00010001...",
+  "txId": "9c1f...",
+  "fromGroup": 0,
+  "toGroup": 0,
+  "gasAmount": 20000,
+  "gasPrice": "100000000000",
+  "attoAlphAmount": "201000000000000000",
+  "collateralRequired": "512500000000000000",
+  "tokens": [{ "id": "<usdt-token-id>", "amount": "512500000000000000" }]
+}
+```
+
+<Warning>
+Check `collateralRequired` before you sign. It is 0.5125 USDT here, not 0.5,
+because it includes the 2.5% trading fee: `price × quantity ÷ 1000 × 1.025`.
+Signing without reading this is how bots overspend.
+</Warning>
+
+### Order constraints
+
+| Field | Rule |
+| --- | --- |
+| `price` | Integer tick, 1 to 999. 500 means 50%. Both 0 and 1000 are rejected. |
+| `quantity` | String of base units, and a whole multiple of `10000000`. One share is `1000000000000000000`. |
+| `side` | `buy` or `sell`. |
+| `outcome` | `yes` or `no`. |
+| `signerAddress` | Must be the same wallet as the session. |
+
+Sell orders lock shares rather than USDT, so `collateralRequired` comes back zero
+for them.
+
+## Step 5: Sign the transaction
+
+Aura built it. You sign it.
+
+```javascript
+const { signature: txSignature } = await wallet.signUnsignedTx({
+  signerAddress: wallet.address,
+  unsignedTx: built.unsignedTx,
+})
+```
+
+## Step 6: Submit to Alephium
+
+Submit to a node, not to Aura. Aura has no submit endpoint, by design.
+
+```javascript
+import { web3 } from '@alephium/web3'
+
+web3.setCurrentNodeProvider('https://node.testnet.alephium.org')
+
+const submitted = await web3
+  .getCurrentNodeProvider()
+  .transactions.postTransactionsSubmit({
+    unsignedTx: built.unsignedTx,
+    signature: txSignature,
+  })
+
+console.log(submitted.txId === built.txId) // true
+```
+
+Comparing the returned `txId` against the one Aura predicted is a cheap integrity
+check. If they differ, the transaction you signed is not the transaction Aura
+built, and you should stop rather than retry.
+
+## Confirm it landed
+
+Chain confirmation and indexer visibility are separate. Once the transaction is
+in a block, poll until Aura's indexer has picked it up:
+
+```javascript
+const { indexed } = await fetch(
+  `${API}/v1/markets/${market}/activity?txId=${built.txId}`
+).then((r) => r.json())
+```
+
+Once `indexed` is true, the order shows up in the book and in
+`GET /v1/markets/{market}/orders`. For anything real-time, subscribe to the
+[realtime stream](/api-reference/realtime) rather than polling this.
+
+## The whole thing
+
+```javascript
+import { web3, hashMessage, sign, PrivateKeyWallet } from '@alephium/web3'
+
+const API = 'https://api.testnet.aura.markets'
+const NODE = 'https://node.testnet.alephium.org'
+
+web3.setCurrentNodeProvider(NODE)
+const wallet = new PrivateKeyWallet({ privateKey: process.env.PRIVATE_KEY })
+
+// 1 + 2: challenge and sign
+const { challenge } = await fetch(`${API}/v1/auth/challenge`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ address: wallet.address }),
+}).then((r) => r.json())
+
+const signature = sign(hashMessage(challenge, 'alephium'), wallet.privateKey)
+
+// 3: session
+const { token } = await fetch(`${API}/v1/auth/session`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    address: wallet.address,
+    publicKey: wallet.publicKey,
+    signature,
+    keyType: 'default',
+    issueToken: true,
+  }),
+}).then((r) => r.json())
+
+// pick a market
+const { markets } = await fetch(`${API}/v1/markets?limit=1&status=open`).then((r) =>
+  r.json()
+)
+const market = markets[0].marketAddress
+
+// 4: build
+const built = await fetch(`${API}/v1/tx/markets/${market}/orders`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+  body: JSON.stringify({
+    signerAddress: wallet.address,
+    signerPublicKey: wallet.publicKey,
+    signerKeyType: 'default',
+    side: 'buy',
+    outcome: 'yes',
+    price: 500,
+    quantity: '1000000000000000000',
+  }),
+}).then((r) => r.json())
+
+console.log('collateral:', built.collateralRequired)
+
+// 5 + 6: sign and submit
+const { signature: txSignature } = await wallet.signUnsignedTx({
+  signerAddress: wallet.address,
+  unsignedTx: built.unsignedTx,
+})
+
+const submitted = await web3.getCurrentNodeProvider().transactions.postTransactionsSubmit({
+  unsignedTx: built.unsignedTx,
+  signature: txSignature,
+})
+
+console.log('submitted', submitted.txId)
+```
+
+## When it goes wrong
+
+<AccordionGroup>
+  <Accordion title="401 on the build call" icon="lock">
+    The bearer token expired or the header is malformed. It must be
+    `Authorization: Bearer <token>`. Bearer sessions do not slide, so re-run
+    steps 1 through 3 on a 401 rather than retrying the build.
+  </Accordion>
+  <Accordion title="Signer address does not match session" icon="user-xmark">
+    `signerAddress` in step 4 has to be the wallet that signed the challenge in
+    step 2. You cannot build a transaction for a different address than the one
+    you authenticated as.
+  </Accordion>
+  <Accordion title="Transaction reverts with error code 12" icon="ban">
+    `INVALID_FILL`, and almost always a quantity that is not a multiple of
+    `10000000`. See [Error codes](/resources/error-codes).
+  </Accordion>
+  <Accordion title="Transaction reverts with error code 13" icon="tag">
+    `INVALID_PRICE`. Ticks must be 1 to 999 inclusive.
+  </Accordion>
+  <Accordion title="Not enough ALPH" icon="gas-pump">
+    Each order writes storage entries on Alephium, which requires a refundable
+    deposit on top of gas. Keep at least 0.21 ALPH free per order in flight. You
+    get the deposit back when the order is filled or cancelled.
+  </Accordion>
+</AccordionGroup>
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Integrator guide" icon="plug" href="/api-reference/integrator-guide">
+    Cancels, elevated rate limits, and running this at volume.
+  </Card>
+  <Card title="Build-tx flow" icon="diagram-project" href="/api-reference/build-tx-flow">
+    Every other transaction Aura can build: stakes, votes, claims, proposals.
+  </Card>
+  <Card title="Realtime stream" icon="bolt" href="/api-reference/realtime">
+    Watch your order fill instead of polling for it.
+  </Card>
+  <Card title="Error codes" icon="triangle-exclamation" href="/resources/error-codes">
+    Decode an on-chain revert.
+  </Card>
+</CardGroup>
