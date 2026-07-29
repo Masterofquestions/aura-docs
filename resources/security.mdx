@@ -1,51 +1,13 @@
 ---
 title: "Security"
 sidebarTitle: "Security"
-description: "How Aura's contracts are audited, the on-chain controls that protect user funds, the trust assumptions that remain, and how to report a vulnerability."
-keywords: ["Aura security", "smart contract audit", "prediction market security", "timelock", "slashing", "responsible disclosure", "bug bounty"]
+description: "The on-chain controls that protect user funds on Aura, the trust assumptions that remain, and how to report a vulnerability."
+keywords: ["Aura security", "prediction market security", "timelock", "slashing", "responsible disclosure", "bug bounty"]
 ---
 
 Aura holds user collateral in on-chain contracts, so the honest version of a
-security page has to cover three things: what has been reviewed, what the
-contracts do to protect funds without trusting us, and what still depends on
-trusting us. All three are below.
-
-## Audit status
-
-<Info>
-Aura's contracts have been through an independent third-party audit. The report
-is detailed enough that publishing it verbatim would function as a map of the
-system's most sensitive paths, so a condensed summary lives here instead. The
-full report will be published alongside the mainnet deployment.
-</Info>
-
-| | |
-| --- | --- |
-| Independent external audit | Complete |
-| Critical findings | None outstanding |
-| High findings | One, accepted with mitigation (see below) |
-| Medium findings | One, fixed |
-| Mainnet deployment | Not yet live |
-
-Two things are worth being explicit about.
-
-**The audit covered a specific commit.** Six changes landed after the audited
-baseline: dispute-fee accounting, the operator registry, liquidity-reward bucket
-bounds, and event layout corrections among them. Those changes were reviewed
-in-house against the same criteria rather than by the external auditor. That
-review found no critical issues and cleared the delta for mainnet. It is still an
-internal review, and we would rather say so than imply the external audit covered
-code it never saw.
-
-**One high finding was accepted rather than fixed.** Accounts holding the
-treasury operator role can direct protocol revenue withdrawals on already-resolved
-markets. The scope is protocol revenue only. It cannot reach user collateral,
-user positions, or unclaimed winnings, because those payout destinations are
-fixed in the contract and cannot be passed in by a caller. The role is custodied
-at the same grade as the primary treasury key and can be revoked instantly with
-no timelock. We accepted it because closing it would have meant a contract change
-after the audited baseline, in exchange for removing a capability the key already
-effectively has.
+security page has to cover two things: what the contracts do to protect funds
+without trusting us, and what still depends on trusting us. Both are below.
 
 ## What protects funds without trusting Aura
 
@@ -133,8 +95,8 @@ Being straight about the parts that are not trustless:
   addresses, subject to the 24-hour timelock. Intended to be a multisig in
   production.
 - **The pause switch** is immediate and has no timelock by design.
-- **Treasury operators** can route protocol revenue on resolved markets, as
-  described in the audit section. Not user funds.
+- **Treasury operators** can route protocol revenue on resolved markets. Not
+  user funds.
 - **The indexer and API** are operated by Aura. They are a convenience layer over
   chain state, not a source of truth. Every balance, position, and outcome can be
   read directly from the contracts, and you should verify against the chain if the

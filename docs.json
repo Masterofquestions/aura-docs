@@ -260,7 +260,7 @@
         "header": "Security",
         "items": [
           { "label": "Contracts", "href": "https://docs.aura.markets/resources/contracts" },
-          { "label": "Security and audits", "href": "https://docs.aura.markets/resources/security" },
+          { "label": "Security", "href": "https://docs.aura.markets/resources/security" },
           { "label": "Report a vulnerability", "href": "mailto:security@aura.markets" },
           { "label": "Support", "href": "https://docs.aura.markets/support/contact" }
         ]
