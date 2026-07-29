@@ -5,10 +5,15 @@ description: "Aura uses a central limit order book. Place market or limit orders
 
 Aura uses a **central limit order book (CLOB)**. Prices are shown as
 probabilities (0–100%), and liquidity comes from limit orders posted by
-traders and market makers. When you place a market order, it fills
-instantly against the best available orders on the book. When you place a
-limit order, you choose your price and your order sits on the book until
-someone matches it (or you cancel it).
+traders and market makers. A market order takes the best available prices on
+the book and normally fills within seconds. A limit order lets you choose your
+price, and it rests on the book until someone matches it or you cancel it.
+
+Matching runs continuously off-chain and each match is then settled on chain, so
+a fill is confirmed a moment after you submit rather than in the same instant.
+You always pay the **resting order's** price, and if that price is better than
+the one you asked for, the difference is refunded to you in the same
+transaction.
 
 ## Buying outcome shares
 
@@ -115,15 +120,24 @@ Two additional rewards flow from the treasury's share:
 | Each YES share pays **1 USDT** | Each NO share pays **1 USDT** |
 | All NO shares expire worthless | All YES shares expire worthless |
 
-Once a market outcome is finalized, winning shares are settled and paid
-out in USDT to the wallet that holds them. Payouts are processed
-automatically as part of settlement.
+Once a market outcome is finalized, Aura's automation pays winning shares out in
+USDT to the wallet holding them, usually within minutes of resolution. You don't
+need to claim anything, and if you'd rather not wait, the claim is also open to
+you directly so you can pull your own winnings at any point after resolution.
 
 ## Collateral & settlement safety
 
-Buy orders lock USDT collateral based on the order's price and size. If
-an order is partially filled or canceled, **any unused locked USDT is
-refunded** immediately.
+Buy orders lock USDT collateral based on the order's price and size. Locked
+collateral is released in two ways:
+
+- **On a fill at a better price**, the difference between what you locked and
+  what the trade actually cost is refunded in the same transaction.
+- **On cancellation**, the collateral still held against the unfilled portion is
+  returned in full.
+
+Collateral for the unfilled part of a partially filled order stays locked while
+that remainder is still live on the book, which is what keeps the order able to
+fill. Cancel it to get that collateral back.
 
 ## TL;DR
 

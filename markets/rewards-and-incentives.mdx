@@ -12,44 +12,56 @@ community.
 Market creators are essential to the Aura ecosystem and earn a share of
 every trade on the markets they spawn:
 
-- **Tier-scaled share**. Creators receive between **1%** and **30%** of
+- **Tier-scaled share**. Creators receive between **0.8%** and **30%** of
   the 2.5% trading fee, scaling with their staked $AURA tier.
-- **Paid in USDT**. Fee shares are distributed in USDT and accrue with
-  every fill, claimable at any time.
+- **Paid in USDT**. Fee shares accrue on every fill and are held by the
+  market contract until it resolves. Once it resolves, your share is sent to
+  your wallet automatically. There is nothing to claim and no deadline to
+  miss.
 
-| Tier | Creator's cut of the trading fee |
-| --- | ---: |
-| Degenerate | 30% |
-| Diamond | 22% |
-| Platinum | 16% |
-| Gold | 11% |
-| Silver | 7% |
-| Bronze | 3% |
-| Iron | 1% |
+| Tier | Creator's cut of the trading fee | Equivalent on volume |
+| --- | ---: | ---: |
+| Degenerate | 30% | 0.75% |
+| Diamond | 22% | 0.55% |
+| Platinum | 16% | 0.40% |
+| Gold | 11.2% | 0.28% |
+| Silver | 6.8% | 0.17% |
+| Bronze | 2.8% | 0.07% |
+| Iron | 0.8% | 0.02% |
 
 The remainder of the fee flows to the protocol treasury, which funds
 liquidity rewards, dispute incentives, referral payouts, and ongoing
 development.
 
+<Note>
+  Fees are locked in the market until it resolves YES or NO. That is also why a
+  `TOO_EARLY` dispute result pays nobody out: the market goes back to trading
+  and its fees keep accruing. See
+  [Resolution & Disputes](/markets/resolution-and-disputes).
+</Note>
+
 ## Dispute voter rewards
 
-Aura's dispute system rewards voters who back the correct outcome, and it funds
-those rewards through **slashing** rather than by skimming USDT fees. The result
-is strictly aligned: the wrong side of a controversial market literally funds
-the right side.
+Voting correctly on a dispute pays **twice**, in two different assets.
+
+**1. Slashed $AURA from the wrong side.** Every dispute creates a penalty pool
+funded by the voters who got it wrong:
 
 - **Wrong-side voters**. Anyone who reveals a vote for the losing
-  outcome has a portion of their vaulted $AURA slashed.
+  outcome has 0.1% of their vaulted $AURA slashed.
 - **Silent stakers**. Voters who committed but never revealed (or never
   committed at all) are penalized too, since silent voters undermine the
   oracle.
 - **Slashed $AURA** flows into a per-market **penalty pool**.
-- **Winning voters** claim from the pool, weighted by their voting tier.
+- **Winning voters** receive from the pool, weighted by their voting tier.
 
-Because the pool is denominated in $AURA, dispute voters earn $AURA, giving a
-direct tie between governance participation and protocol ownership. See
-[Resolution & Disputes](/markets/resolution-and-disputes) for the full
-flow.
+**2. A USDT cut of the market's trading fees.** On top of the $AURA, a market
+resolved through a dispute vote pays its winning voters **10% of the trading
+fees that market collected**, split by vote weight. Undisputed markets pay no
+voter fee share, so this only applies where voters actually did the work.
+
+Both are sent to your wallet automatically once penalties are finalized. See
+[Resolution & Disputes](/markets/resolution-and-disputes) for the full flow.
 
 <Warning>
   Voting on a dispute is not free. If you back the wrong side, **you lose
@@ -58,9 +70,14 @@ flow.
 
 ## Referral rewards
 
-Refer a trader to Aura with your unique referral link, and you earn **10%
-of the treasury's share** of every trade they ever make on Aura. Payouts
-are claimable directly from your dashboard.
+Refer a trader to Aura with your unique referral link and you earn **10% of the
+trading fee** on every trade they ever make, which works out to 0.25% of their
+volume. It is carved out of the treasury's portion of the fee, so it never comes
+out of the creator's cut or any trader's payout.
+
+Referral fees accrue per fill and are sent to your wallet automatically once
+each market resolves. Your dashboard shows the history rather than a claim
+button, because there is nothing for you to sign.
 
 ## Liquidity rewards
 

@@ -15,10 +15,12 @@ Before submitting a proposal, you'll need:
 - **Iron tier or higher**. At least 60,000 vaulted $AURA. See
   [Tier Structure](/tokens/tier-structure) and
   [Staking & Vaulting $AURA](/tokens/staking).
-- **A small ALPH deposit**. Covers the on-chain contract storage for the
-  proposal (around 0.5 ALPH per market). If the proposal is **rejected**,
-  the deposit is refunded; if it's **approved**, the deposit funds the
-  new market contract's on-chain storage.
+- **A small ALPH deposit**, around 0.5 ALPH per market. This is refundable
+  storage rent rather than a fee: Alephium charges it to hold your proposal's
+  on-chain records, and it comes back as those records are freed. The portion
+  reserved for the market contract itself is refunded if your proposal is
+  **rejected**, or funds the new market's storage if it's **approved**. Aura
+  converts the ALPH from your USD balance, so you never source it yourself.
 
 ## Market creation flow
 
@@ -32,8 +34,10 @@ Before submitting a proposal, you'll need:
       market.
     - **Resolution rules**. Describe exactly what conditions resolve the
       market YES, NO, or to each option.
-    - **Resolution date**. The deadline at which the market closes for
-      trading. The outcome is resolved shortly after.
+    - **Expected resolution date**. Displayed to traders as a guide for when
+      the event should be decidable. It is **informational only**: the contract
+      never reads it, and trading does not stop when it passes. A market keeps
+      trading until an outcome is actually submitted and resolved.
     - **Sources & images**. List authoritative sources voters can use to
       verify the outcome, and add a relevant image to drive engagement.
   </Step>
@@ -72,9 +76,14 @@ proposal does.
 
 For events with multiple related outcomes such as election races, league seasons,
 or playoff brackets, you can submit a **linked proposal** that bundles up to
-**40 related markets** into a single transaction and voting decision. If
-the bundle is approved, all of its child markets deploy together with
-shared metadata, so the UI can group them into a single "event" page.
+**100 related markets** under one voting decision. If the bundle is approved,
+all of its child markets deploy together with shared metadata, so the UI can
+group them into a single "event" page.
+
+Large bundles are submitted across **several transactions** rather than one,
+because Alephium caps how much script bytecode a single transaction can carry.
+The form handles the batching for you and shows progress as it goes; you just
+sign each step.
 
 Linked proposals are ideal for:
 
