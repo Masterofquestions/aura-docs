@@ -100,6 +100,7 @@
               "api-reference/authentication",
               "api-reference/rate-limits",
               "api-reference/build-tx-flow",
+              "api-reference/integrator-guide",
               "api-reference/errors"
             ]
           },

@@ -11,11 +11,25 @@ The Aura API enforces per-minute rate limits on every request.
 | ------------------------ | --------------: | ---------------: |
 | Anonymous | 60 per IP | 10 per IP |
 | Signed-in (session) | 600 per wallet | 60 per wallet |
+| Elevated (by agreement) | 6,000 per wallet | 600 per wallet |
 
-Anonymous requests are bucketed by client IP. Requests carrying a valid
-session cookie are bucketed by the session's wallet address instead, so a
-signed-in integration isn't penalised for sharing an IP (and can't dodge
-limits by rotating IPs).
+Anonymous requests are bucketed by client IP. Authenticated requests are
+bucketed by the session's wallet address instead, whether the session arrives as
+a cookie or a bearer token, so a signed-in integration isn't penalised for
+sharing an IP and can't dodge limits by rotating IPs.
+
+Because the bucket keys on the wallet address, **running more processes does not
+buy more throughput**. They share one budget. Plan around the per-wallet number.
+
+## Elevated limits
+
+Market makers and partners who need more headroom can have their wallet moved to
+the elevated tier under an agreement. Get in touch on
+[Telegram](https://t.me/AuraMarkets) with your wallet address and a rough
+picture of the request pattern you expect.
+
+Elevation only resizes the bucket. It grants no additional permissions and
+changes no endpoint behaviour.
 
 ## Response headers
 
@@ -52,8 +66,14 @@ the standard error envelope:
 The same `RateLimit-*` headers are returned on the 429 response so your
 client can back off precisely.
 
-<Tip>
-  If you anticipate sustained throughput above the signed-in limit (e.g.
-  high-frequency market makers), reach out on
-  [Telegram](https://t.me/AuraMarkets) and we'll work something out.
-</Tip>
+## Staying inside the budget
+
+Two habits do most of the work:
+
+- **Stream instead of polling.** `market:{address}:orders` and
+  `market:{address}:fills` are public SSE topics, so live order and fill data
+  costs you one connection instead of a poll loop against your read budget. See
+  the [Integrator guide](/api-reference/integrator-guide).
+- **Read the headers, not the clock.** `RateLimit-Remaining` and
+  `RateLimit-Reset` are on every response, including the `429`, so you can back
+  off precisely rather than guessing an interval.

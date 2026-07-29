@@ -1,0 +1,148 @@
+---
+title: "Integrator Guide"
+description: "Building a bot, a dashboard, or a product on top of Aura. What needs auth, what streams, and where the limits are."
+---
+
+This page covers the practical shape of an Aura integration: which parts need
+credentials, how to get live data without burning your request budget, and the
+constraints worth designing around before you write much code.
+
+## Start by checking whether you need auth at all
+
+A surprising amount of product needs no credentials:
+
+| What you're building | Auth needed |
+| --- | --- |
+| Dashboard, odds aggregator, analytics, research tool | **None.** Every `GET` is public |
+| Alert bot (price moves, new markets, resolutions) | **None.** Public SSE topics stream orders and fills |
+| Trading bot placing its own orders | Session, and its own wallet to sign |
+| Anything acting for other users | One session **per user** (see below) |
+
+If you only read, skip authentication entirely and go straight to
+[rate limits](/api-reference/rate-limits) to size your polling. Anonymous callers
+get 60 reads a minute per IP, and streaming costs nothing against that.
+
+## Live data without polling
+
+`GET /v1/realtime/stream` is a Server-Sent Events endpoint. Pass a
+comma-separated `topics` list. These topics are **public**, so no session is
+needed:
+
+| Topic | Fires on |
+| --- | --- |
+| `market:{address}:orders` | Order placed, filled, or cancelled |
+| `market:{address}:fills` | A trade executes |
+| `dispute:{marketId}` | Dispute phase, tallies, and commit/reveal counts change |
+| `settings:banner` | Site banner changes |
+| `health:indexer` | Indexer heartbeat |
+
+```bash
+curl -N "https://api.aurabets.io/v1/realtime/stream?topics=market:3abc...:orders,market:3abc...:fills"
+```
+
+Two limits to plan for. An anonymous connection accepts up to **8 topics**, and
+a signed-in one up to **20**. Since full coverage of a market takes two topics,
+that's roughly 10 markets per authenticated connection, so a bot watching a wide
+book opens several connections.
+
+Reconnects are lossless. Keep the last event id you saw and send it back as the
+`Last-Event-ID` header (or `?lastEventId=`) and the stream replays what you
+missed, falling back to a reset signal if you were away too long to replay. Pair
+that with an HTTP catch-up read so a long outage still converges.
+
+Signed-in sessions add private topics for your own wallet:
+`user:{address}:orders`, `:fills`, `:parlays`, and `:notifications`. Requesting
+someone else's is rejected, not silently emptied.
+
+## Authenticating a bot
+
+Use a bearer token rather than a cookie jar. The full flow, including a
+dependency-free Python implementation of the signing scheme, is in
+[Authentication](/api-reference/authentication).
+
+The short version: request a challenge, sign it with your Alephium key, exchange
+it for a session with `issueToken: true`, then send
+`Authorization: Bearer <token>` on everything afterwards. No cookies, and no
+`x-csrf-token`.
+
+Tokens last 30 days with no refresh. Because re-authenticating costs one
+signature, the simplest correct design is to catch a `401`, run the challenge
+flow again, and retry once.
+
+## Placing orders
+
+Writes never hand Aura your key. `POST /v1/tx/*` returns an **unsigned**
+transaction that you sign locally and submit to any Alephium node, so the flow is
+always build, sign, submit. See [Build-tx flow](/api-reference/build-tx-flow) for
+the response shape and a worked example.
+
+Three things catch people out:
+
+**One order per transaction.** There is no batch place or batch cancel endpoint.
+Each order and each cancellation is its own build, signature, and submission,
+which means a two-sided quote across five price levels is 10 writes to place and
+10 to cancel. At the standard 60 writes a minute that's roughly three full
+refresh cycles per minute, so size your quoting loop accordingly or ask about
+[elevated limits](/api-reference/rate-limits#elevated-limits).
+
+**Transactions from one wallet compete for the same coins.** If you build
+several transactions from the same wallet and submit them together, all but one
+are typically rejected, because each was built against the same unspent outputs.
+Submit and confirm in sequence, or use your node's chained-transaction endpoint
+to have the outputs threaded for you.
+
+**Quantities are lot-aligned.** `quantity` must be a multiple of `10000000`
+(1e7). The builder rejects anything else up front rather than letting it fail
+on chain.
+
+## Acting for other users
+
+`/v1/tx/*` enforces that the transaction's signer equals the session's wallet, so
+a session for wallet A can never build a transaction spending from wallet B. That
+holds even for a signed request with someone else's `signerAddress` in the body.
+
+If you're building a copy-trading service, a portfolio manager, or any product
+that transacts on behalf of others, each user needs their own session and signs
+their own transactions. There is no delegation or operator model, and designing
+around one will not work.
+
+## Error handling worth getting right
+
+- **`429`** carries `RateLimit-Remaining` and `RateLimit-Reset`. Back off on the
+  header rather than a fixed sleep.
+- **`401`** on a previously working token means it expired. Re-authenticate and
+  retry once, then give up rather than looping.
+- **`502`** means the Alephium node refused to build your transaction, and is
+  usually transient. Retry with backoff.
+- **`409`** is a state conflict rather than a transport failure. Retrying the
+  same request unchanged will not fix it.
+
+Retrying `POST /v1/tx/*` is always safe, since those endpoints build transactions
+and never submit them. The returned `unsignedTx` can differ between calls as
+your unspent outputs change, and only the one you actually sign and submit
+matters.
+
+Full status and code tables are in [Errors](/api-reference/errors).
+
+## Generating a client
+
+The spec at [`/openapi.json`](https://api.aurabets.io/openapi.json) is OpenAPI
+3.1, generated from the live route definitions, so it never drifts from the
+implementation. Point any generator at it:
+
+```bash
+npx @openapitools/openapi-generator-cli generate \
+  -i https://api.aurabets.io/openapi.json \
+  -g python \
+  -o ./aura-client
+```
+
+The published spec covers the integrator surface. Endpoints used only by the Aura
+app itself are omitted, so if you find a reference to something absent from the
+spec, it isn't a public interface.
+
+<Tip>
+  Building something on Aura? Say hello on
+  [Telegram](https://t.me/AuraMarkets). It's also the place to ask about elevated
+  rate limits or to flag a gap in these docs.
+</Tip>

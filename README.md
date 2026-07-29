@@ -93,6 +93,7 @@ api-reference/          API tab
   authentication.mdx
   rate-limits.mdx
   build-tx-flow.mdx
+  integrator-guide.mdx
   errors.mdx
   openapi.json          Generated OpenAPI 3.1 spec. DO NOT EDIT BY HAND.
 

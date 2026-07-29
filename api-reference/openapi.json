@@ -298,6 +298,11 @@
                     "required": [
                       "provider"
                     ]
+                  },
+                  "issueToken": {
+                    "default": false,
+                    "description": "Set true to also receive the session token in the response body, for scripted callers that would rather send `Authorization: Bearer <token>` than keep a cookie jar. Browser clients should leave this false so their only copy of the credential stays in the HttpOnly cookie.",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -326,11 +331,19 @@
                     },
                     "csrf": {
                       "type": "string",
-                      "description": "CSRF token. Send it as the x-csrf-token header on mutating requests."
+                      "description": "CSRF token. Send it as the x-csrf-token header on mutating requests. Not needed for Bearer callers."
                     },
                     "created": {
                       "type": "boolean",
                       "description": "true when this call created a new account row."
+                    },
+                    "token": {
+                      "description": "The session token, present only when `issueToken` was true. Send it as `Authorization: Bearer <token>`. It is the same credential as the cookie, so it carries the same expiry and is equally worth protecting.",
+                      "type": "string"
+                    },
+                    "expiresAt": {
+                      "description": "ISO-8601 expiry of the returned token. Present only alongside `token`.",
+                      "type": "string"
                     }
                   },
                   "required": [

@@ -11,7 +11,8 @@ key). There are no API keys.
   (subject to the anonymous per-IP [rate limits](/api-reference/rate-limits)).
 - **Writes require a session.** Mutating endpoints (comments, watchlist,
   notifications, profile writes) and the build-tx endpoints under `/v1/tx/*`
-  require a valid session **cookie** plus a **CSRF header**.
+  require a valid session, presented either as a **cookie plus CSRF header** or
+  as an **`Authorization: Bearer` token**.
 
 The session authorises off-chain writes only. On-chain actions come back as
 *unsigned* transactions that your wallet signs locally, so the API never holds
@@ -54,6 +55,10 @@ Two-step wallet-signature flow:
     These two are the only accepted values. Build-tx endpoints take the same
     `signerKeyType` field, and it must match the key your `signerAddress` was
     derived from.
+
+    If you're not in JavaScript, see
+    [the signing scheme](#the-signing-scheme-for-non-javascript-clients) for
+    the exact bytes.
   </Step>
   <Step title="Exchange the signature for a session">
     ```bash
@@ -87,6 +92,102 @@ Two-step wallet-signature flow:
     `GET /v1/users/username-available`.
   </Step>
 </Steps>
+
+## The signing scheme (for non-JavaScript clients)
+
+`@alephium/web3` hides this behind `signMessage`, but the scheme is small
+enough to implement directly in any language. The `alephium` hasher prefixes
+the message before hashing, which is what stops a signed login from ever being
+mistaken for a signed transaction:
+
+```
+digest    = blake2b-256( utf8("Alephium Signed Message: " + challenge) )
+signature = secp256k1 sign over that 32-byte digest
+```
+
+Encodings on the wire, all lowercase hex without a `0x` prefix:
+
+| Field | Format |
+| --- | --- |
+| `publicKey` | 33-byte compressed secp256k1 point, 66 hex chars |
+| `signature` | 64-byte raw `r \|\| s`, 128 hex chars. Not DER, and no recovery byte |
+| `address` | base58. Groupless keys give a 53-char address starting with `3` |
+
+<Warning>
+  The literal prefix is `Alephium Signed Message: ` with a single trailing
+  space, and it is hashed as UTF-8. Getting the prefix or the digest wrong
+  produces a signature that verifies against nothing, which surfaces as a
+  generic `401 invalid signature`.
+</Warning>
+
+Here is the whole flow in Python, with no Aura or Alephium dependency:
+
+```python
+import hashlib, requests
+from coincurve import PrivateKey  # pip install coincurve requests
+
+API = "https://api.aurabets.io"
+ADDRESS = "3cUq...your-wallet"
+key = PrivateKey(bytes.fromhex("your-32-byte-private-key-hex"))
+
+s = requests.Session()
+
+# 1. Ask for a challenge.
+challenge = s.post(f"{API}/v1/auth/challenge", json={"address": ADDRESS}).json()["challenge"]
+
+# 2. Hash it the way Alephium does, then sign the digest.
+digest = hashlib.blake2b(
+    ("Alephium Signed Message: " + challenge).encode("utf-8"), digest_size=32
+).digest()
+signature = key.sign_recoverable(digest, hasher=None)[:64]  # drop the recovery byte
+
+# 3. Exchange it for a session, asking for a bearer token.
+session = s.post(f"{API}/v1/auth/session", json={
+    "address":     ADDRESS,
+    "publicKey":   key.public_key.format(compressed=True).hex(),
+    "signature":   signature.hex(),
+    "keyType":     "gl-secp256k1",
+    "issueToken":  True,
+}).json()
+
+s.headers["Authorization"] = f"Bearer {session['token']}"
+
+# 4. Authenticated from here on, with no cookie jar and no CSRF header.
+print(s.get(f"{API}/v1/users/me").json())
+```
+
+## Bearer tokens for bots and backends
+
+Cookies are a browser convenience and a nuisance everywhere else. Pass
+`issueToken: true` to `POST /v1/auth/session` and the response body includes the
+token, which you then send as a header:
+
+```bash
+curl https://api.aurabets.io/v1/users/me \
+  -H "authorization: Bearer $AURA_TOKEN"
+```
+
+It is the same credential as the cookie, with the same 30-day lifetime, so
+three things differ and nothing else does:
+
+| | Cookie | Bearer |
+| --- | --- | --- |
+| `x-csrf-token` on writes | Required | Not required |
+| Sliding refresh | Automatic | None. Re-run challenge and sign on a `401` |
+| Where you keep it | Browser handles it | You store it, so treat it like a key |
+
+Skipping CSRF for bearer callers is safe rather than a shortcut. CSRF exists
+because browsers attach cookies to cross-site requests on their own, and nothing
+attaches an `Authorization` header on its own. Re-authenticating is also cheap
+when you hold the signing key, so on a `401` just run the challenge flow again
+rather than building refresh logic.
+
+<Warning>
+  A session token is a bearer credential for your account's off-chain actions.
+  It cannot move funds, since on-chain actions still need your wallet signature,
+  but it can post as you. Individual tokens cannot be revoked, so keep them in a
+  secret store and re-authenticate rather than persisting them somewhere loose.
+</Warning>
 
 ## Making authenticated requests
 
@@ -127,7 +228,8 @@ res = s.post(
 </CodeGroup>
 
 `GET` requests never need the CSRF header. They need only the cookie, and only
-on endpoints that return caller-specific data.
+on endpoints that return caller-specific data. Bearer callers never need it at
+all.
 
 ## Session lifecycle
 
