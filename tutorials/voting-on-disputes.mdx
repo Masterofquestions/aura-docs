@@ -94,8 +94,8 @@ choice and salt on-chain, and the contract verifies the hash matches your
 commit before tallying your tier-weighted vote.
 
 You can watch the status of your queued reveal under **Voting →
-Outcomes** (or via `GET /v1/users/{address}/pending-reveals`, an
-owner-only API endpoint).
+Outcomes** (or via `GET /v1/users/me/pending-reveals`, which reads your own
+queue only).
 
 <Tip>
   Prefer not to share your vote choice with Aura's relay before it hits

@@ -137,9 +137,17 @@ npx @openapitools/openapi-generator-cli generate \
   -o ./aura-client
 ```
 
-The published spec covers the integrator surface. Endpoints used only by the Aura
-app itself are omitted, so if you find a reference to something absent from the
-spec, it isn't a public interface.
+The published spec covers the integrator surface. Endpoints that exist only to
+serve the Aura app (comments, support tickets, notifications, watchlist, image
+upload, proposal drafts, and the proposal form's AI helpers) are omitted, along
+with the operator dashboard. If you find a reference to something absent from
+the spec, treat it as private rather than undocumented: it can change or
+disappear without notice.
+
+Anything scoped to your own wallet uses `me` in the path rather than an address,
+for example `GET /v1/users/me`, `GET /v1/referrals/me/summary`, and
+`GET /v1/users/me/pending-reveals`. Endpoints that take `{address}` return
+public data and work for any wallet.
 
 <Tip>
   Building something on Aura? Say hello on

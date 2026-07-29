@@ -195,22 +195,22 @@ Send the session cookie **and** the CSRF header on every mutating request:
 
 <CodeGroup>
 ```bash curl
-curl -X POST https://api.aurabets.io/v1/watchlist \
+curl -X PATCH https://api.aurabets.io/v1/users/me \
   -b cookies.txt \
   -H "x-csrf-token: $CSRF" \
   -H 'content-type: application/json' \
-  -d '{"marketId": 42}'
+  -d '{"bio": "Sports and elections."}'
 ```
 
 ```ts TypeScript (fetch)
-const res = await fetch('https://api.aurabets.io/v1/watchlist', {
-  method: 'POST',
+const res = await fetch('https://api.aurabets.io/v1/users/me', {
+  method: 'PATCH',
   credentials: 'include', // sends the HttpOnly session cookie
   headers: {
     'content-type': 'application/json',
     'x-csrf-token': csrf,
   },
-  body: JSON.stringify({ marketId: 42 }),
+  body: JSON.stringify({ bio: 'Sports and elections.' }),
 })
 ```
 
@@ -219,10 +219,10 @@ import requests
 
 s = requests.Session()
 # ...challenge + session calls populate s.cookies...
-res = s.post(
-    'https://api.aurabets.io/v1/watchlist',
+res = s.patch(
+    'https://api.aurabets.io/v1/users/me',
     headers={'x-csrf-token': csrf},
-    json={'marketId': 42},
+    json={'bio': 'Sports and elections.'},
 )
 ```
 </CodeGroup>
