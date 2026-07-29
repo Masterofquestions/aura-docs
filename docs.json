@@ -12,7 +12,7 @@
   "logo": {
     "light": "/logo/light.png",
     "dark": "/logo/dark.png",
-    "href": "https://aurabets.io"
+    "href": "https://aura.markets"
   },
   "background": {
     "color": {
@@ -141,12 +141,12 @@
       "og:locale": "en_US",
       "twitter:card": "summary_large_image",
       "twitter:site": "@AuraMarkets",
-      "canonical": "https://docs.aurabets.io"
+      "canonical": "https://docs.aura.markets"
     },
     "organization": {
-      "id": "https://aurabets.io/#organization",
+      "id": "https://aura.markets/#organization",
       "name": "Aura",
-      "url": "https://aurabets.io",
+      "url": "https://aura.markets",
       "sameAs": [
         "https://x.com/AuraMarkets",
         "https://t.me/AuraMarkets"
@@ -170,7 +170,7 @@
     "primary": {
       "type": "button",
       "label": "Open App",
-      "href": "https://testnet.aurabets.io"
+      "href": "https://aura.markets"
     }
   },
   "footer": {

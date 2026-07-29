@@ -1,9 +1,9 @@
 # Aura Documentation
 
-The official documentation for [Aura](https://aurabets.io) — decentralized
+The official documentation for [Aura](https://aura.markets), decentralized
 prediction markets on Alephium.
 
-**Live site:** [docs.aurabets.io](https://docs.aurabets.io)
+**Live site:** [docs.aura.markets](https://docs.aura.markets)
 
 This repository contains the source of the Aura docs site, which covers:
 
@@ -103,7 +103,7 @@ favicon.png
 
 ## Community
 
-- **App** — <https://testnet.aurabets.io>
+- **App** — <https://aura.markets>
 - **Telegram** — <https://t.me/AuraMarkets>
 - **X (Twitter)** — <https://x.com/AuraMarkets>
 
