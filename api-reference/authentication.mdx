@@ -1,247 +1,232 @@
 ---
-title: "Authentication"
-description: "Establish a wallet-bound session by signing a one-time challenge. No email, password, or API key."
+title: "Authentication and Authority"
+sidebarTitle: "Authentication"
+description: "Use public access, scoped developer keys and wallet-bound user sessions without confusing builder identity with user authority."
 ---
 
-The Aura API uses **wallet-bound sessions**, the same mechanism as the Aura
-app (whose embedded wallet signs the challenge with its groupless secp256k1
-key). There are no API keys.
+Aura separates three concerns:
 
-- **Reads are public.** Every `GET` endpoint works without authentication
-  (subject to the anonymous per-IP [rate limits](/api-reference/rate-limits)).
-- **Writes require a session.** Mutating endpoints (comments, watchlist,
-  notifications, profile writes) and the build-tx endpoints under `/v1/tx/*`
-  require a valid session, presented either as a **cookie plus CSRF header** or
-  as an **`Authorization: Bearer` token**.
+| Credential | Identifies | Can authorize user assets? |
+| --- | --- | --- |
+| None | Anonymous public client | No |
+| Developer key | Builder, environment, scopes and quota | **No** |
+| Wallet session | A wallet that signed a one-time challenge | Only for session-bound endpoints; it cannot authorize restricted trading by itself |
+| Restricted trading authorization | A user's bounded consent grant for one builder | Only within its market/outcome, BUY/SELL, expiry and cap policy |
 
-The session authorises off-chain writes only. On-chain actions come back as
-*unsigned* transactions that your wallet signs locally, so the API never holds
-keys and the session can never move funds.
+Private account and private-webhook operations can require both a developer key
+and the matching wallet session. Restricted order requests instead require the
+developer key plus the user's `aura_trade_…` authorization and do not require an
+unrelated session bearer. Supplying more scopes to a developer key never
+substitutes for user consent.
 
-## Establishing a session
+## Developer keys
 
-Two-step wallet-signature flow:
+Send a developer key only in this header:
+
+```http
+x-aura-developer-key: aura_dev_live_...
+```
+
+Never append it to a URL. URLs commonly appear in proxy, CDN, browser-history
+and analytics logs.
+
+Available scopes are:
+
+- `public:read` and `market:read`
+- `realtime:public`
+- `account:read`
+- `transactions:read`
+- `trade:place` and `trade:cancel`
+- `webhooks:manage`
+
+Key creation is a wallet-session operation:
+
+```ts
+const { key, secret } = await aura.developerKeys.create({
+  name: 'production-market-data',
+  scopes: ['market:read', 'realtime:public'],
+  expiresInDays: 30,
+})
+
+console.log(key.builderCode)
+```
+
+The secret is displayed once. Aura stores only its digest. Put the returned
+value directly in a server-side secret manager. Rotate it rather than copying it
+between developers, and revoke it when the integration is retired.
+
+`key.builderCode` is the immutable public attribution identity bound to the
+key owner. It is not secret and grants no authority. For a trading integration,
+give the user this exact code when they create restricted access in Aura's
+first-party console and use a developer key with the required `trade:*` scopes;
+the order facade verifies that the authorization binding matches the presented
+key. Key rotation preserves the code.
+
+<Warning>
+  Do not embed a privileged developer key in browser JavaScript. Anyone can
+  extract it and consume its quota. Browser code should normally use public
+  access plus the user's HttpOnly session.
+</Warning>
+
+## Establish a wallet session
 
 <Steps>
-  <Step title="Get a one-time challenge">
+  <Step title="Request a one-time challenge">
     ```bash
     curl -X POST https://api.aura.markets/v1/auth/challenge \
       -H 'content-type: application/json' \
-      -d '{"address": "3Cef...your-wallet"}'
+      -d '{"address":"3Cef...your-wallet"}'
     ```
 
-    Response:
-
-    ```json
-    {
-      "challenge": "Sign this message...",
-      "expiresAt": "2026-07-01T19:00:00Z"
-    }
-    ```
-
-    `address` is optional. Omit it when the wallet address is only known
-    after authentication, then pass the exact `challenge` text in the next
-    step.
+    The challenge expires after five minutes and is single-use. Issuing it for
+    a known address is preferred; an address-less challenge must be returned
+    verbatim in the session request.
   </Step>
-  <Step title="Sign with your wallet">
-    Use your wallet's `signMessage` helper with `hasher: "alephium"` to sign
-    the `challenge` string. `keyType` identifies the signature scheme:
+  <Step title="Sign the exact challenge text">
+    Use the wallet's `signMessage` operation with the Alephium message hasher.
+    Do not ask for, export, or handle the wallet seed. Aura has no raw seed
+    export flow.
 
-    | `keyType` | Wallet |
+    | `keyType` | Use |
     | --- | --- |
-    | `gl-secp256k1` | Groupless secp256k1, which is what the Aura app's embedded wallet uses (addresses start with `3`) |
-    | `default` | Grouped secp256k1, for standard Alephium wallets and tooling (addresses start with `1`) |
-
-    These two are the only accepted values. Build-tx endpoints take the same
-    `signerKeyType` field, and it must match the key your `signerAddress` was
-    derived from.
-
-    If you're not in JavaScript, see
-    [the signing scheme](#the-signing-scheme-for-non-javascript-clients) for
-    the exact bytes.
+    | `gl-secp256k1` | Aura's groupless embedded wallet |
+    | `default` | Standard grouped Alephium wallet tooling |
   </Step>
-  <Step title="Exchange the signature for a session">
+  <Step title="Exchange the signature">
     ```bash
     curl -X POST https://api.aura.markets/v1/auth/session \
       -H 'content-type: application/json' \
       -c cookies.txt \
       -d '{
-        "address":   "3Cef...your-wallet",
-        "publicKey": "0233...your-pubkey",
-        "signature": "abcd...sig",
-        "keyType":   "gl-secp256k1"
+        "address":"3Cef...your-wallet",
+        "publicKey":"0233...compressed-public-key",
+        "signature":"abcd...raw-signature",
+        "keyType":"gl-secp256k1"
       }'
     ```
 
-    Response:
-
-    ```json
-    {
-      "address": "3Cef...your-wallet",
-      "csrf": "5f2a...token",
-      "created": false
-    }
-    ```
-
-    The session itself is set as an **HttpOnly cookie** (30-day TTL with
-    sliding refresh). Keep the `csrf` value, because every mutating request
-    must echo it back in the `x-csrf-token` header.
-
-    First sign-in also creates the account server-side with a **generated
-    unique username**; manage it via `GET/PATCH /v1/users/me` and
-    `GET /v1/users/username-available`.
+    The browser flow receives an HttpOnly `aura_session` cookie and a CSRF token
+    in the response. Echo the CSRF token in `x-csrf-token` on session-owned
+    mutations.
   </Step>
 </Steps>
 
-## The signing scheme (for non-JavaScript clients)
+For non-JavaScript implementations, the signed digest is:
 
-`@alephium/web3` hides this behind `signMessage`, but the scheme is small
-enough to implement directly in any language. The `alephium` hasher prefixes
-the message before hashing, which is what stops a signed login from ever being
-mistaken for a signed transaction:
-
-```
-digest    = blake2b-256( utf8("Alephium Signed Message: " + challenge) )
-signature = secp256k1 sign over that 32-byte digest
+```text
+blake2b-256(utf8("Alephium Signed Message: " + exactChallengeText))
 ```
 
-Encodings on the wire, all lowercase hex without a `0x` prefix:
+The signature is a 64-byte raw `r || s` secp256k1 signature encoded as lowercase
+hex. It is not DER and has no recovery byte.
 
-| Field | Format |
-| --- | --- |
-| `publicKey` | 33-byte compressed secp256k1 point, 66 hex chars |
-| `signature` | 64-byte raw `r \|\| s`, 128 hex chars. Not DER, and no recovery byte |
-| `address` | base58. Groupless keys give a 53-char address starting with `3` |
+## Browser cookie versus backend bearer
 
-<Warning>
-  The literal prefix is `Alephium Signed Message: ` with a single trailing
-  space, and it is hashed as UTF-8. Getting the prefix or the digest wrong
-  produces a signature that verifies against nothing, which surfaces as a
-  generic `401 invalid signature`.
-</Warning>
+Browsers should keep the session in the HttpOnly cookie:
 
-Here is the whole flow in Python, with no Aura or Alephium dependency:
-
-```python
-import hashlib, requests
-from coincurve import PrivateKey  # pip install coincurve requests
-
-API = "https://api.aura.markets"
-ADDRESS = "3cUq...your-wallet"
-key = PrivateKey(bytes.fromhex("your-32-byte-private-key-hex"))
-
-s = requests.Session()
-
-# 1. Ask for a challenge.
-challenge = s.post(f"{API}/v1/auth/challenge", json={"address": ADDRESS}).json()["challenge"]
-
-# 2. Hash it the way Alephium does, then sign the digest.
-digest = hashlib.blake2b(
-    ("Alephium Signed Message: " + challenge).encode("utf-8"), digest_size=32
-).digest()
-signature = key.sign_recoverable(digest, hasher=None)[:64]  # drop the recovery byte
-
-# 3. Exchange it for a session, asking for a bearer token.
-session = s.post(f"{API}/v1/auth/session", json={
-    "address":     ADDRESS,
-    "publicKey":   key.public_key.format(compressed=True).hex(),
-    "signature":   signature.hex(),
-    "keyType":     "gl-secp256k1",
-    "issueToken":  True,
-}).json()
-
-s.headers["Authorization"] = f"Bearer {session['token']}"
-
-# 4. Authenticated from here on, with no cookie jar and no CSRF header.
-print(s.get(f"{API}/v1/users/me").json())
-```
-
-## Bearer tokens for bots and backends
-
-Cookies are a browser convenience and a nuisance everywhere else. Pass
-`issueToken: true` to `POST /v1/auth/session` and the response body includes the
-token, which you then send as a header:
-
-```bash
-curl https://api.aura.markets/v1/users/me \
-  -H "authorization: Bearer $AURA_TOKEN"
-```
-
-It is the same credential as the cookie, with the same 30-day lifetime, so
-three things differ and nothing else does:
-
-| | Cookie | Bearer |
-| --- | --- | --- |
-| `x-csrf-token` on writes | Required | Not required |
-| Sliding refresh | Automatic | None. Re-run challenge and sign on a `401` |
-| Where you keep it | Browser handles it | You store it, so treat it like a key |
-
-Skipping CSRF for bearer callers is safe rather than a shortcut. CSRF exists
-because browsers attach cookies to cross-site requests on their own, and nothing
-attaches an `Authorization` header on its own. Re-authenticating is also cheap
-when you hold the signing key, so on a `401` just run the challenge flow again
-rather than building refresh logic.
-
-<Warning>
-  A session token is a bearer credential for your account's off-chain actions.
-  It cannot move funds, since on-chain actions still need your wallet signature,
-  but it can post as you. Individual tokens cannot be revoked, so keep them in a
-  secret store and re-authenticate rather than persisting them somewhere loose.
-</Warning>
-
-## Making authenticated requests
-
-Send the session cookie **and** the CSRF header on every mutating request:
-
-<CodeGroup>
-```bash curl
-curl -X PATCH https://api.aura.markets/v1/users/me \
-  -b cookies.txt \
-  -H "x-csrf-token: $CSRF" \
-  -H 'content-type: application/json' \
-  -d '{"bio": "Sports and elections."}'
-```
-
-```ts TypeScript (fetch)
-const res = await fetch('https://api.aura.markets/v1/users/me', {
-  method: 'PATCH',
-  credentials: 'include', // sends the HttpOnly session cookie
-  headers: {
-    'content-type': 'application/json',
-    'x-csrf-token': csrf,
-  },
-  body: JSON.stringify({ bio: 'Sports and elections.' }),
+```ts
+const aura = createAuraClient({
+  baseUrl: 'https://api.aura.markets',
+  session: { kind: 'cookie', credentials: 'include', csrfToken: () => csrf },
 })
 ```
 
-```py Python (requests)
-import requests
+Backends may request `issueToken: true` when exchanging the challenge and send
+the returned token as:
 
-s = requests.Session()
-# ...challenge + session calls populate s.cookies...
-res = s.patch(
-    'https://api.aura.markets/v1/users/me',
-    headers={'x-csrf-token': csrf},
-    json={'bio': 'Sports and elections.'},
-)
+```http
+Authorization: Bearer <user-session-token>
 ```
-</CodeGroup>
 
-`GET` requests never need the CSRF header. They need only the cookie, and only
-on endpoints that return caller-specific data. Bearer callers never need it at
-all.
+Bearer requests do not need CSRF because browsers do not attach an
+`Authorization` header automatically. Store the token like any other secret;
+never put it in a query string, application log or browser `localStorage`.
 
-## Session lifecycle
+## Compose builder and user credentials
+
+```ts
+const aura = createAuraClient({
+  baseUrl: 'https://api.aura.markets',
+  developerKey: () => secretManager.read('aura/developer-key'),
+  session: { kind: 'bearer', token: () => userSessionStore.read(userId) },
+})
+
+const account = await aura.account.snapshot(userAddress)
+```
+
+The request carries both headers. Aura independently checks the key scope and
+that the path address belongs to the session.
+
+## Restricted trading authority
+
+API trading uses a separate, user-created authorization held by Aura's enclave.
+It is narrowly limited by account, environment, market/outcome permissions,
+BUY/SELL caps, expiry and builder attribution. The API signs and submits an
+authorized intent internally; intent signatures and cancel signatures are not
+returned to the builder.
+
+Users can inspect, rotate and revoke that authorization. Revoking a developer
+key stops the builder identity; revoking the user authorization stops its
+trading power. Treat these as independent controls.
+
+Creation, rotation and revocation deliberately remain in Aura's signer iframe
+and first-party authorization console, where each high-authority action is bound
+to explicit user consent. The `aura_trade_…` secret is shown once and delivered
+to the builder the user selected. The builder must place it directly in a
+server-side secret store and send it only in
+`x-aura-trading-authorization` alongside its developer key.
+
+The builder API and `@aura/builder-sdk` cannot mint or broaden an authorization.
+Do not call wallet-svc or enclave internal routes.
+
+The first-party console keeps the same idempotency key when a create or rotation
+has an ambiguous transport failure. The authorization service never replays a
+show-once secret: if the write committed but the response was lost, the console
+reloads the resulting authorization ID and generation, then requires the user
+to rotate with a new idempotency key or revoke it. Reusing an idempotency key
+with different terms is a conflict. These recovery operations remain inside the
+passkey/action-bound console; there is no builder API route for them.
+
+## Manage active sessions
+
+`GET /v1/auth/sessions` returns at most the 100 most recent sessions owned by
+the authenticated wallet. Rows contain only an opaque UUID, creation/last-seen
+and expiry timestamps, nullable revocation time, and `current`; Aura never
+returns the JWT, CSRF secret, token digest, or a credential fingerprint.
+
+```ts
+const { sessions } = await aura.auth.listSessions()
+
+for (const session of sessions) {
+  if (!session.current && session.revokedAt === null) {
+    await aura.auth.revokeSession(session.id)
+  }
+}
+```
+
+Single-session revocation is intentionally enumeration-safe and idempotent:
+missing, already-revoked, and foreign UUIDs all return `204`. Revoking the
+current session clears its cookie. `revokeAllSessions()` immediately
+invalidates every cookie and bearer token for that wallet, including the
+presented session.
+
+Cookie-authenticated logout and revocation are writes and require the current
+`x-csrf-token`. Bearer callers are CSRF-exempt. `POST /v1/auth/logout` revokes
+the exact presented session (so copied tokens stop working), clears browser
+cookies, and still returns `204` when no active session is present.
+
+## Session endpoints
 
 | Endpoint | Purpose |
 | --- | --- |
-| `POST /v1/auth/challenge` | Mint a one-time nonce to sign (5-minute expiry). |
-| `POST /v1/auth/session` | Verify the signature, create/refresh the account, set the session cookie. Sign-in **and** registration. |
-| `GET /v1/auth/session` | Check whether the cookie is still valid and recover the CSRF token. |
-| `POST /v1/auth/logout` | Clear the session + CSRF cookies. |
+| `POST /v1/auth/challenge` | Create a short-lived, one-time message to sign. |
+| `POST /v1/auth/session` | Verify ownership and issue the cookie; optionally return a backend bearer token. |
+| `GET /v1/auth/session` | Read the current cookie session and CSRF value. |
+| `POST /v1/auth/logout` | Revoke the presented cookie/bearer session and clear cookies; cookie callers send CSRF. |
+| `GET /v1/auth/sessions` | List safe metadata for sessions owned by the authenticated wallet. |
+| `DELETE /v1/auth/sessions/{sessionId}` | Idempotently revoke one owned opaque session ID. |
+| `DELETE /v1/auth/sessions` | Revoke every session for the authenticated wallet. |
 
-<Warning>
-  Build-tx endpoints under `/v1/tx/*` additionally enforce that the
-  transaction's **signer equals the session wallet**, so a session for wallet A
-  can never build a transaction that spends from wallet B.
-</Warning>
+Raw seed export is deliberately unavailable. Deleting an Aura wallet account
+must use the dedicated account-destruction/recovery policy; it is not a way to
+reveal custody material.

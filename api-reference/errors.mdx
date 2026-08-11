@@ -1,84 +1,85 @@
 ---
-title: "API Errors"
-sidebarTitle: "API Errors"
-description: "Standard error envelope and HTTP status codes used across the Aura REST API."
-keywords: ["Aura API errors", "error envelope", "HTTP status codes", "error handling"]
+title: "Errors and Retries"
+description: "Handle Aura's stable error envelope, idempotency conflicts, realtime resets and transaction failures safely."
 ---
 
-The Aura API returns every error as JSON with a stable envelope:
+JSON errors use a stable machine-readable envelope:
 
 ```json
 {
   "error": {
-    "code": "invalid_price",
-    "message": "price must be in (0, 1000); got 1000",
-    "details": { "field": "price" }
+    "code": "order_book_version_stale",
+    "message": "The supplied book version is no longer current.",
+    "requestId": "req-...",
+    "details": {}
   }
 }
 ```
 
-| Field | Description |
-| --- | --- |
-| `error.code` | Stable, machine-readable error code in `snake_case`. Don't switch on `message`. |
-| `error.message` | Human-readable error description. |
-| `error.details` | Optional structured context (present on validation and rate-limit errors). |
+Branch on `error.code`, never on the human `message`. Include `requestId` when
+reporting a problem, but do not include developer keys, session tokens, webhook
+signatures or raw signed payloads in logs or support messages.
 
-The HTTP status code is carried on the response itself, not duplicated in
-the body.
+## HTTP classification
 
-## Status codes
+| Status | Meaning | Typical action |
+| --- | --- | --- |
+| `400` | Invalid syntax, field, cursor or unsupported combination | Fix the request; do not retry unchanged |
+| `401` | Missing, expired or invalid credential | Reauthenticate/rotate; never move the credential to a query string |
+| `403` | Credential is valid but lacks scope or user ownership | Ask for the correct user authority or reduce the operation |
+| `404` | Resource is not visible or does not exist | Stop or refresh discovery state |
+| `409` | Stale version, lifecycle conflict or idempotency conflict | Reconcile current state before deciding whether to retry |
+| `429` | Rate or connection limit | Honor `Retry-After` and add jitter |
+| `500` | Unexpected Aura failure | Retry only an idempotent operation with backoff |
+| `503` | Required sequencer, wallet, indexer, node or realtime source unavailable | Preserve state and retry with backoff |
 
-| Status | When |
-| --- | --- |
-| `400 Bad Request` | Validation failed on a schema, range, or business rule (`details` carries the zod issues for schema failures). |
-| `401 Unauthorized` | No valid session cookie. Sign in via `/v1/auth`. |
-| `403 Forbidden` | Session valid but the action isn't allowed. Missing or invalid `x-csrf-token`, or the tx signer doesn't match the session wallet. |
-| `404 Not Found` | The resource doesn't exist (or you don't own it, for wallet-scoped reads). |
-| `409 Conflict` | Idempotency / state conflict (e.g. a sponsorship `txId` recorded with different parameters). |
-| `429 Too Many Requests` | Rate limit exceeded. See [Rate Limits](/api-reference/rate-limits). |
-| `500 Internal Server Error` | Bug on our side. The original error is logged server-side and never leaked in the response. |
-| `502 Bad Gateway` | The Alephium node refused to build a tx, or an upstream (node / indexer) is unhealthy. Retry. |
-| `503 Service Unavailable` | Database or indexer temporarily unavailable. Retry with backoff. |
+## Security-sensitive conflicts
 
-## Common error codes
+- `developer_scope_missing`: the developer key does not have the required
+  scope. A wallet session does not add that scope.
+- `account_scope_mismatch` / `account_forbidden`: the requested account is not
+  the signed-in wallet.
+- `idempotency_secret_unrecoverable`: an earlier request created a one-time
+  secret. Aura cannot show it again; rotate the key/webhook.
+- stale book/version errors: fetch a new book or quote and ask the user to
+  accept changed execution terms.
+- private webhook authorization errors: the matching wallet must authorize or
+  renew the endpoint; the builder key cannot do it alone.
+- `funding_requirements_unavailable`: Aura could not obtain a valid
+  authenticated wallet-runtime confirmation policy. Freeze the deposit flow;
+  never substitute a client-side confirmation default.
 
-| Code | Meaning |
-| --- | --- |
-| `bad_request` | Request body or query failed schema validation. |
-| `unauthorized` | Session required or invalid (sign in via `/v1/auth`). |
-| `csrf_failed` | Missing or invalid `x-csrf-token` header on a mutating request. |
-| `signer_mismatch` | The session is bound to a different wallet than `signerAddress`. |
-| `rate_limited` | Per-IP or per-wallet rate limit exceeded (`details` carries `max` + `ttl`). |
-| `not_found` / `market_not_found` / `draft_not_found` | Resource doesn't exist. |
-| `invalid_quantity` / `invalid_price` / `invalid_outcome` | Order parameters violate the contract's rules (lot size, price tick range, yes/no). |
-| `field_too_long` | A proposal field exceeds its UTF-8 byte limit (limits mirror the on-chain checks). |
-| `bond_mismatch` | A caller-supplied `bondAmount` doesn't match the on-chain bond. Omit it to use the on-chain value. |
-| `build_failed` | The Alephium node refused to build the unsigned tx (returned as `502`). |
-| `db_error` | Database read/write failed (returned as `503`). |
-| `internal_error` | Unhandled server error (returned as `500`). |
+## Realtime errors are frames
 
-## Idempotency & retries
+After an SSE connection is established, Aura can send `event: aura-error` with
+`recoverable`, `code`, `requestId` and `lastCursor`. It can also send
+`event: aura-reset`. A reset is not a normal retry: replace local state from a
+fresh snapshot and resume after that snapshot's cursor.
 
-- All `GET` endpoints are safe to retry.
-- `POST /v1/tx/*` endpoints build transactions and never submit them, so
-  retrying is always safe. The returned `unsignedTx` can differ between calls
-  as the wallet's UTXO set changes. Only the transaction your wallet actually
-  signs and submits matters.
-- `POST /v1/rewards/sponsorships` is idempotent on `txId`, so repeat calls
-  with the same `txId` return the existing row.
+The stable stream codes are `slow_consumer`, `replay_unavailable`,
+`session_expired`, `session_revoked`, `session_revalidation_unavailable`,
+`developer_key_revoked`, `developer_key_expired`, `developer_key_rotated`,
+`developer_key_scope_changed`, `developer_key_generation_changed`,
+`developer_key_revalidation_unavailable`, and `source_unavailable`. Session and
+developer-key lifecycle failures require fresh authority before reconnecting;
+revalidation/source outages and replay failures use bounded backoff while local
+state remains frozen. See the realtime guide for the per-code recovery table.
 
-## On-chain failures are different
+Malformed schema-v2 events, source-vector divergence and JSON numbers in event
+money fields are protocol errors. Stop applying them and resynchronize rather
+than guessing.
 
-Everything above covers errors the API returns. Once you submit a signed
-transaction, the API is out of the loop, and a failure comes back from Alephium as
-a numeric assertion code rather than this envelope:
+## Safe retry rules
 
-```text
-Assertion Failed in Contract @ <contract-address>, Error Code: 13
-```
+1. Reuse the same idempotency key only for the same logical write.
+2. Do not retry a non-idempotent write merely because the response was lost;
+   first query its status or reconcile its transaction/order identifier.
+3. Batch cancellation can partially succeed. Process each result instead of
+   retrying the entire batch with a new key.
+4. Webhooks are at least once. Deduplicate the durable event ID and acknowledge
+   duplicates successfully.
+5. Once an Alephium transaction is broadcast, use
+   `GET /v1/transactions/{txId}` rather than blindly submitting a replacement.
 
-Those are contract errors, and they need a different lookup table.
-
-<Card title="Contract error codes" icon="triangle-exclamation" href="/resources/error-codes">
-  Decode an on-chain revert into the assertion that failed, indexed by contract.
-</Card>
+`@aura/builder-sdk` throws `AuraApiError` with `status`, `code`, `requestId`,
+`details` and rate-limit metadata.

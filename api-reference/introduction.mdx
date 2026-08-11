@@ -1,12 +1,19 @@
 ---
 title: "API Overview"
 sidebarTitle: "Overview"
-description: "Public REST API for Aura prediction markets. Market data, order books, realtime streams, and non-custodial transaction building."
-keywords: ["Aura API", "prediction market API", "REST API", "market data API", "trading API", "Alephium API"]
+description: "Build secure market-data and trading integrations on Aura's instant clearinghouse API."
+keywords: ["Aura API", "prediction market API", "builder API", "Alephium API", "realtime market data"]
 ---
 
-Build on Aura. Market data is public and needs no key, and everything a user can
-do in the app is available over the same API.
+Aura's API exposes the same instant-trading venue used by the app. Public
+market data needs no credential. Builder workloads can use scoped developer
+keys for quotas and attribution, while private account and trading actions also
+require explicit authority from the user.
+
+<Warning>
+  A developer key is never a wallet credential. It cannot sign, custody assets,
+  or substitute for whichever user authority an operation requires.
+</Warning>
 
 ## Make your first request
 
@@ -18,118 +25,98 @@ curl -s "https://api.aura.markets/v1/markets?limit=5&status=open"
 ```javascript JavaScript
 const { markets } = await fetch(
   'https://api.aura.markets/v1/markets?limit=5&status=open'
-).then((r) => r.json())
+).then((response) => response.json())
 
-for (const m of markets) console.log(m.question, m.bestBidYes)
+for (const market of markets) console.log(market.question, market.lifecycle.tradingStatus)
 ```
 
 ```python Python
 import requests
 
-res = requests.get(
+response = requests.get(
     "https://api.aura.markets/v1/markets",
     params={"limit": 5, "status": "open"},
 )
-
-for m in res.json()["markets"]:
-    print(m["question"], m["bestBidYes"])
+for market in response.json()["markets"]:
+    print(market["question"], market["lifecycle"]["tradingStatus"])
 ```
 </CodeGroup>
 
-That is the whole setup. No signup, no key, no header.
+No signup, key, or header is needed for this public read.
+
+## API model
+
+- **Canonical configuration.** `GET /v1/protocol/config` publishes the active
+  network, contracts, collateral decimals, limits, fees and realtime
+  capabilities. Do not hard-code these values.
+- **Immediate market data.** Market summaries, the versioned order book and
+  point-in-time BUY/SELL quotes reflect the instant clearinghouse venue.
+- **Rich lifecycle.** Market responses distinguish registration, trading,
+  resolution, settlement and claimability instead of relying on one ambiguous
+  `active` flag.
+- **Durable realtime.** Fetch-based SSE uses schema version 2, source-vector
+  cursors and explicit reset frames. REST snapshots carry the cursor needed for
+  race-free resume.
+- **Private authority.** Account and private realtime reads require the matching
+  wallet session. Trading writes require a separate user-created restricted
+  authorization plus the scoped developer key; the write does not receive an
+  unrelated session bearer. A developer key alone never reveals or controls a
+  user's account.
+- **Reconciliation.** `GET /v1/transactions/{txId}` combines Alephium node state
+  with privacy-filtered Aura indexing and recovery state.
+- **Webhooks.** Developer webhooks share the durable event backbone, use HMAC
+  signatures, and deliver at least once.
+
+All financial quantities are canonical decimal strings. Do not parse token
+base units, P&L, fees or volume through JavaScript `number`.
 
 <CardGroup cols={2}>
   <Card title="Your first API call" icon="play" href="/api-reference/quickstart">
-    Read markets, order books, and prices in a few minutes.
+    Read configuration, markets and a versioned book.
   </Card>
-  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
-    Authenticate, build, sign, and submit an order end to end.
+  <Card title="Prepare API trading" icon="rocket" href="/api-reference/place-your-first-order">
+    Compose a builder identity with explicit user authority.
   </Card>
-</CardGroup>
-
-## How it is shaped
-
-- **Reads.** Markets, prices, the order book, trades, vault state, oracle and
-  governance data. All public.
-- **Realtime.** One SSE endpoint multiplexes live order, fill, dispute, and
-  account events with lossless reconnects.
-- **Writes** (`/v1/tx/*`). The API builds **unsigned** transactions for your
-  client to sign with its own wallet. Aura never holds private keys, so a
-  compromised API cannot move your funds. It also means you always need a local
-  signer.
-
-The endpoint reference is generated from the running service's OpenAPI 3.1 spec,
-so it cannot drift from the implementation.
-
-<CardGroup cols={2}>
   <Card title="Authentication" icon="key" href="/api-reference/authentication">
-    Wallet-bound sessions from a signed challenge. Bearer tokens for bots.
+    Public access, developer keys and wallet-bound sessions.
+  </Card>
+  <Card title="Native funding" icon="wallet" href="/api-reference/funding">
+    Exact spendability, deposits and session-only withdrawals.
   </Card>
   <Card title="Realtime data" icon="bolt" href="/api-reference/realtime">
-    Subscribe to live events instead of polling.
+    Snapshot, resume and recover safely from a reset.
   </Card>
-  <Card title="Build-tx flow" icon="signature" href="/api-reference/build-tx-flow">
-    Every transaction the API can build for you.
+  <Card title="On-chain operations" icon="link" href="/api-reference/build-tx-flow">
+    Understand the remaining non-trading transaction builders.
   </Card>
-  <Card title="Rate limits" icon="gauge-high" href="/api-reference/rate-limits">
-    Anonymous, signed-in, and elevated tiers.
-  </Card>
-  <Card title="Integrator guide" icon="robot" href="/api-reference/integrator-guide">
-    Bots, streaming, and the constraints to design around.
-  </Card>
-  <Card title="API errors" icon="triangle-exclamation" href="/api-reference/errors">
-    Error envelope and status codes.
+  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Stable codes, request IDs and safe retries.
   </Card>
 </CardGroup>
 
 ## Base URLs
 
 <CodeGroup>
-```bash Mainnet
+```text Mainnet
 https://api.aura.markets
 ```
 
-```bash Testnet
+```text Testnet
 https://api.testnet.aura.markets
 ```
 
-```bash Local
+```text Local
 http://localhost:3001
 ```
 </CodeGroup>
 
-<Tip>
-Build against testnet first. Same API, test tokens, real transactions. See
-[Contracts](/resources/contracts#testnet).
-</Tip>
+Build against testnet first. Before every session, read
+`/v1/protocol/config` and verify the network and contract configuration you
+expected.
 
-## Discovery
+## Specifications and SDK
 
-Built for integrators, not for lazy implementers:
-
-- **Faceted lists.** Every list endpoint accepts `?facets=true` and returns
-  category, tag, and status counts in the same response, so a UI can render
-  filter chips without a second request.
-- **Cursor pagination.** Stable across inserts and fast at depth. Offset
-  paging via `?page=` is still supported for compatibility.
-- **Rich filters.** `?q=`, `?category=`, `?tags=`, `?status=`, `?creator=`,
-  and `?minVolume=` on `/v1/markets`. Tag matching is AND, so all listed tags
-  must be present.
-- **Sortable.** `?sort=created-at|volume|best-bid-yes|recently-traded` with
-  `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.
-- **Field projection.** `?fields=id,question,bestBidYes` trims the wire
-  weight for thin clients.
-- **Unified search.** `/v1/search?q=` runs a strict tsquery first with a
-  fuzzy trigram fallback when nothing matches. The result type is a
-  discriminated union, so adding events or users later is non-breaking.
-- **Transparent trending.** `/v1/trending` returns the full algorithm and
-  per-market component scores so the ranking is auditable.
-- **Categories and tags as first-class.** `/v1/categories` and `/v1/tags`
-  enumerate the taxonomy with market counts.
-
-## OpenAPI spec
-
-The machine-readable spec is published at
-[`/openapi.json`](https://api.aura.markets/openapi.json) on the live API and
-is generated directly from the Fastify + zod route definitions, so it can
-never drift from the implementation.
+The public OpenAPI 3.1 document is served from
+[`/openapi.json`](https://api.aura.markets/openapi.json). The TypeScript builder
+SDK is `@aura/builder-sdk`; it includes exact-money types, header-based auth,
+fetch-SSE resume/reset handling and webhook verification.

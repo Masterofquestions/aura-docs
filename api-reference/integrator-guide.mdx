@@ -1,156 +1,137 @@
 ---
-title: "Integrator Guide"
-description: "Building a bot, a dashboard, or a product on top of Aura. What needs auth, what streams, and where the limits are."
+title: "Builder Integration Guide"
+description: "Architecture and security rules for market-data products, bots, trading interfaces and market makers on Aura."
 ---
 
-This page covers the practical shape of an Aura integration: which parts need
-credentials, how to get live data without burning your request budget, and the
-constraints worth designing around before you write much code.
+Choose credentials and delivery mechanisms by capability, not convenience.
 
-## Start by checking whether you need auth at all
+| Integration | Developer key | User session | Restricted trading authorization |
+| --- | --- | --- | --- |
+| Public market-data page | Optional | No | No |
+| Server-side public feed or webhook | Yes | No | No |
+| Private portfolio/account view | Yes for builder quota | **Matching user** | No |
+| Place BUY/SELL orders | **`trade:place`** | No on the order request | **Matching user, capped** |
+| Cancel or run a dead-man switch | **`trade:cancel`** | No on the order request | **Matching user, capped** |
 
-A surprising amount of product needs no credentials:
+A developer key never signs and never gives access to another user's private
+events. Do not build a service that asks users for wallet seeds or raw private
+keys; Aura intentionally has no raw seed export.
 
-| What you're building | Auth needed |
-| --- | --- |
-| Dashboard, odds aggregator, analytics, research tool | **None.** Every `GET` is public |
-| Alert bot (price moves, new markets, resolutions) | **None.** Public SSE topics stream orders and fills |
-| Trading bot placing its own orders | Session, and its own wallet to sign |
-| Anything acting for other users | One session **per user** (see below) |
+## Bootstrap from canonical state
 
-If you only read, skip authentication entirely and go straight to
-[rate limits](/api-reference/rate-limits) to size your polling. Anonymous callers
-get 60 reads a minute per IP, and streaming costs nothing against that.
+1. Fetch `GET /v1/protocol/config` and verify the environment.
+2. Fetch the relevant REST snapshot.
+3. Connect to schema-v2 SSE after the snapshot's `streamCursor`.
+4. Apply events idempotently by durable event ID.
+5. On a reset, replace state from a new snapshot.
 
-## Live data without polling
+Do not hard-code collateral decimals, fees, contract addresses, topic patterns,
+batch limits or intent lifetimes. Configuration changes carry an ETag and a
+`configVersion`.
 
-`GET /v1/realtime/stream` is a Server-Sent Events endpoint. Pass a
-comma-separated `topics` list. These topics are **public**, so no session is
-needed:
+## Public book versus qualified pricing state
 
-| Topic | Fires on |
-| --- | --- |
-| `market:{address}:orders` | Order placed, filled, or cancelled |
-| `market:{address}:fills` | A trade executes |
-| `dispute:{marketId}` | Dispute phase, tallies, and commit/reveal counts change |
-| `settings:banner` | Site banner changes |
-| `health:indexer` | Indexer heartbeat |
+The public execution book updates immediately. Aura may also maintain a
+time-qualified view for pricing and liquidity rewards. Use the immediate book
+for quoting/trading and the qualified feed only for the purpose documented by
+that endpoint. A 30-second qualification delay is not a reason to add stale
+polling to execution surfaces.
 
-```bash
-curl -N "https://api.aura.markets/v1/realtime/stream?topics=market:3abc...:orders,market:3abc...:fills"
-```
+## Quote before acting
 
-Two limits to plan for. An anonymous connection accepts up to **8 topics**, and
-a signed-in one up to **20**. Since full coverage of a market takes two topics,
-that's roughly 10 markets per authenticated connection, so a bot watching a wide
-book opens several connections.
+`POST /v1/markets/{address}/quote` supports BUY and SELL and shares the real
+matcher, fee and rounding implementation. Inspect:
 
-Reconnects are lossless. Keep the last event id you saw and send it back as the
-`Last-Event-ID` header (or `?lastEventId=`) and the stream replays what you
-missed, falling back to a reset signal if you were away too long to replay. Pair
-that with an HTTP catch-up read so a long outage still converges.
+- quote and expiry time;
+- book version and stream cursor;
+- partial/unfilled amount;
+- average and worst execution ticks;
+- exact fee and collateral base units;
+- spendable state when a wallet session is present;
+- every warning.
 
-Signed-in sessions add private topics for your own wallet:
-`user:{address}:orders`, `:fills`, `:parlays`, and `:notifications`. Requesting
-someone else's is rejected, not silently emptied.
+Quotes are simulations, not reservations.
 
-## Authenticating a bot
+## Private account composition
 
-Use a bearer token rather than a cookie jar. The full flow, including a
-dependency-free Python implementation of the signing scheme, is in
-[Authentication](/api-reference/authentication).
+`GET /v1/users/{address}/account` combines sequencer, wallet/node and indexed
+state with explicit provenance. The path address must match the session. Never
+add raw balance, pending deposit and spendable balance together; the response
+already avoids double counting holds and obligations.
 
-The short version: request a challenge, sign it with your Alephium key, exchange
-it for a session with `issueToken: true`, then send
-`Authorization: Bearer <token>` on everything afterwards. No cookies, and no
-`x-csrf-token`.
+Large order and position collections are truncated with cursor-paginated
+continuations. Keep the snapshot cursor so private SSE can safely catch up.
 
-Tokens last 30 days with no refresh. Because re-authenticating costs one
-signature, the simplest correct design is to catch a `401`, run the challenge
-flow again, and retry once.
+## Provisional execution and final analytics
 
-## Placing orders
+An accepted/matched order is not automatically a settled fill. Funding can
+fail, a match can unwind, and chain settlement can reorg or recover. Keep those
+states visible. Use settled records only for final volume, P&L, creator fees,
+referral earnings and builder attribution analytics.
 
-Writes never hand Aura your key. `POST /v1/tx/*` returns an **unsigned**
-transaction that you sign locally and submit to any Alephium node, so the flow is
-always build, sign, submit. See [Build-tx flow](/api-reference/build-tx-flow) for
-the response shape and a worked example.
+Detached `builderCode` attribution is attribution-only at launch. It does not
+change fee or reward economics. Do not promise revenue share based on it.
 
-Three things catch people out:
+## Webhooks
 
-**One order per transaction.** There is no batch place or batch cancel endpoint.
-Each order and each cancellation is its own build, signature, and submission,
-which means a two-sided quote across five price levels is 10 writes to place and
-10 to cancel. At the standard 60 writes a minute that's roughly three full
-refresh cycles per minute, so size your quoting loop accordingly or ask about
-[elevated limits](/api-reference/rate-limits#elevated-limits).
+Webhooks are durable, ordered per endpoint and delivered at least once.
 
-**Transactions from one wallet compete for the same coins.** If you build
-several transactions from the same wallet and submit them together, all but one
-are typically rejected, because each was built against the same unspent outputs.
-Submit and confirm in sequence, or use your node's chained-transaction endpoint
-to have the outputs threaded for you.
+- Verify HMAC against the exact raw body before parsing.
+- Reject timestamps outside the replay tolerance.
+- Deduplicate on `x-aura-webhook-id` with a database unique constraint.
+- Return success for an already-consumed event ID.
+- Echo the signed verification challenge header for endpoint activation.
+- Keep the one-time secret in a server-side secret manager and rotate it.
+- Inspect attempts and manually replay only after the handler is fixed.
 
-**Quantities are lot-aligned.** `quantity` must be a multiple of `10000000`
-(1e7). The builder rejects anything else up front rather than letting it fail
-on chain.
+Private topics need a live authorization from the matching user. The user can
+revoke private webhook access without the builder's developer key.
 
-## Acting for other users
+## Idempotent writes and partial success
 
-`/v1/tx/*` enforces that the transaction's signer equals the session's wallet, so
-a session for wallet A can never build a transaction spending from wallet B. That
-holds even for a signed request with someone else's `signerAddress` in the body.
+Provide a fresh, stable `idempotency-key` for each logical write and reuse it
+only when retrying that same operation. If a one-time developer or webhook
+secret was lost after a successful request, Aura cannot recover it; rotate the
+created credential instead.
 
-If you're building a copy-trading service, a portfolio manager, or any product
-that transacts on behalf of others, each user needs their own session and signs
-their own transactions. There is no delegation or operator model, and designing
-around one will not work.
+Batch cancellation is non-atomic. Read every per-order result. A fill and a
+cancel may race, so a mixed response is not a transport failure.
 
-## Error handling worth getting right
+## Transaction reconciliation
 
-- **`429`** carries `RateLimit-Remaining` and `RateLimit-Reset`. Back off on the
-  header rather than a fixed sleep.
-- **`401`** on a previously working token means it expired. Re-authenticate and
-  retry once, then give up rather than looping.
-- **`502`** means the Alephium node refused to build your transaction, and is
-  usually transient. Retry with backoff.
-- **`409`** is a state conflict rather than a transport failure. Retrying the
-  same request unchanged will not fix it.
+After any Alephium submission, call `GET /v1/transactions/{txId}` instead of
+implementing one poller per operation. Public callers see public correlations;
+the matching user session reveals its private associations. `aura.sequencer`
+reports the public sequencer lookup and its exact snapshot cursor. For an owned
+wallet-custody transaction, `aura.walletCustody.transaction.sequencer` also
+contains owner-sanitized `privateAccount.matches` and `privateAccount.cancellations`.
+Absence or an unavailable lookup is not proof that a chain transaction failed;
+continue using the explicit lookup/found/chain states.
 
-Retrying `POST /v1/tx/*` is always safe, since those endpoints build transactions
-and never submit them. The returned `unsignedTx` can differ between calls as
-your unspent outputs change, and only the one you actually sign and submit
-matters.
+## Historical data provenance
 
-Full status and code tables are in [Errors](/api-reference/errors).
+- Candles are aggregated from settled Clearinghouse fills.
+- Retained book samples are raw one-minute observations with explicit gaps.
+- Late indexing, reorg and settlement corrections replace affected projections.
+- Aura never invents historical depth it did not retain.
 
-## Generating a client
+## Public trading-contract gate
 
-The spec at [`/openapi.json`](https://api.aura.markets/openapi.json) is OpenAPI
-3.1, generated from the live route definitions, so it never drifts from the
-implementation. Point any generator at it:
+Use only order, authorization, cancellation and dead-man-switch operations that
+appear in the published OpenAPI document and builder SDK. Do not call internal
+wallet/enclave routes, and do not revive deleted on-chain CLOB build-tx routes.
 
-```bash
-npx @openapitools/openapi-generator-cli generate \
-  -i https://api.aura.markets/openapi.json \
-  -g python \
-  -o ./aura-client
-```
-
-The published spec covers the integrator surface. Endpoints that exist only to
-serve the Aura app (comments, support tickets, notifications, watchlist, image
-upload, proposal drafts, and the proposal form's AI helpers) are omitted, along
-with the operator dashboard. If you find a reference to something absent from
-the spec, treat it as private rather than undocumented: it can change or
-disappear without notice.
-
-Anything scoped to your own wallet uses `me` in the path rather than an address,
-for example `GET /v1/users/me`, `GET /v1/referrals/me/summary`, and
-`GET /v1/users/me/pending-reveals`. Endpoints that take `{address}` return
-public data and work for any wallet.
-
-<Tip>
-  Building something on Aura? Say hello on
-  [Telegram](https://t.me/AuraMarkets). It's also the place to ask about elevated
-  rate limits or to flag a gap in these docs.
-</Tip>
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Credential composition and authority boundaries.
+  </Card>
+  <Card title="Realtime" icon="bolt" href="/api-reference/realtime">
+    Durable resume and explicit reset handling.
+  </Card>
+  <Card title="Rate limits" icon="gauge-high" href="/api-reference/rate-limits">
+    Quotas, stream caps and backoff.
+  </Card>
+  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Stable codes and retry classification.
+  </Card>
+</CardGroup>

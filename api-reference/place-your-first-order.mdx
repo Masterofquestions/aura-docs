@@ -1,344 +1,161 @@
 ---
-title: "Place Your First Order"
-sidebarTitle: "Place Your First Order"
-description: "End-to-end walkthrough: authenticate with a wallet signature, build an unsigned order transaction, sign it locally, and submit it to Alephium."
-keywords: ["place order Aura API", "prediction market bot", "sign transaction Alephium", "wallet authentication", "limit order API"]
+title: "Prepare Your First API Order"
+sidebarTitle: "Prepare API Trading"
+description: "Set up secure BUY/SELL trading with separate builder identity and user-controlled authority."
+keywords: ["Aura trading API", "prediction market bot", "developer key", "restricted trading authorization"]
 ---
 
-This walks the whole path, from an empty script to a resting limit order on-chain.
-Six steps, four of them HTTP calls to Aura.
+Aura trading is instant off-chain matching with batched Clearinghouse
+settlement. Orders are **not** individual on-chain CLOB transactions. Do not use
+the deleted `/v1/tx/markets/{address}/orders`, `market-orders`, or per-order
+build/sign/submit flow.
 
-The important structural point up front: **Aura never holds your keys and never
-submits your transaction.** The API builds an unsigned transaction, you sign it
-locally, and you submit it to an Alephium node yourself. That means a compromised
-Aura API cannot move your funds, and it also means you cannot place an order
-without a local signer.
+The secure API path keeps builder identity and user authority separate:
 
-<Info>
-Run this against testnet first. Same API, same flow, test tokens.
-Base URL `https://api.testnet.aura.markets`, node
-`https://node.testnet.alephium.org`.
-</Info>
+<Steps>
+  <Step title="Read the active protocol configuration">
+    ```ts
+    const config = await aura.protocol.config()
+    if (config.network.name !== expectedNetwork) throw new Error('wrong Aura network')
+    ```
 
-## Before you start
+    Use its collateral decimals, lot size, fee rate, lifetime and batch limits.
+    Do not copy these values from a tutorial.
+  </Step>
+  <Step title="Create a narrowly scoped developer key">
+    The builder owner creates a key with only the needed scopes, for example
+    `market:read`, `realtime:public`, `account:read`, `trade:place` and
+    `trade:cancel`. The key controls identity and quota, not assets.
+    Save the returned `key.builderCode` as the builder's canonical public
+    attribution identity. It is not a secret.
+  </Step>
+  <Step title="Establish a wallet session for private reads">
+    The user signs a one-time Aura login challenge. Use the resulting session
+    for spendable-aware quotes, account snapshots and private realtime topics.
+    The order write itself uses the developer key plus the restricted trading
+    authorization, not this session bearer.
+  </Step>
+  <Step title="Have the user create restricted trading authority">
+    The authorization is held by Aura's enclave and limited by expiry and
+    trading caps. The user can inspect, rotate and revoke it. Neither seed
+    material nor intent/cancel signatures are exposed to the builder. Creation
+    happens only in Aura's signer iframe/first-party authorization console; its
+    one-time `aura_trade_…` secret is delivered to the chosen builder for
+    server-side storage. The user binds the authorization to the exact
+    `builderCode` returned with the developer key; Aura rejects order writes
+    when those identities do not match.
+  </Step>
+  <Step title="Preview BUY or SELL with the canonical matcher">
+    ```ts
+    const quote = await aura.markets.quote(marketAddress, {
+      outcome: 'yes',
+      side: 'buy',
+      orderType: 'gtc_limit',
+      quantityBaseUnits: baseUnits('1000000000000000000'),
+      limitPriceTick: priceTick(625),
+      expectedBookVersion: snapshot.bookVersion,
+    })
+    ```
 
-You need three things:
+    Check `expiresAt`, warnings, required collateral, unfilled quantity and the
+    current book version. A quote is never a guaranteed fill.
+  </Step>
+  <Step title="Submit idempotently and observe lifecycle events">
+    Semantic order submission is `POST /v1/orders` with a developer key in
+    `x-aura-developer-key` and the user's authorization in
+    `x-aura-trading-authorization`. Aura derives the authorization owner,
+    registered-market witness, network, nonce, timestamps and intent, injects
+    the authenticated key's canonical `builderCode`, then signs and submits
+    internally. Do not add a caller-selected `builderCode` to the order body;
+    it is not accepted. The
+    response contains an intent hash and may contain a public sequencer-signed
+    acknowledgement for client verification. It never contains the intent's
+    custody signature, a cancellation authorization or a reusable signing
+    grant.
 
-<CardGroup cols={3}>
-  <Card title="A wallet key" icon="key">
-    An Alephium private key you can sign with in your process. A browser
-    extension works for interactive apps, but a bot needs a local key.
-  </Card>
-  <Card title="USDT for collateral" icon="dollar-sign">
-    Buy orders lock collateral. Aura settles in USDT at 18 decimals.
-  </Card>
-  <Card title="A little ALPH" icon="gas-pump">
-    Around 0.21 ALPH per order covers gas plus the refundable storage deposits
-    Alephium charges for the order entries.
-  </Card>
-</CardGroup>
+    ```ts
+    const placed = await aura.orders.place({
+      clientOrderId: baseUnits('42'),
+      marketId: quote.marketId,
+      outcome: 'yes',
+      side: 'buy',
+      orderType: 'gtc_limit',
+      quantityBaseUnits: baseUnits('1000000000000000000'),
+      limitPriceTick: priceTick(625),
+      expectedBookVersion: quote.bookVersion,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    })
+    ```
 
-```bash
-npm install @alephium/web3
-```
+    Supply exactly one of `quantityBaseUnits` or BUY-only `spendBaseUnits`.
+    IOC SELL requires `costBoundBaseUnits` as minimum proceeds. The API rejects
+    stale, expired or authorization-policy-violating requests.
 
-## Step 1: Request a challenge
+    Persist the exact body. After an ambiguous transport failure, retry the
+    same `clientOrderId`, `expiresAt` and terms; recomputing expiry creates a new
+    logical request.
 
-Authentication is a wallet signature. Ask for a challenge string first.
+    An accepted order is initially provisional. Subscribe to the user's order,
+    funding, settlement and account topics after the account snapshot cursor.
+    Treat settlement confirmation as final for analytics; an earlier match can
+    still unwind or fail funding.
+  </Step>
+</Steps>
 
-```javascript
-const API = 'https://api.testnet.aura.markets'
+## Order state is not one boolean
 
-const { challenge } = await fetch(`${API}/v1/auth/challenge`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ address: wallet.address }),
-}).then((r) => r.json())
-```
+Builders should preserve the states emitted by Aura, including accepted, open,
+partially filled, matched/provisional, cancel pending, cancelled, settled,
+unwound and funding failed. Do not remove an order from the UI before its
+replacement position, settlement or correction state is available.
 
-The challenge is human-readable and includes a nonce and an expiry, so what you
-sign is legible rather than an opaque hash:
+## Cancellation and dead-man switch
 
-```text
-Sign in to Aura.
+Batch cancellation is non-atomic and returns a result for each target. A fill
+may win the race for one order while another cancellation succeeds. Reusing the
+same idempotency key must return the original result rather than executing a
+second batch.
 
-Wallet:  1GUgKXvPNkgEa6MBDXsKMGvpyyJnzwVMc1Zrzz2N78PiL
-Nonce:   7f3a9c...
-Expires: 2026-07-29T19:45:00.000Z
-```
-
-## Step 2: Sign the challenge
-
-Sign it with Alephium's message hasher. The `'alephium'` prefix matters, and
-signing the raw bytes instead will be rejected.
-
-```javascript
-import { hashMessage, sign } from '@alephium/web3'
-
-const signature = sign(hashMessage(challenge, 'alephium'), wallet.privateKey)
-```
-
-<Warning>
-Sign the challenge string **exactly** as returned, including newlines. Trimming
-whitespace or normalizing line endings changes the hash and the signature will
-fail to verify.
-</Warning>
-
-If you are working in a language without an Alephium SDK, the signing scheme is
-specified byte by byte in [Authentication](/api-reference/authentication).
-
-## Step 3: Create a session
-
-Exchange the signature for a session. Bots should pass `issueToken: true` to get
-a bearer token in the response body instead of relying on cookies.
-
-```javascript
-const session = await fetch(`${API}/v1/auth/session`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({
-    address: wallet.address,
-    publicKey: wallet.publicKey,
-    signature,
-    keyType: 'default',
-    issueToken: true,
-  }),
-}).then((r) => r.json())
-
-const token = session.token
-```
-
-<Note>
-`keyType` must match your address. Use `default` for a standard Alephium wallet
-(addresses starting `1`), or `gl-secp256k1` for an Aura embedded wallet
-(addresses starting `3`). The same value has to be passed again in step 4.
-</Note>
-
-Tokens last 30 days. Bearer sessions are exempt from CSRF, which is the main
-reason to prefer them for automation. Cookie sessions require an `x-csrf-token`
-header on every mutating request.
-
-## Step 4: Build the unsigned transaction
-
-Now the actual order. Pick a market from
-[your first API call](/api-reference/quickstart), then:
-
-```javascript
-const market = '26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs'
-
-const built = await fetch(`${API}/v1/tx/markets/${market}/orders`, {
-  method: 'POST',
-  headers: {
-    'content-type': 'application/json',
-    authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify({
-    signerAddress: wallet.address,
-    signerPublicKey: wallet.publicKey,
-    signerKeyType: 'default',
-    side: 'buy',
-    outcome: 'yes',
-    price: 500,
-    quantity: '1000000000000000000',
-  }),
-}).then((r) => r.json())
-```
-
-That is a bid for 1 yes share at 50%. The response hands back everything you need
-to sign and everything you should check first:
-
-```json
-{
-  "unsignedTx": "00010001...",
-  "txId": "9c1f...",
-  "fromGroup": 0,
-  "toGroup": 0,
-  "gasAmount": 20000,
-  "gasPrice": "100000000000",
-  "attoAlphAmount": "201000000000000000",
-  "collateralRequired": "512500000000000000",
-  "tokens": [{ "id": "<usdt-token-id>", "amount": "512500000000000000" }]
-}
-```
+Market makers can arm a durable dead-man switch. Refresh it only while the
+authenticated control surface is alive. If the heartbeat expires, Aura creates
+exact one-use cancellations through the normal escrow/tombstone path. Aura does
+not keep a reusable pre-signed cancel-all transaction.
 
 <Warning>
-Check `collateralRequired` before you sign. It is 0.5125 USDT here, not 0.5,
-because it includes the 2.5% trading fee: `price × quantity ÷ 1000 × 1.025`.
-Signing without reading this is how bots overspend.
+  In a browser, a dead-man switch heartbeat is tab-only. Tell the user clearly
+  that closing the tab, sleeping the device or losing connectivity will trigger
+  cancellation. Never arm it silently.
 </Warning>
 
-### Order constraints
+The public management operations are:
 
-| Field | Rule |
+| Operation | Route |
 | --- | --- |
-| `price` | Integer tick, 1 to 999. 500 means 50%. Both 0 and 1000 are rejected. |
-| `quantity` | String of base units, and a whole multiple of `10000000`. One share is `1000000000000000000`. |
-| `side` | `buy` or `sell`. |
-| `outcome` | `yes` or `no`. |
-| `signerAddress` | Must be the same wallet as the session. |
+| Place semantic BUY/SELL request | `POST /v1/orders` |
+| Advanced pre-encoded intent compatibility | `POST /v1/orders/raw` |
+| Submit one canonical unsigned cancel command | `POST /v1/orders/cancel` |
+| Cancel explicit hashes, all, or an owner-scoped filter | `POST /v1/orders/cancel-batch` |
+| Read a batch by idempotency key | `POST /v1/orders/cancel-batch/status` |
+| Arm/refresh/disarm/status | `POST /v1/orders/dead-man-switch/{operation}` |
 
-Sell orders lock shares rather than USDT, so `collateralRequired` comes back zero
-for them.
+Filtered cancellation returns at most 100 newest orders. If `selection.truncated`
+is true, continue with `nextBeforeSequence` and a **new** idempotency key. A
+retry of the same page keeps the original key.
 
-## Step 5: Sign the transaction
+## Advanced raw compatibility gate
 
-Aura built it. You sign it.
-
-```javascript
-const { signature: txSignature } = await wallet.signUnsignedTx({
-  signerAddress: wallet.address,
-  unsignedTx: built.unsignedTx,
-})
-```
-
-## Step 6: Submit to Alephium
-
-Submit to a node, not to Aura. Aura has no submit endpoint, by design.
-
-```javascript
-import { web3 } from '@alephium/web3'
-
-web3.setCurrentNodeProvider('https://node.testnet.alephium.org')
-
-const submitted = await web3
-  .getCurrentNodeProvider()
-  .transactions.postTransactionsSubmit({
-    unsignedTx: built.unsignedTx,
-    signature: txSignature,
-  })
-
-console.log(submitted.txId === built.txId) // true
-```
-
-Comparing the returned `txId` against the one Aura predicted is a cheap integrity
-check. If they differ, the transaction you signed is not the transaction Aura
-built, and you should stop rather than retry.
-
-## Confirm it landed
-
-Chain confirmation and indexer visibility are separate. Once the transaction is
-in a block, poll until Aura's indexer has picked it up:
-
-```javascript
-const { indexed } = await fetch(
-  `${API}/v1/markets/${market}/activity?txId=${built.txId}`
-).then((r) => r.json())
-```
-
-Once `indexed` is true, the order shows up in the book and in
-`GET /v1/markets/{market}/orders`. For anything real-time, subscribe to the
-[realtime stream](/api-reference/realtime) rather than polling this.
-
-## The whole thing
-
-```javascript
-import { web3, hashMessage, sign, PrivateKeyWallet } from '@alephium/web3'
-
-const API = 'https://api.testnet.aura.markets'
-const NODE = 'https://node.testnet.alephium.org'
-
-web3.setCurrentNodeProvider(NODE)
-const wallet = new PrivateKeyWallet({ privateKey: process.env.PRIVATE_KEY })
-
-// 1 + 2: challenge and sign
-const { challenge } = await fetch(`${API}/v1/auth/challenge`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ address: wallet.address }),
-}).then((r) => r.json())
-
-const signature = sign(hashMessage(challenge, 'alephium'), wallet.privateKey)
-
-// 3: session
-const { token } = await fetch(`${API}/v1/auth/session`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({
-    address: wallet.address,
-    publicKey: wallet.publicKey,
-    signature,
-    keyType: 'default',
-    issueToken: true,
-  }),
-}).then((r) => r.json())
-
-// pick a market
-const { markets } = await fetch(`${API}/v1/markets?limit=1&status=open`).then((r) =>
-  r.json()
-)
-const market = markets[0].marketAddress
-
-// 4: build
-const built = await fetch(`${API}/v1/tx/markets/${market}/orders`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-  body: JSON.stringify({
-    signerAddress: wallet.address,
-    signerPublicKey: wallet.publicKey,
-    signerKeyType: 'default',
-    side: 'buy',
-    outcome: 'yes',
-    price: 500,
-    quantity: '1000000000000000000',
-  }),
-}).then((r) => r.json())
-
-console.log('collateral:', built.collateralRequired)
-
-// 5 + 6: sign and submit
-const { signature: txSignature } = await wallet.signUnsignedTx({
-  signerAddress: wallet.address,
-  unsignedTx: built.unsignedTx,
-})
-
-const submitted = await web3.getCurrentNodeProvider().transactions.postTransactionsSubmit({
-  unsignedTx: built.unsignedTx,
-  signature: txSignature,
-})
-
-console.log('submitted', submitted.txId)
-```
-
-## When it goes wrong
-
-<AccordionGroup>
-  <Accordion title="401 on the build call" icon="lock">
-    The bearer token expired or the header is malformed. It must be
-    `Authorization: Bearer <token>`. Bearer sessions do not slide, so re-run
-    steps 1 through 3 on a 401 rather than retrying the build.
-  </Accordion>
-  <Accordion title="Signer address does not match session" icon="user-xmark">
-    `signerAddress` in step 4 has to be the wallet that signed the challenge in
-    step 2. You cannot build a transaction for a different address than the one
-    you authenticated as.
-  </Accordion>
-  <Accordion title="Transaction reverts with error code 12" icon="ban">
-    `INVALID_FILL`, and almost always a quantity that is not a multiple of
-    `10000000`. See [Error codes](/resources/error-codes).
-  </Accordion>
-  <Accordion title="Transaction reverts with error code 13" icon="tag">
-    `INVALID_PRICE`. Ticks must be 1 to 999 inclusive.
-  </Accordion>
-  <Accordion title="Not enough ALPH" icon="gas-pump">
-    Each order writes storage entries on Alephium, which requires a refundable
-    deposit on top of gas. Keep at least 0.21 ALPH free per order in flight. You
-    get the deposit back when the order is filled or cancelled.
-  </Accordion>
-</AccordionGroup>
-
-## Next
+New builders should use semantic `orders.place()`. `intentHex` exists only on
+advanced `orders.placeRaw()`, while single-order `commandHex` remains an
+unsigned fixed-format cancellation command. Use Aura's audited canonical
+format package for either raw message; never reverse-engineer the binary layout
+from an example, call wallet-svc/enclave internal routes, or request a custody
+signature from the API.
 
 <CardGroup cols={2}>
-  <Card title="Integrator guide" icon="plug" href="/api-reference/integrator-guide">
-    Cancels, elevated rate limits, and running this at volume.
-  </Card>
-  <Card title="Build-tx flow" icon="diagram-project" href="/api-reference/build-tx-flow">
-    Every other transaction Aura can build: stakes, votes, claims, proposals.
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Compose builder and user authority correctly.
   </Card>
   <Card title="Realtime stream" icon="bolt" href="/api-reference/realtime">
-    Watch your order fill instead of polling for it.
-  </Card>
-  <Card title="Error codes" icon="triangle-exclamation" href="/resources/error-codes">
-    Decode an on-chain revert.
+    Observe provisional state and settlement corrections.
   </Card>
 </CardGroup>

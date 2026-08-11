@@ -1,149 +1,109 @@
 ---
 title: "Trade Markets"
 sidebarTitle: "Trade Markets"
-description: "Aura uses a central limit order book. Place market or limit orders, build parlays, and earn from spreads."
+description: "Buy and sell outcome shares through Aura's instant order book and Clearinghouse settlement."
 ---
 
-Aura uses a **central limit order book (CLOB)**. Prices are shown as
-probabilities (0–100%), and liquidity comes from limit orders posted by
-traders and market makers. A market order takes the best available prices on
-the book and normally fills within seconds. A limit order lets you choose your
-price, and it rests on the book until someone matches it or you cancel it.
+Aura uses an **instant off-chain order book with batched on-chain Clearinghouse
+settlement**. Prices represent probabilities from 0% to 100%. Orders appear in
+the book immediately; a match is provisional until funding and settlement
+finish.
 
-Matching runs continuously off-chain and each match is then settled on chain, so
-a fill is confirmed a moment after you submit rather than in the same instant.
-You always pay the **resting order's** price, and if that price is better than
-the one you asked for, the difference is refunded to you in the same
-transaction.
+This replaces Aura's legacy model where each order and cancellation was its own
+on-chain CLOB transaction.
 
 ## Buying outcome shares
 
 <Steps>
-  <Step title="Navigate to your desired market">
-    Select the market you wish to trade from the Aura homepage or search
-    results.
+  <Step title="Choose a market and outcome">
+    Select a market, then choose **YES** or **NO**.
   </Step>
-  <Step title="Choose outcome">
-    Pick an outcome, typically **YES** or **NO**.
-  </Step>
-  <Step title="Choose order type">
+  <Step title="Choose how to execute">
     <Tabs>
-      <Tab title="Market order (instant fill)">
-        Enter how much USDT (collateral) you want to spend (or the share
-        quantity you want). The order fills immediately against the best
-        available asks on the order book. Your final average price depends
-        on available depth.
+      <Tab title="Market (IOC)">
+        Enter a spend or share quantity. Aura previews the current depth, fees,
+        average price, worst price and any unfilled remainder. The order takes
+        available liquidity immediately and cancels anything it cannot fill.
       </Tab>
-      <Tab title="Limit order (set your price)">
-        Enter a price (probability % / 0–100) and a quantity (shares). Your
-        order is posted to the order book and only fills if another trader
-        matches it. You can cancel open orders anytime before they fill.
+      <Tab title="Limit (GTC)">
+        Choose a price and share quantity. Any unmatched remainder rests in the
+        immediate book until it fills, expires or you cancel it.
       </Tab>
     </Tabs>
   </Step>
-  <Step title="Confirm transaction">
-    Click **Buy**. Your Aura wallet signs seamlessly, with no pop-ups.
+  <Step title="Review the live quote">
+    A quote is a point-in-time simulation, not a reserved fill. Review its
+    expiry, fees, price impact, required collateral and warnings.
+  </Step>
+  <Step title="Confirm">
+    The embedded wallet authorizes the bounded action inside Aura's enclave;
+    seed material and reusable signatures never leave custody.
   </Step>
 </Steps>
 
 ## Selling outcome shares
 
-<Steps>
-  <Step title="Switch to Sell tab">
-    On the market page, select the **Sell** tab.
-  </Step>
-  <Step title="Select outcome shares">
-    Choose which shares you want to sell (YES or NO).
-  </Step>
-  <Step title="Choose order type">
-    <Tabs>
-      <Tab title="Market sell (instant fill)">
-        Sells immediately into the best available bids on the book. Your
-        average fill price depends on book depth.
-      </Tab>
-      <Tab title="Limit sell (set your price)">
-        Set a price and quantity to sell. The order sits on the book until
-        a buyer matches it. You can cancel open orders anytime if you
-        change your mind.
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step title="Confirm transaction">
-    Click **Sell**. Your Aura wallet signs seamlessly, with no pop-ups.
-  </Step>
-</Steps>
+Open the **Sell** tab, choose YES or NO shares and select market/IOC or
+limit/GTC execution. Aura reserves only the sellable shares required by an open
+order. A pending settlement obligation remains unavailable until it settles or
+unwinds.
 
-## Parlay bets (multi-leg trades)
+## What “instant” means
 
-- **Multiple legs**. Select 2 to 5 different market outcome positions
-  (legs) to include in one parlay bet.
-- **Combined odds**. The odds of each leg multiply together, yielding a
-  combined payout that can reach **up to 50× the original stake** if all
-  legs are correct.
-- **All-or-nothing payout**. Every leg must win for the parlay to pay
-  out. If any leg fails, the parlay is lost and no payout is given.
-- **Dynamic odds**. Parlay odds reflect the live order book at the time
-  you place the bet. As legs are added, the overall odds shift based on
-  available liquidity and prices.
+The UI can show an accepted order or provisional match immediately. Final
+Clearinghouse settlement follows asynchronously. Funding failure, an unwind or
+a chain reorg can correct provisional state, so keep the order/account view
+open until settlement is confirmed.
 
-## Understanding fees
+Aura reconciles open orders, holds, positions and settlement events so an order
+does not disappear before its replacement position or correction is visible.
 
-A **2.5% trading fee** is charged in USDT on executed volume. The fee
-splits between the market creator and the protocol treasury:
+## Open orders and cancellation
 
-| Slice | Recipient |
-| --- | --- |
-| **Creator share** | A tier-scaled cut (1–30%) goes to the market creator. |
-| **Treasury** | The remainder funds liquidity rewards, dispute incentives, referral payouts, and protocol development. |
+You can cancel the unfilled remainder of an open limit order. A fill can race a
+cancellation; in that case the filled portion remains a trade and only the
+remaining quantity cancels.
 
-Two additional rewards flow from the treasury's share:
+Market makers can explicitly arm a dead-man switch that cancels open orders if
+its authenticated heartbeat stops. Closing or sleeping the active browser tab
+can trigger it, and the app warns before arming. Aura creates one-use exact
+cancellations at timeout rather than storing a reusable pre-signed cancel-all.
 
-- **Referrals**. When a trader uses a referral link, the referrer earns
-  **10% of that trader's trading fees**, paid out of the treasury's share.
-- **Dispute resolution**. Voters who decide disputed markets are
-  rewarded through a separate slashing mechanism. See
-  [Resolution & Disputes](/markets/resolution-and-disputes).
+## Fees, spread and slippage
 
-<Tip>
-  No other fees exist. There is no exit tax, hidden spread, or performance fee.
-</Tip>
+The current trading fee and denominator are published by Aura's canonical
+protocol configuration. Check the quote shown before confirming rather than
+relying on a hard-coded percentage.
 
-### Spreads & slippage
+- **Spread** is the gap between the best bid and ask.
+- **Slippage** occurs when an order consumes several price levels.
+- **Price improvement** means execution was better than your limit or bound.
 
-- **Spread**. The gap between the best bid and best ask on the book.
-- **Slippage**. When a trade consumes multiple price levels due to
-  limited depth.
+Creator, referral, liquidity and treasury accounting comes from settled fills.
+Provisional matches do not count as final earnings.
 
 ## Potential returns
 
 | Market resolves YES | Market resolves NO |
 | --- | --- |
-| Each YES share pays **1 USDT** | Each NO share pays **1 USDT** |
-| All NO shares expire worthless | All YES shares expire worthless |
+| Each settled YES share pays 1 unit of collateral | Each settled NO share pays 1 unit of collateral |
+| NO shares pay zero | YES shares pay zero |
 
-Once a market outcome is finalized, Aura's automation pays winning shares out in
-USDT to the wallet holding them, usually within minutes of resolution. You don't
-need to claim anything, and if you'd rather not wait, the claim is also open to
-you directly so you can pull your own winnings at any point after resolution.
+After resolution and its dispute/settlement timing, winnings become claimable
+or are paid by Aura's payout automation. The market lifecycle shows when that
+state is reached.
 
-## Collateral & settlement safety
+## Parlays
 
-Buy orders lock USDT collateral based on the order's price and size. Locked
-collateral is released in two ways:
-
-- **On a fill at a better price**, the difference between what you locked and
-  what the trade actually cost is refunded in the same transaction.
-- **On cancellation**, the collateral still held against the unfilled portion is
-  returned in full.
-
-Collateral for the unfilled part of a partially filled order stays locked while
-that remainder is still live on the book, which is what keeps the order able to
-fill. Cancel it to get that collateral back.
+Parlays combine several market outcomes into one all-or-nothing payout. Their
+odds and limits are a separate product surface; do not infer a parlay price by
+multiplying stale book values. Review the current parlay quote before
+confirming.
 
 ## TL;DR
 
-- Central limit order book, where bids and asks form 0–100% probabilities.
-- Market orders cross the book; limit orders provide liquidity.
-- 2.5% USDT fee on executed volume, split between creator and treasury.
-- 1 USDT per winning share at settlement.
-- Up to 50× payout on 2–5-leg parlays.
+- Immediate off-chain order book; batched Clearinghouse settlement.
+- Market/IOC orders take available liquidity; limit/GTC remainders can rest.
+- BUY locks collateral and SELL reserves shares/obligations.
+- Matches are provisional until settlement confirms.
+- Current fees and limits come from protocol configuration and the live quote.

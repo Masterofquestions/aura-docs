@@ -1,137 +1,89 @@
 ---
-title: "Build-tx Flow"
-description: "How non-custodial transaction building works under `/v1/tx/*`."
+title: "Non-Trading Build-tx Flow"
+sidebarTitle: "On-chain Operations"
+description: "Sign the remaining governance, oracle, proposal and vault transaction builders without confusing them with instant trading."
 ---
 
-Aura is non-custodial, so the API **never holds private keys**. Endpoints
-under `/v1/tx/*` return an *unsigned* transaction that the caller signs with
-its own wallet (the app's embedded wallet, a mobile wallet, a hardware wallet,
-and so on) and submits to an Alephium node.
+Some explicitly on-chain Aura operations still return an unsigned Alephium
+transaction under `/v1/tx/*`. Trading does not: instant orders are signed and
+submitted internally under the user's restricted enclave authorization.
 
-## Anatomy of a build-tx response
+<Warning>
+  The former `/v1/tx/markets/{address}/orders`, `market-orders`, and order-cancel
+  builders are deleted. An integration that still calls them is using the
+  legacy on-chain CLOB model and must migrate before launch.
+</Warning>
 
-Every `/v1/tx/*` endpoint returns the same shape:
+## Where build-tx still applies
 
-```json
-{
-  "unsignedTx":         "00010001...",
-  "txId":               "abc123...",
-  "fromGroup":          0,
-  "toGroup":            0,
-  "gasAmount":          20000,
-  "gasPrice":           "100000000000",
-  "collateralRequired": "666250000000000000",
-  "attoAlphAmount":     "1000000000000000",
-  "tokens": [
-    { "id": "<usdt-id>", "amount": "666250000000000000" }
-  ]
-}
-```
-
-| Field | Description |
+| Domain | Examples |
 | --- | --- |
-| `unsignedTx` | Hex-encoded unsigned transaction. Pass directly to your wallet's `signUnsignedTx` helper. |
-| `txId` | The txId your wallet should produce after signing. Useful for client-side optimistic UI. |
-| `fromGroup` / `toGroup` | Alephium shard groups. |
-| `gasAmount`, `gasPrice` | Gas estimate for the transaction. |
-| `collateralRequired` | USDT the tx will lock, on order endpoints. Use it for pre-flight balance checks. |
-| `attoAlphAmount` | ALPH the tx approves, covering dust plus any on-chain map-entry / contract deposits. Unused approval returns to your wallet as change. |
-| `tokens[]` | Tokens the tx approves (id + raw amount strings). |
+| Vault | explicitly documented protocol-vault operations |
+| Oracle | submit/dispute an outcome, commit and reveal |
+| Governance | cast an on-chain vote |
+| Factory | propose markets, submit/link proposals and parlay deposit |
 
-Fields beyond the common set (`collateralRequired`, `tokens`, `legCount`,
-…) appear only where they're meaningful. See each endpoint's schema.
+Always use the current OpenAPI operation for the exact request and response.
+Wallet collateral deposits and withdrawals use the session-bound
+`/v1/funding` flow, not a generic build-tx tutorial.
 
-## End-to-end example: place a limit order
+## Safe flow
 
 <Steps>
-  <Step title="Build the unsigned tx">
-    ```bash
-    curl -X POST https://api.aura.markets/v1/tx/markets/<market-address>/orders \
-      -b cookies.txt \
-      -H "x-csrf-token: $CSRF" \
-      -H 'content-type: application/json' \
-      -d '{
-        "signerAddress":   "3Cef...",
-        "signerPublicKey": "0233...",
-        "side":            "buy",
-        "outcome":         "yes",
-        "price":           650,
-        "quantity":        "1000000000000000000"
-      }'
-    ```
+  <Step title="Read protocol configuration">
+    Confirm network, contract addresses and collateral token from
+    `GET /v1/protocol/config`.
   </Step>
-  <Step title="Sign with your wallet">
-    <CodeGroup>
-    ```ts @alephium/web3
-    import { web3 } from '@alephium/web3'
-
-    const signed = await wallet.signUnsignedTx({
-      signerAddress,
-      unsignedTx: response.unsignedTx,
-    })
-    ```
-
-    </CodeGroup>
+  <Step title="Build for the authenticated signer">
+    The route verifies that the requested signer matches the wallet session.
+    Validate the returned network, destination, token movements and expiry in
+    your own client before asking for a signature.
   </Step>
-  <Step title="Submit to any Alephium node">
-    ```ts
-    const submitted = await nodeProvider.transactions.postTransactionsSubmit({
-      unsignedTx: response.unsignedTx,
-      signature:  signed.signature,
-    })
-
-    console.assert(submitted.txId === response.txId)
-    ```
-
-    Most wallets bundle the sign + submit step into a single
-    `signAndSubmitUnsignedTx` helper.
+  <Step title="Sign without exporting custody material">
+    Send the unsigned transaction to the user's wallet provider. Never request
+    or export a raw seed, and never send a private key to Aura or to your
+    backend.
+  </Step>
+  <Step title="Submit to Alephium">
+    Submit the signed transaction through a trusted node/provider. Do not reuse
+    a signature for a different unsigned payload.
+  </Step>
+  <Step title="Reconcile generically">
+    Poll `GET /v1/transactions/{txId}` or use the corresponding realtime topic.
+    The generic response distinguishes mempool, confirmation, script failure,
+    local indexing, reorg and recovery state.
   </Step>
 </Steps>
 
-## Why this pattern?
+## Validate before signing
 
-| Custodial API | Aura API |
-| --- | --- |
-| You hand over your key, or sign in to a custodian. | Your wallet signs locally, and the API only constructs the tx. |
-| Custodian can freeze, censor, or drain. | Aura cannot move your funds at all. |
-| Single point of failure. | Aura can go down without affecting your wallet. |
+At minimum compare:
 
-This pattern is identical to how Polymarket, Hyperliquid, and other
-non-custodial trading platforms expose their write paths.
+- the chain/network and contract against `/v1/protocol/config`;
+- the authenticated signer address;
+- token IDs and exact base-unit amounts;
+- the operation-specific bounds and expiry;
+- the expected contract method and destinations;
+- any fee and refundable-deposit assumptions.
 
-## Build-tx endpoints (by domain)
+Treat the unsigned transaction as untrusted input until this comparison passes.
 
-| Domain | Endpoints |
-| --- | --- |
-| Orders | `POST /v1/tx/markets/{address}/orders` (limit), `POST /v1/tx/markets/{address}/market-orders`, `POST /v1/tx/markets/{address}/orders/{orderId}/cancel` |
-| Vault | `POST /v1/tx/vault/{address}/deposit`, `.../unlock-request`, `.../withdraw` |
-| Oracle | `POST /v1/tx/oracle/submit-outcome`, `.../dispute-outcome`, `.../commit`, `.../reveal` |
-| Governance vote | `POST /v1/tx/voting/vote` |
-| Proposals | `POST /v1/tx/factory/propose-market`, `.../propose-markets-batch`, `.../submit-proposals`, `.../link-proposals` |
-| Parlays | `POST /v1/tx/factory/parlay-deposit` |
+## Retry semantics
 
-A few endpoint-specific notes:
+Building is generally side-effect free, but the surrounding operation may have
+an idempotency contract. Follow the endpoint's documented idempotency key and do
+not assume every POST is safe to duplicate. Once a transaction has been
+submitted, reconcile its transaction ID rather than blindly building and
+submitting a replacement.
 
-- **Orders.** `quantity` must be a multiple of `10000000` (1e7 base units),
-  which is the contract's lot size. Buy orders return `collateralRequired`,
-  equal to `price × quantity / 1000` plus the 2.5% fee.
-- **Submit outcome.** Only `yes` and `no` can be proposed. `TOO_EARLY` is a
-  dispute-*vote* option rather than a submittable outcome, and the contract
-  asserts that. The USDT bond is read from the oracle contract server-side.
-- **Linked bundles run in two phases.** `propose-markets-batch` registers up
-  to 20 legs per transaction (phase A), then `submit-proposals` registers up
-  to 40 proposal ids for voting per transaction (phase B), and
-  `link-proposals` closes the bundle. Sign and submit each phase in order.
-- **Parlay deposit.** Pass structured legs
-  (`"legs": [{ "marketId": 12, "side": "yes" }, …]`, 2 to 5 legs). The API
-  produces the canonical on-chain payload and rejects duplicate or
-  contradictory legs up front, so a doomed parlay fails here instead of
-  round-tripping through the refund queue.
-- **Proposals.** String fields are validated against the on-chain UTF-8
-  *byte* limits (question ≤ 300, rules and sources ≤ 1000, metadata ≤ 2048
-  bytes), so multi-byte characters count more than once. `POST
-  /v1/proposals/validate` dry-runs the same checks and returns per-field byte
-  sizes.
-
-See the **API Reference → Endpoints** tab for the full request/response
-schema of each.
+<CardGroup cols={2}>
+  <Card title="Prepare API trading" icon="rocket" href="/api-reference/place-your-first-order">
+    Use the instant clearinghouse authorization model for orders.
+  </Card>
+  <Card title="Native funding" icon="wallet" href="/api-reference/funding">
+    Read spendability and use the exact-vector withdrawal flow.
+  </Card>
+  <Card title="API errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Handle node, validation and reconciliation failures.
+  </Card>
+</CardGroup>

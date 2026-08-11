@@ -1,79 +1,59 @@
 ---
 title: "Rate Limits"
-description: "Per-IP and per-account request budgets, with standard `RateLimit-*` response headers."
+description: "Understand Aura's IP, session, developer-key, stream and webhook quotas."
 ---
 
-The Aura API enforces per-minute rate limits on every request.
+Aura applies independent abuse controls by IP, wallet session and developer
+key. The effective limit is the tightest applicable bucket; adding a developer
+key does not remove IP controls.
 
-## Tiers
-
-| Tier | Reads (req/min) | Writes (req/min) |
-| ------------------------ | --------------: | ---------------: |
-| Anonymous | 60 per IP | 10 per IP |
-| Signed-in (session) | 600 per wallet | 60 per wallet |
-| Elevated (by agreement) | 6,000 per wallet | 600 per wallet |
-
-Anonymous requests are bucketed by client IP. Authenticated requests are
-bucketed by the session's wallet address instead, whether the session arrives as
-a cookie or a bearer token, so a signed-in integration isn't penalised for
-sharing an IP and can't dodge limits by rotating IPs.
-
-Because the bucket keys on the wallet address, **running more processes does not
-buy more throughput**. They share one budget. Plan around the per-wallet number.
-
-## Elevated limits
-
-Market makers and partners who need more headroom can have their wallet moved to
-the elevated tier under an agreement. Get in touch on
-[Telegram](https://t.me/AuraMarkets) with your wallet address and a rough
-picture of the request pattern you expect.
-
-Elevation only resizes the bucket. It grants no additional permissions and
-changes no endpoint behaviour.
+Developer keys carry explicit `readRequestsPerMinute`,
+`writeRequestsPerMinute` and `maxStreamConnections` values. Read them from the
+key record rather than assuming a universal premium tier.
 
 ## Response headers
 
-Every response carries the standard IETF
-`draft-ietf-httpapi-ratelimit-headers` set:
-
-```http
-RateLimit-Limit: 600
-RateLimit-Remaining: 547
-RateLimit-Reset: 38
-```
+Every limited response exposes standard rate-limit metadata:
 
 | Header | Meaning |
 | --- | --- |
-| `RateLimit-Limit` | Total requests allowed in the current window. |
-| `RateLimit-Remaining` | Requests remaining in the current window. |
-| `RateLimit-Reset` | Seconds until the window resets. |
+| `RateLimit-Limit` | Effective request allowance for the window |
+| `RateLimit-Remaining` | Requests remaining in the current window |
+| `RateLimit-Reset` | Time until the bucket resets |
+| `Retry-After` | Minimum delay after a `429` |
 
-## Hitting the limit
+Treat header values as opaque strings unless the published specification says
+otherwise. When a `429` is returned, honor `Retry-After` and add jitter so many
+workers do not reconnect together.
 
-When you exceed your budget, the API returns `429 Too Many Requests` with
-the standard error envelope:
+## Realtime limits
 
-```json
-{
-  "error": {
-    "code": "rate_limited",
-    "message": "rate limit exceeded — 600 req/1 minute",
-    "details": { "max": 600, "ttl": 38000 }
-  }
-}
-```
+SSE connections are limited per IP, session and developer key. Reconnecting
+aggressively after a deploy or network outage can consume the connection and
+request budgets at once.
 
-The same `RateLimit-*` headers are returned on the 429 response so your
-client can back off precisely.
+- Keep one multiplexed stream for several topics when practical.
+- Resume with `Last-Event-ID`; do not poll while reconnecting.
+- Use exponential backoff with jitter.
+- On `slow_consumer`, reduce callback latency before reconnecting.
+- On an explicit reset, fetch one fresh snapshot rather than replaying a large
+  set of ad hoc reads.
 
-## Staying inside the budget
+## Efficient integrations
 
-Two habits do most of the work:
+- Use field projection and cursor pagination for discovery lists.
+- Use the versioned snapshot plus SSE for visible books and private account
+  state.
+- Cache `/v1/protocol/config` with its ETag and revalidate it.
+- Avoid repeatedly requesting historical windows that cannot change.
+- Use webhooks for server-side durable notifications instead of maintaining a
+  stream per worker.
 
-- **Stream instead of polling.** `market:{address}:orders` and
-  `market:{address}:fills` are public SSE topics, so live order and fill data
-  costs you one connection instead of a poll loop against your read budget. See
-  the [Integrator guide](/api-reference/integrator-guide).
-- **Read the headers, not the clock.** `RateLimit-Remaining` and
-  `RateLimit-Reset` are on every response, including the `429`, so you can back
-  off precisely rather than guessing an interval.
+## Key-specific quotas
+
+The wallet that owns a developer key can choose bounded quotas at creation and
+inspect them later. Rotation preserves the integration's scopes and limits.
+Revocation immediately invalidates the key and disables its webhook delivery.
+
+If your legitimate workload cannot fit, reduce fan-out and contact Aura before
+increasing concurrency. Do not create key farms to bypass abuse controls.

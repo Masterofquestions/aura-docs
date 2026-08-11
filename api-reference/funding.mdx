@@ -1,0 +1,112 @@
+---
+title: "Native Funding"
+sidebarTitle: "Funding"
+description: "Read exact collateral state and safely deposit or withdraw through Aura's session-bound native funding API."
+---
+
+Funding is wallet authority, not builder authority. Every `/v1/funding` route
+requires the matching wallet session. Withdrawal quote/build calls also require
+CSRF for cookie sessions and explicitly reject developer keys and restricted
+trading authorizations.
+
+## Balance and deposit requirements
+
+```ts
+const funding = await walletAura.funding.balance()
+const deposit = await walletAura.funding.depositRequirements()
+```
+
+`balance()` separates raw confirmed collateral, reservations and authoritative
+spendable collateral. Never present the raw balance as withdrawable and never
+add reservations to spendable. `nativeWithdrawal.allowedNow` is false and its
+maximum is zero while any listed trading or custody blocker remains.
+This includes BUY collateral holds, SELL share reservations, sequencer
+obligation holds, pending settlements and a truncated sequencer risk snapshot.
+
+`depositRequirements()` returns the current network, collateral token, native
+Alephium wallet destination, dust requirement and confirmation count. Read it
+at action time rather than persisting deployment constants. Accepted BUY orders
+use automatic JIT funding; builders do not construct that transfer.
+
+`requirements.requiredConfirmations` is obtained from wallet-svc over its
+authenticated internal channel and is a positive integer runtime policy. Do
+not assume two confirmations (or any other fallback). If Aura cannot obtain a
+valid policy, the endpoint fails with `503 funding_requirements_unavailable`;
+freeze the funding flow and retry with backoff rather than guessing.
+
+After a deposit transaction is submitted, reconcile its transaction ID at
+`GET /v1/transactions/{txId}` and follow private funding realtime events.
+
+## Funding history and status
+
+```ts
+const page = await walletAura.funding.operations.list({ limit: 25 })
+const deposits = await walletAura.funding.deposits.list({ limit: 25 })
+const withdrawals = await walletAura.funding.withdrawals.list({ limit: 25 })
+
+if (page.page.nextCursor) {
+  await walletAura.funding.operations.list({
+    limit: page.page.limit,
+    cursor: page.page.nextCursor,
+  })
+}
+```
+
+Follow the returned cursor verbatim. `funding.operations.get(txId)` reports the
+wallet-custody state for an owned transaction. Generic transaction
+reconciliation additionally exposes owner-filtered `aura.walletCustody` state,
+chain confirmation, script outcome, indexing and reorg recovery. When a wallet
+session owns the custody row, `aura.walletCustody.transaction.sequencer` adds a
+sanitized sequencer cursor, bounded correlations, and that account's matching
+match/cancellation records. It never exposes another account, an intent or
+cancel signature, or internal custody bytes.
+
+## Native withdrawal
+
+<Steps>
+  <Step title="Create an idempotent quote">
+    ```ts
+    const quote = await walletAura.funding.withdrawals.quote({
+      idempotencyKey: createIdempotencyKey(),
+      network: config.network.name,
+      tokenId: config.collateral.tokenId,
+      amountBaseUnits: baseUnits('1000000000000000000'),
+      destinationAddress,
+      signerPublicKey,
+      signerKeyType: 'gl-secp256k1',
+    })
+    ```
+
+    The quote returns exact spendability and fee assumptions but no unsigned
+    bytes. Reusing the key with different terms conflicts; an expired quote
+    requires a new key.
+  </Step>
+  <Step title="Build the persisted ordered vector">
+    ```ts
+    const build = await walletAura.funding.withdrawals.build({
+      quoteId: quote.quoteId,
+      idempotencyKey: quote.idempotency.key,
+    })
+    ```
+
+    Aura returns the exact transaction vector persisted with the quote. It does
+    not rebuild or reselect UTXOs at this step.
+  </Step>
+  <Step title="Hand the whole vector to the trusted Aura signer">
+    Use the first-party wallet helper `submitNativeWithdrawal(build)`. It binds
+    a fresh step-up to these exact bytes and submits signatures only into
+    wallet-svc durable custody. Never sign, reorder, omit or independently
+    submit a vector member, and never move the bytes to a builder backend.
+  </Step>
+  <Step title="Reconcile to terminal state">
+    Follow the operation and generic transaction endpoints. A node rejection
+    remains fail-closed; recovery may retry only the same persisted
+    byte/signature vector.
+  </Step>
+</Steps>
+
+<Warning>
+  A developer key and `aura_trade_…` credential are intentionally powerless on
+  withdrawals. Never ask for a raw seed or private key to work around the
+  signer boundary.
+</Warning>

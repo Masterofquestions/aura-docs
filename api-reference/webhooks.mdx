@@ -1,0 +1,113 @@
+---
+title: "Builder Webhooks"
+sidebarTitle: "Webhooks"
+description: "Create, verify and consume durable Aura webhooks with HMAC signatures and replay protection."
+---
+
+Webhooks deliver the same durable semantic events used by realtime SSE. They
+are ordered per endpoint and delivered at least once, outside the matcher and
+settlement critical paths.
+
+Managing endpoints requires a developer key with `webhooks:manage`. Private
+`user:` topics additionally require `account:read` and a live matching wallet
+session. Creating, changing or renewing private authorization is a
+session-write and requires CSRF for a cookie session. One endpoint can cover
+only one private account.
+
+## Create and verify an endpoint
+
+```ts
+const { endpoint, secret } = await aura.webhooks.create({
+  name: 'production-events',
+  url: 'https://builder.example.com/aura/webhooks',
+  topics: ['trades:all'],
+})
+```
+
+Creation needs an `idempotency-key`; the SDK creates one by default. The secret
+is shown once and must go directly into a server-side secret manager.
+
+Aura sends a signed `webhook.endpoint_verification` event. After verifying the
+signature, echo `data.challenge` in the
+`x-aura-webhook-challenge` response header. The endpoint becomes active only
+after this succeeds.
+
+## Verify before parsing
+
+Aura sends:
+
+| Header | Meaning |
+| --- | --- |
+| `x-aura-webhook-id` | Durable event ID; use for deduplication |
+| `x-aura-webhook-timestamp` | Unix seconds included in the signature |
+| `x-aura-webhook-signature` | `v1=` plus the HMAC-SHA256 hex digest |
+| `x-aura-webhook-attempt` | Delivery attempt number |
+
+The signature base is:
+
+```text
+<timestamp>.<event-id>.<exact-request-body-bytes>
+```
+
+```ts
+import {
+  auraWebhookChallengeResponse,
+  parseAuraWebhook,
+} from '@aura/builder-sdk/webhooks'
+
+const rawBody = new Uint8Array(await request.arrayBuffer())
+const event = await parseAuraWebhook({
+  secret: await secretManager.read('aura/webhook'),
+  rawBody,
+  headers: request.headers,
+})
+
+await consumeOnce(request.headers.get('x-aura-webhook-id')!, event)
+const challenge = auraWebhookChallengeResponse(event)
+return new Response(null, { status: 204, headers: challenge?.headers })
+```
+
+Do not parse and reserialize JSON before verification. Whitespace and property
+order are part of the signed body. The helper rejects timestamps outside five
+minutes by default and uses Web Crypto verification.
+
+## Idempotent consumption
+
+Put `x-aura-webhook-id` in a table with a unique constraint in the same
+transaction as your state change. If the ID was already consumed, return a 2xx
+response without repeating the side effect.
+
+Retries use exponential backoff. Repeated failures eventually disable or pause
+the endpoint. Fix the consumer, inspect delivery attempts, resume the endpoint
+and use manual replay for selected durable deliveries.
+
+## Rotation and private authorization
+
+Rotating a webhook secret invalidates the old secret and requires verification
+again. Coordinate rotation with your secret store and deployment so there is no
+period where neither value is available.
+
+Private authorization expires with the user's session and can be renewed by the
+matching wallet. The user can list and revoke authorized endpoints through
+their account even without the builder's developer key. Revocation terminates
+queued private deliveries.
+
+When updating only the name or URL of an already-private endpoint, call
+`aura.webhooks.update(id, patch, { authorizePrivateTopics: true })` so the SDK
+includes the matching session and CSRF proof. Public-only management omits the
+wallet session.
+
+Independent endpoints may deliver concurrently, but each endpoint retains its
+own durable order. The worker defaults to 64 endpoint lanes (deployment range
+1–256), claims at most 1,024 deliveries per bounded one-second drain batch and
+never overlaps scheduler ticks. A healthy endpoint can drain sequentially
+within one batch; it is not limited to one delivery per timer tick. These are
+capacity controls, not a delivery-latency SLA, and consumers must not infer
+ordering between two different endpoints.
+
+## Endpoint safety
+
+Aura requires HTTPS public endpoints, does not follow redirects, resolves and
+pins a public address, and rejects loopback/private/reserved destinations. Your
+consumer should still apply normal request size, timeout, logging and secret
+management controls.

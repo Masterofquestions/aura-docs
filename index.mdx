@@ -9,8 +9,9 @@ Aura is a prediction market on Alephium. You trade shares in whether something
 will happen, and the winning side pays out $1 per share. Prices are probabilities,
 so a market at $0.64 is the crowd saying 64%.
 
-Everything runs on-chain: the order books, the collateral, the resolution, and the
-payouts. Aura never holds your keys.
+Aura combines an immediate off-chain order book with batched on-chain
+Clearinghouse settlement. Collateral, resolution, and payouts remain anchored
+on Alephium, while wallet keys stay inside protected wallet custody.
 
 ## Start here
 
@@ -53,8 +54,10 @@ Four programs, all funded by the same 2.5% trading fee. They stack.
 
 ## Build on Aura
 
-Market data is public and needs no key. Trading is non-custodial: the API builds
-unsigned transactions and your wallet signs them.
+Market data is public and needs no key. Builders place and cancel orders with
+their developer key plus a user-created, narrowly scoped trading authorization;
+neither credential can replace the other. Aura derives and signs the restricted
+order internally, so builders never handle wallet keys or reusable signatures.
 
 <CodeGroup>
 ```bash cURL
@@ -87,7 +90,7 @@ for m in res.json()["markets"]:
     Markets, order books, and prices in a few minutes.
   </Card>
   <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
-    Authenticate, build, sign, and submit, end to end.
+    Provision restricted consent, quote, place, and track an order end to end.
   </Card>
   <Card title="Realtime data" icon="bolt" href="/api-reference/realtime">
     Stream live fills and order updates instead of polling.
@@ -117,8 +120,8 @@ for m in res.json()["markets"]:
     What Aura is and why prediction markets matter.
   </Card>
   <Card title="Why Alephium" icon="cube" href="/overview/why-alephium">
-    Fast settlement, low fees, and the architecture that makes on-chain order
-    books practical.
+    Fast settlement, low fees, and the architecture behind Aura's batched
+    Clearinghouse settlement.
   </Card>
   <Card title="Resolution and disputes" icon="scale-balanced" href="/markets/resolution-and-disputes">
     How outcomes get proposed, challenged, and settled.

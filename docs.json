@@ -118,8 +118,10 @@
             "group": "Guides",
             "pages": [
               "api-reference/authentication",
+              "api-reference/funding",
               "api-reference/build-tx-flow",
               "api-reference/realtime",
+              "api-reference/webhooks",
               "api-reference/rate-limits",
               "api-reference/integrator-guide"
             ]

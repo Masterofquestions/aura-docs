@@ -1,235 +1,233 @@
 ---
 title: "Realtime Data"
 sidebarTitle: "Realtime Data"
-description: "Subscribe to live Aura order, fill, dispute, and account events over Server-Sent Events, with lossless reconnects."
-keywords: ["Aura realtime", "SSE stream", "live order book", "prediction market websocket", "server-sent events", "market data stream"]
+description: "Consume Aura's durable schema-v2 SSE stream with source-vector resume cursors and explicit resynchronization."
+keywords: ["Aura realtime", "SSE", "rt2 cursor", "live order book", "prediction market stream"]
 ---
 
-Aura pushes live events over Server-Sent Events on a single endpoint. One
-connection, many topics, plain HTTP.
+Aura uses Server-Sent Events for ordered one-way updates. WebSockets are not
+part of the public contract. A stream is an acceleration layer over durable
+state: REST snapshots and indexed chain state remain the recovery boundary.
 
-SSE rather than WebSocket is a deliberate choice: it runs over ordinary HTTP, it
-reconnects automatically in every browser, and it has replay built into the
-protocol through `Last-Event-ID`. You do not need a client library, and `curl`
-works as a debugging tool.
-
-<Tip>
-If you are polling REST endpoints in a loop, switch to this. Polling burns your
-rate-limit budget to re-fetch data that mostly did not change, and it is slower
-at noticing the changes that matter.
-</Tip>
-
-## Connect
-
-```bash
-curl -N "https://api.aura.markets/v1/realtime/stream?topics=market:26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs:fills"
-```
-
-```javascript
-const market = '26tkBYU6bv77TUDRHX9Yj3aWNKf8jgcgrDobzGnkZSSNs'
-
-const stream = new EventSource(
-  `https://api.aura.markets/v1/realtime/stream?topics=market:${market}:orders,market:${market}:fills`
-)
-
-stream.addEventListener('aura', (e) => {
-  const event = JSON.parse(e.data)
-  console.log(event.entity, event.operation, event.payload)
-})
-```
-
-`topics` is a comma-separated list and is the only required parameter.
+The opaque `rt2` cursor is a vector across the sources active in this API
+deployment: `main` (indexed account/earnings projections), `sequencer`
+(orders, matches and settlement), and `wallet` (private custody/funding). Read
+the active subset from `GET /v1/protocol/config`; never assume a cursor contains
+only one source.
 
 ## Topics
 
-### Public, no session needed
+Read the live topic grammar from `GET /v1/protocol/config`. Schema version 2
+currently includes patterns such as:
 
-| Topic | Fires when |
-| --- | --- |
-| `market:{address}:orders` | An order is placed, updated, or cancelled in that market. |
-| `market:{address}:fills` | A trade executes in that market. |
-| `dispute:{marketId}` | A dispute on that market changes state: opened, committed, revealed, resolved. |
-| `settings:banner` | The platform announcement banner changes. |
-| `health:indexer` | Indexer liveness changes. Useful for knowing whether your data is current. |
+| Visibility | Topic pattern | Purpose |
+| --- | --- | --- |
+| Public | `market:{marketId}:book` | Immediate versioned book updates |
+| Public | `market:{marketId}:trades` | Trade lifecycle updates |
+| Public | `market:{marketId}:lifecycle` | Trading, resolution and settlement state |
+| Public | `markets:all`, `trades:all`, `book-ticker:all` | Bounded global feeds |
+| Private | `user:{address}:orders` | The user's order lifecycle |
+| Private | `user:{address}:funding` | Deposit/funding state |
+| Private | `user:{address}:settlements` | Provisional and final settlement state |
+| Private | `user:{address}:account` | Holds, balances and account-version changes |
 
-### Requires a session
+Private topics require the matching wallet session. If a developer key is also
+present, it needs `realtime:public` and `account:read` as applicable. A key by
+itself cannot subscribe to user topics.
 
-These only work for the wallet you authenticated as. Requesting another wallet's
-topics returns `403`.
+## Replay capability contract
 
-| Topic | Fires when |
-| --- | --- |
-| `user:{address}:orders` | Your order is placed, filled, or cancelled. |
-| `user:{address}:fills` | One of your orders trades. |
-| `user:{address}:parlays` | A parlay you hold changes state. |
-| `user:{address}:notifications` | You get a notification. |
-| `user:{address}:reveals:{marketId}` | Your commit-reveal state changes in a dispute. |
-| `user:{address}:rewards:{marketId}` | Rewards become claimable for you on that market. |
-
-Authenticate with a bearer token the same way as any other request:
-
-```javascript
-// EventSource cannot set headers, so in Node use fetch with a streaming body,
-// or pass the session cookie in a browser.
-const res = await fetch(`${API}/v1/realtime/stream?topics=user:${address}:fills`, {
-  headers: { authorization: `Bearer ${token}` },
-})
-```
-
-<Note>
-The browser `EventSource` API cannot send an `Authorization` header. In a browser,
-rely on the session cookie, which is sent automatically. In Node or a bot, use
-`fetch` with a streaming response and parse the frames yourself.
-</Note>
-
-## Topic limits
-
-| Connection | Max topics |
-| --- | --- |
-| Anonymous | 8 |
-| Signed in | 20 |
-
-Covering more than that means opening more connections. The limit exists because
-each topic is a live subscription on the server, not a filter applied to a
-firehose.
-
-## Event format
-
-Every data frame arrives as event type `aura` with a JSON body:
-
-```text
-id: 84213
-event: aura
-data: {"v":1,"id":"84213","seq":"84213","topic":"market:26tk...:fills","operation":"insert","entity":"trade","key":{"tradeId":"9182"},"payload":{"price":640,"quantity":"2000000000000000000","outcome":"yes"},"timestamp":"2026-07-29T19:12:04.881Z","source":"indexer"}
-```
+`GET /v1/protocol/config` publishes the replay contract without embedding a
+transient head cursor:
 
 | Field | Meaning |
 | --- | --- |
-| `v` | Protocol version. Currently `1`. |
-| `id` | Monotonic event id. Keep the last one you saw for reconnects. |
-| `seq` | Sequence number, same value as `id`. |
-| `topic` | Which subscription produced this. |
-| `operation` | `insert`, `update`, or `delete`. |
-| `entity` | What kind of row changed, for example `order`, `trade`, `dispute`. |
-| `key` | Identifiers for the affected record. |
-| `payload` | The changed fields. |
-| `timestamp` | ISO-8601, when the change happened. |
-| `source` | `outbox`, `api`, or `indexer`. |
+| `cursorFormat` | Always `rt2_source_vector` for schema version 2. |
+| `sources` | Active `main`, `sequencer`, and/or `wallet` adapters. |
+| `minimumReplayRetentionMs` | Minimum age window retained by every active source. |
+| `minimumRetainedEvents` | Minimum event-count floor retained by every active source. |
+| `maximumReplayEvents` | Maximum events returned in one bounded replay. |
 
-<Warning>
-Treat unknown `entity` values and unknown `payload` fields as forward
-compatibility rather than errors. New entities and fields get added without a
-version bump, and a client that throws on anything unrecognized will break on a
-routine release.
-</Warning>
+These are minimum service guarantees, not a promise that an arbitrary old
+cursor remains replayable. Obtain an exact resume cursor from a REST snapshot
+or an SSE `id:` line. Do not poll protocol configuration for a stream head.
 
-## Heartbeats
+## Use fetch-based SSE
 
-Every 15 seconds the server sends an SSE comment:
+Native `EventSource` cannot attach an `Authorization` or developer-key header.
+The builder SDK uses fetch and keeps credentials out of the URL:
 
-```text
-: heartbeat 2026-07-29T19:12:19.402Z
-```
+```ts
+let account = await aura.account.realtimeSnapshot(address)
 
-Comments are ignored by `EventSource` automatically. If you are parsing frames
-yourself, skip lines starting with `:`. Their purpose is to keep proxies from
-timing out an idle connection, and they double as a liveness signal: no heartbeat
-for over 30 seconds means the connection is dead even if the socket looks open.
-
-## Reconnecting without gaps
-
-This is the part worth getting right. Every event carries an `id`, and passing the
-last one you processed replays what you missed.
-
-```javascript
-const stream = new EventSource(url) // EventSource does this for you
-
-// Doing it manually:
-const res = await fetch(url, { headers: { 'last-event-id': lastSeenId } })
-```
-
-You can also pass it as `?lastEventId=84213` if setting headers is awkward.
-
-Browsers handle this natively. `EventSource` remembers the last `id` it saw and
-sends it on reconnect with no code from you, which is a large part of why SSE is
-worth the tradeoff here.
-
-### When replay is not possible
-
-Replay works within a retention window. If you were disconnected longer than that,
-you get a reset frame instead of a gap:
-
-```text
-event: aura-reset
-data: {"v":1,"type":"replay-reset","topic":"market:26tk...:fills","afterEventId":"84213","reason":"retention-exceeded"}
-```
-
-Handle it by refetching current state from REST and resuming the stream from live:
-
-```javascript
-stream.addEventListener('aura-reset', async (e) => {
-  const { topic } = JSON.parse(e.data)
-  await resyncFromRest(topic) // your snapshot refetch
+await aura.realtime.subscribe({
+  topics: [`user:${address}:orders`, `user:${address}:account`],
+  cursor: account.streamCursor,
+  onEvent: async (event) => {
+    account = await persistAndApply(account, event)
+  },
+  onReset: async () => {
+    account = await aura.account.realtimeSnapshot(address)
+    return account.streamCursor
+  },
 })
 ```
 
-<Warning>
-Silently ignoring `aura-reset` means running on stale state indefinitely. It is
-the one frame you must handle, because it is the server telling you it can no
-longer guarantee you have seen everything.
-</Warning>
+For public-only command-line inspection:
 
-## Recommended pattern
+```bash
+curl -N \
+  'https://api.aura.markets/v1/realtime/stream?schemaVersion=2&topics=market:MARKET_ID:book'
+```
+
+Topic names may be in the query string. Credentials, session tokens and API
+secrets must not be.
+
+## Snapshot, then resume
 
 <Steps>
-  <Step title="Snapshot first, then stream">
-    Fetch the order book from REST, then open the stream. Buffer events that
-    arrive during the snapshot and apply them afterwards, discarding any whose
-    `id` predates the snapshot.
+  <Step title="Fetch an authoritative snapshot">
+    Use `/v1/realtime/book/{marketId}/snapshot` for a book or
+    `/v1/realtime/account/{address}/snapshot` for the authenticated account.
   </Step>
-  <Step title="Track the last id you applied">
-    Persist it. On reconnect, send it as `Last-Event-ID`.
+  <Step title="Install the snapshot atomically">
+    Keep its `bookVersion` or `accountVersion` and `streamCursor` with the state.
   </Step>
-  <Step title="Handle aura-reset by resnapshotting">
-    Go back to step one for that topic. Do not try to reason about what you
-    missed.
+  <Step title="Connect after the snapshot cursor">
+    Send the cursor in the `Last-Event-ID` request header. The durable journal
+    replays events committed during the snapshot request, so there is no
+    subscribe gap.
   </Step>
-  <Step title="Watch the heartbeat">
-    If more than 30 seconds pass with no frame of any kind, tear down and
-    reconnect rather than trusting the socket.
+  <Step title="Apply, then checkpoint">
+    Apply and persist an event before advancing its resume cursor. Delivery is
+    at least once, so deduplicate by the semantic envelope's stable `id`.
   </Step>
 </Steps>
 
-## Errors
+## Schema version 2 envelope
 
-| Status | Code | Cause |
-| --- | --- | --- |
-| `400` | `invalid_realtime_cursor` | `lastEventId` was not a positive integer. |
-| `403` | `realtime_topic_forbidden` | Unknown topic, over the topic cap, or a `user:` topic for a wallet you are not signed in as. |
-| `503` | `realtime_unavailable` | Realtime delivery is not configured on this deployment. |
-
-A mid-stream failure arrives as an `aura-error` frame and the connection closes:
-
-```text
-event: aura-error
-data: {"code":"replay_unavailable","topic":"market:26tk...:fills"}
+```json
+{
+  "schemaVersion": 2,
+  "id": "sequencer:generation-1:184392:0",
+  "type": "order.accepted",
+  "occurredAt": "2026-08-10T20:00:00.000Z",
+  "stream": "market:abc123:book",
+  "streams": [
+    { "stream": "market:abc123:book", "sequence": "991" },
+    { "stream": "user:3Cef...:orders", "sequence": "44" }
+  ],
+  "source": {
+    "name": "sequencer",
+    "generation": "generation-1",
+    "sequence": "184392",
+    "ordinal": 0,
+    "hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  },
+  "cursor": "rt2....",
+  "bookVersion": "981",
+  "data": {
+    "quantityBaseUnits": "1000000000000000000"
+  }
+}
 ```
 
-Reconnect without a cursor and resnapshot.
+The SSE `id:` line is the opaque `rt2` source-vector cursor. The JSON `id` is
+the durable event identity used for deduplication. Numeric protocol values in
+`data` are decimal strings, never JSON numbers.
 
-## Connection limits
+## Private wallet and account events
 
-Stream connections are limited to 600 per minute per IP, which is sized for
-reconnect storms rather than steady state. A normal client holds one connection
-open indefinitely and never approaches it.
+The wallet source emits only owner-sanitized state. It never includes unsigned
+transactions, signatures, grants, destination secrets, raw failure text, or
+custody bytes.
 
-## Next
+| Event type | Important `data` fields |
+| --- | --- |
+| `deposit.required` | `operationId`, `kind: jit_deposit`, `state: signing`, `amountBaseUnits`, `intentHash`, nullable `transactionId`/`failureCode` |
+| `deposit.pending` | Same identity and amount fields with `state: submitted` |
+| `deposit.confirmed` | Same fields with `state: confirmed` |
+| `deposit.failed` | Same fields with `state: failed` and a sanitized `failureCode` |
+| `withdrawal.pending` | `operationId`, `kind: withdrawal`, `state`, ordered `operationIndex`/`operationSize`, `transactionId`, `attoAlphOutflow`, `tokenOutflows` |
+| `withdrawal.confirmed` / `withdrawal.failed` | The same persisted operation identity and amounts with terminal state |
+| `custody.transaction_changed` | A non-final `group_funding` or `sweep` vector member; never interpret it as a completed withdrawal |
+| `spendable_balance.changed` | A reason and operation ID plus `requiresSnapshotRefresh: true`; reload the account/funding snapshot rather than calculating spendable from the delta alone |
 
-<CardGroup cols={2}>
-  <Card title="Integrator guide" icon="plug" href="/api-reference/integrator-guide">
-    Streaming versus polling, elevated rate limits, and bot patterns.
-  </Card>
-  <Card title="Place your first order" icon="rocket" href="/api-reference/place-your-first-order">
-    Get an order on-chain, then watch it fill on the stream.
-  </Card>
-</CardGroup>
+The main projection emits these authenticated-account corrections:
+
+| Event type | Meaning |
+| --- | --- |
+| `position.changed` | Insert/update/delete of one YES/NO position with exact shares, cost, payout and lock fields. |
+| `claimable_balance.changed` | Exact collateral base-unit totals for eligible (`claimableWinningsBaseUnits`), submitted/processing (`pendingClaimsBaseUnits`), and confirmed (`confirmedWinningsBaseUnits`) winnings. The three buckets are disjoint; never add a claim to two buckets. |
+| `reward.changed` | Liquidity-maker, referral-fee, or dispute-vote reward state with an explicit kind and unit. |
+| `payout.changed` | Payout queue or liquidity-reward lifecycle, including only sanitized transaction identifiers. |
+
+Use `isRealtimeEventType(event, 'claimable_balance.changed')` from the builder
+SDK to narrow `data` to the documented exact payload. Events remain at least
+once, so the stable envelope `id` is still the deduplication key.
+
+## Reset means replace state
+
+Aura emits `event: aura-reset` when the requested cursor is no longer replayable,
+a source generation changed, a replay limit was exceeded, or a restored source
+diverged.
+
+```json
+{
+  "schemaVersion": 2,
+  "type": "replay.reset",
+  "reason": "retention-exceeded",
+  "requestedCursor": "rt2....",
+  "currentCursor": "rt2....",
+  "sources": ["sequencer"],
+  "occurredAt": "2026-08-10T20:01:00.000Z"
+}
+```
+
+Do not continue applying events to old state and do not merely adopt
+`currentCursor`. Fetch and install a fresh snapshot, then reconnect after that
+snapshot's cursor. Without an `onReset` handler, `@aura/builder-sdk` throws
+instead of silently risking stale state.
+
+## Stream errors and reconnect
+
+`event: aura-error` carries a stable code, request ID, `recoverable` flag and
+last safe cursor. Handle the complete code set:
+
+| Code | Required response |
+| --- | --- |
+| `slow_consumer` | Reduce synchronous callback work, then resume after `lastCursor`. |
+| `replay_unavailable` | Keep the last durable snapshot/cursor and retry with bounded backoff. |
+| `session_expired`, `session_revoked` | Obtain a new wallet session before reconnecting a private stream. |
+| `session_revalidation_unavailable` | Keep private state frozen and retry only after session validation recovers. |
+| `developer_key_revoked`, `developer_key_expired` | Stop using the key and reconnect with an active replacement. |
+| `developer_key_rotated`, `developer_key_generation_changed` | Reload the current key generation from the secret manager before reconnecting. |
+| `developer_key_scope_changed` | Reconnect only with a key that still grants every requested stream scope. |
+| `developer_key_revalidation_unavailable` | Keep state frozen and retry with backoff after key validation recovers. |
+| `source_unavailable` | Preserve the last snapshot/cursor and retry after the advertised source recovers. |
+
+Treat `recoverable` as authoritative. A recoverable frame permits a later
+reconnect; it does not mean retry immediately or continue applying stale state.
+The SDK passes every typed frame to `onStreamError`, retains `lastCursor`, and
+uses bounded backoff.
+
+- Reconnect with bounded exponential backoff and jitter.
+- On `slow_consumer`, reduce work in the callback or move persistence off the
+  read loop before resuming.
+- Never downgrade a failed private subscription to a public one while leaving
+  private account state on screen.
+- Treat malformed frames, incompatible schema versions, cursor divergence and
+  numeric money fields as protocol errors, not ignorable warnings.
+- Expect duplicates across reconnects and deployments.
+
+The service also enforces per-IP, per-session and per-developer-key connection
+limits. A `429` includes rate-limit headers; do not reconnect in a tight loop.
+
+## Book and settlement correctness
+
+An immediate public book is suitable for execution. A separate aged qualified
+book may be used for pricing/reward calculations; do not conflate the two.
+
+A match can be provisional before funding and Clearinghouse settlement. Handle
+`settled`, `unwound`, `funding-failed` and reorg/recovery corrections. Final
+volume, earnings and P&L analytics use settled state only.
