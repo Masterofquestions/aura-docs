@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Aura API",
-    "description": "Public REST API for Aura, prediction markets on Alephium.\n\nThis API exposes the app read model: markets, live instant order books,\norders, fills, vault state, oracle and governance. Non-trading\nbuild-tx endpoints return unsigned transactions for the client to\nsign with its own wallet.\n\nInteractive reference: https://docs.aura.markets/api-reference/introduction\n\n## Discovery\n\nBuilt for integrators, not for lazy implementers:\n\n- **Faceted lists.** Every list endpoint accepts `?facets=true`\n  and returns category, tag, and status counts in the same response,\n  so a UI can render filter chips without a second request.\n- **Cursor pagination.** Stable across inserts and fast at depth.\n  Offset paging via `?page=` is still supported for compat.\n- **Rich filters.** `?q=`, `?category=`, `?tags=`, `?status=`,\n  `?creator=`, and `?minVolume=` on `/v1/markets`. Tag matching is\n  AND, so all listed tags must be present.\n- **Sortable.** `?sort=created-at|volume|best-bid-yes|recently-traded`\n  with `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.\n- **Field projection.** `?fields=id,question,bestBidYes` trims the\n  wire weight for thin clients.\n- **Unified search.** `/v1/search?q=` matches strictly first, then\n  falls back to typo-tolerant matching when nothing hits. The result\n  type is a discriminated union, so adding events or users later is\n  non-breaking.\n- **Transparent trending.** `/v1/trending` returns the full algorithm\n  and per-market component scores so the ranking is auditable.\n- **Categories and tags as first-class.** `/v1/categories` and\n  `/v1/tags` enumerate the taxonomy with market counts.\n\n## Authentication\n\nAura uses wallet-bound account sessions delivered as an HttpOnly\ncookie. Sign in by signing a one-time challenge with your wallet:\n\n```\nPOST /v1/auth/challenge   { \"address\": \"...\" }\nPOST /v1/auth/session     { \"address\": \"...\", \"publicKey\": \"...\", \"signature\": \"...\", \"keyType\": \"gl-secp256k1\" }\n```\n\nThe `session` call sets the `aura_session` cookie and returns a CSRF\ntoken; send it back in the `x-csrf-token` header on every mutating\nrequest. Every token is checked against durable revocation state.\n`POST /v1/auth/logout` revokes the presented cookie or bearer session;\ncookie callers include the same CSRF header.\n\nReads are accessible anonymously with low IP-based rate limits;\nwrite endpoints (`/v1/tx/*`, social writes) require a valid session.\n\n## Rate limits\n\n| Tier      | Reads (req/min) | Writes (req/min) |\n|-----------|----------------:|-----------------:|\n| Anonymous | 60 per IP | 10 per IP |\n| Signed-in | 600 per wallet | 60 per wallet |\n\nStandard `RateLimit-*` response headers are returned on every\nrequest (IETF `draft-ietf-httpapi-ratelimit-headers`).\n\n## Write endpoints\n\nAura never returns raw keys, signing grants, or transaction/intent\nsignatures. Embedded-wallet keys are usable only inside the measured\nenclave. Endpoints under `/v1/tx/*` return an *unsigned* transaction\nfor an independently controlled wallet to sign and submit.\n\nBuilder trading endpoints require two independent credentials: a scoped\ndeveloper key identifies and rate-limits the integration, while a\nuser-created restricted trading authorization permits only its bounded\nplace/cancel policy. Aura signs and submits inside custody; the builder\nreceives a receipt, never a reusable signature.\n\nA typical on-chain lifecycle flow:\n\n1. `POST /v1/tx/vault/{address}/deposit` → server returns\n   `{ unsignedTx, gasEstimate, ... }`.\n2. Wallet signs `unsignedTx`.\n3. Wallet submits the signed tx to any Alephium node.",
+    "description": "Public REST API for Aura, prediction markets on Alephium.\n\nThis API exposes the app read model: markets, live instant order books,\norders, fills, vault state, oracle and governance. Non-trading\nbuild-tx endpoints return unsigned transactions for the client to\nsign with its own wallet.\n\nInteractive reference: https://docs.aura.markets/api-reference/introduction\n\n## Discovery\n\nBuilt for integrators, not for lazy implementers:\n\n- **Faceted lists.** Every list endpoint accepts `?facets=true`\n  and returns category, tag, and status counts in the same response,\n  so a UI can render filter chips without a second request.\n- **Cursor pagination.** Stable across inserts and fast at depth.\n  Offset paging via `?page=` is still supported for compat.\n- **Rich filters.** `?q=`, `?category=`, `?tags=`, `?status=`,\n  `?creator=`, and `?minVolume=` on `/v1/markets`. Tag matching is\n  AND, so all listed tags must be present.\n- **Sortable.** `?sort=created-at|volume|best-bid-yes|recently-traded`\n  with `?order=asc|desc`. Use `/v1/trending` for the composite-score sort.\n- **Field projection.** `?fields=id,question,bestBidYes` trims the\n  wire weight for thin clients.\n- **Unified search.** `/v1/search?q=` matches strictly first, then\n  falls back to typo-tolerant matching when nothing hits. The result\n  type is a discriminated union, so adding events or users later is\n  non-breaking.\n- **Transparent trending.** `/v1/trending` returns the full algorithm\n  and per-market component scores so the ranking is auditable.\n- **Categories and tags as first-class.** `/v1/categories` and\n  `/v1/tags` enumerate the taxonomy with market counts.\n\n## Authentication\n\nAura uses wallet-bound account sessions delivered as an HttpOnly\ncookie. Sign in by signing a one-time challenge with your wallet:\n\n```\nPOST /v1/auth/challenge   { \"address\": \"...\" }\nPOST /v1/auth/session     { \"address\": \"...\", \"publicKey\": \"...\", \"signature\": \"...\", \"challenge\": \"...\", \"keyType\": \"gl-secp256k1\" }\n```\n\nThe `session` call sets the `aura_session` cookie and returns a CSRF\ntoken; send it back in the `x-csrf-token` header on every mutating\nrequest. Every token is checked against durable revocation state.\n`POST /v1/auth/logout` revokes the presented cookie or bearer session;\ncookie callers include the same CSRF header.\n\nReads are accessible anonymously with low IP-based rate limits;\nwrite endpoints (`/v1/tx/*`, social writes) require a valid session.\n\n## Rate limits\n\n| Tier      | Reads (req/min) | Writes (req/min) |\n|-----------|----------------:|-----------------:|\n| Anonymous | 60 per IP | 10 per IP |\n| Signed-in | 600 per wallet | 60 per wallet |\n\nStandard `RateLimit-*` response headers are returned on every\nrequest (IETF `draft-ietf-httpapi-ratelimit-headers`).\n\n## Write endpoints\n\nAura never returns raw keys, signing grants, or transaction/intent\nsignatures. Embedded-wallet keys are usable only inside the measured\nenclave. Endpoints under `/v1/tx/*` return an *unsigned* transaction\nfor an independently controlled wallet to sign and submit.\n\nBuilder trading endpoints require two independent credentials: a scoped\ndeveloper key identifies and rate-limits the integration, while a\nuser-created restricted trading authorization permits only its bounded\nplace/cancel policy. Aura signs and submits inside custody; the builder\nreceives a receipt, never a reusable signature.\n\nA typical on-chain lifecycle flow:\n\n1. `POST /v1/tx/vault/{address}/deposit` → server returns\n   `{ unsignedTx, gasEstimate, ... }`.\n2. Wallet signs `unsignedTx`.\n3. Wallet submits the signed tx to any Alephium node.",
     "version": "0.1.0",
     "license": {
       "name": "MIT"
@@ -48,7 +48,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Returns a short text the wallet must sign to prove ownership. The signed result is then submitted to `POST /v1/auth/session` to establish a session. `address` is optional: omit it when the address is only known after authentication to get a generic nonce, which the session call consumes by its exact text.\n\nRate limited per target `address` (10/minute) as well as per caller, so nobody can flood live nonces against a wallet they do not control.",
+        "description": "Returns a short text the wallet must sign to prove ownership. The signed result is then submitted to `POST /v1/auth/session` to establish a session. `address` is optional: omit it when the address is only known after authentication to get a generic nonce. Every request receives a fresh nonce and the session call must echo its exact text, so concurrent target-address requests cannot displace it. Challenge issuance is rate limited by the caller, never by an anonymously supplied target address.",
         "requestBody": {
           "required": true,
           "content": {
@@ -223,7 +223,7 @@
         "tags": [
           "Auth"
         ],
-        "description": "Verifies the wallet signature against the most recent unconsumed challenge for the address, creates or refreshes the account row, and sets an HttpOnly session cookie bound to the verified wallet. The CSRF token is returned in the body (echo it back in the `x-csrf-token` header on subsequent mutating requests) and also set as a readable cookie.",
+        "description": "Verifies the wallet signature against the exact submitted challenge, creates or refreshes the account row, and sets an HttpOnly session cookie bound to the verified wallet. The CSRF token is returned in the body (echo it back in the `x-csrf-token` header on subsequent mutating requests) and also set as a readable cookie.",
         "requestBody": {
           "required": true,
           "content": {
@@ -258,8 +258,10 @@
                     ]
                   },
                   "challenge": {
-                    "description": "The exact challenge text that was signed. Send this when the challenge was issued without an address (the server consumes it by text). Omit it when the challenge was issued for a known address (it is then consumed by address).",
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024,
+                    "description": "Required exact challenge text returned by POST /v1/auth/challenge. Exact lookup keeps authentication independent of the number or ordering of other live nonces."
                   },
                   "refererAddress": {
                     "description": "Optional referrer wallet, captured once on first registration. Ignored if it equals the caller or does not exist.",
@@ -305,7 +307,8 @@
                 "required": [
                   "address",
                   "publicKey",
-                  "signature"
+                  "signature",
+                  "challenge"
                 ]
               }
             }
@@ -1582,9 +1585,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -2953,9 +2956,9 @@
                               "description": "Exact token base-unit quantity encoded as canonical JSON string."
                             },
                             "proposalCapacityLimit": {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 25
+                              "type": "string",
+                              "pattern": "^(0|[1-9][0-9]*)$",
+                              "description": "Exact token base-unit quantity encoded as canonical JSON string."
                             },
                             "linkedBundleLimit": {
                               "type": "integer",
@@ -4343,9 +4346,9 @@
                               "description": "Exact token base-unit quantity encoded as canonical JSON string."
                             },
                             "proposalCapacityLimit": {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 25
+                              "type": "string",
+                              "pattern": "^(0|[1-9][0-9]*)$",
+                              "description": "Exact token base-unit quantity encoded as canonical JSON string."
                             },
                             "linkedBundleLimit": {
                               "type": "integer",
@@ -7207,9 +7210,9 @@
                                   "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                 },
                                 "proposalCapacityLimit": {
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 25
+                                  "type": "string",
+                                  "pattern": "^(0|[1-9][0-9]*)$",
+                                  "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                 },
                                 "linkedBundleLimit": {
                                   "type": "integer",
@@ -8235,9 +8238,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -11786,9 +11789,9 @@
                                             "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                           },
                                           "proposalCapacityLimit": {
-                                            "type": "integer",
-                                            "minimum": 0,
-                                            "maximum": 25
+                                            "type": "string",
+                                            "pattern": "^(0|[1-9][0-9]*)$",
+                                            "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                           },
                                           "linkedBundleLimit": {
                                             "type": "integer",
@@ -13045,9 +13048,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -14381,9 +14384,9 @@
                                           "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                         },
                                         "proposalCapacityLimit": {
-                                          "type": "integer",
-                                          "minimum": 0,
-                                          "maximum": 25
+                                          "type": "string",
+                                          "pattern": "^(0|[1-9][0-9]*)$",
+                                          "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                         },
                                         "linkedBundleLimit": {
                                           "type": "integer",
@@ -15627,9 +15630,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -17056,9 +17059,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -19390,9 +19393,9 @@
                                         "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                       },
                                       "proposalCapacityLimit": {
-                                        "type": "integer",
-                                        "minimum": 0,
-                                        "maximum": 25
+                                        "type": "string",
+                                        "pattern": "^(0|[1-9][0-9]*)$",
+                                        "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                       },
                                       "linkedBundleLimit": {
                                         "type": "integer",
@@ -20416,6 +20419,24 @@
           },
           {
             "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string",
               "minLength": 30,
               "maxLength": 80,
@@ -20684,10 +20705,51 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "description": "Current page (offset mode only). Absent when paginating with `cursor`.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 200,
+                          "description": "Page size requested."
+                        },
+                        "total": {
+                          "description": "Total matching rows across all pages (offset mode only). Cursor mode omits for performance.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Opaque cursor for the next page. `null` when this page is the last one."
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Pagination envelope returned alongside every list endpoint."
                     }
                   },
                   "required": [
-                    "fills"
+                    "fills",
+                    "pagination"
                   ],
                   "additionalProperties": false
                 }
@@ -21340,9 +21402,9 @@
                                         "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                       },
                                       "proposalCapacityLimit": {
-                                        "type": "integer",
-                                        "minimum": 0,
-                                        "maximum": 25
+                                        "type": "string",
+                                        "pattern": "^(0|[1-9][0-9]*)$",
+                                        "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                       },
                                       "linkedBundleLimit": {
                                         "type": "integer",
@@ -22342,6 +22404,24 @@
           },
           {
             "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string",
               "minLength": 30,
               "maxLength": 80,
@@ -22438,10 +22518,51 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "description": "Current page (offset mode only). Absent when paginating with `cursor`.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 200,
+                          "description": "Page size requested."
+                        },
+                        "total": {
+                          "description": "Total matching rows across all pages (offset mode only). Cursor mode omits for performance.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Opaque cursor for the next page. `null` when this page is the last one."
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Pagination envelope returned alongside every list endpoint."
                     }
                   },
                   "required": [
-                    "winnings"
+                    "winnings",
+                    "pagination"
                   ],
                   "additionalProperties": false
                 }
@@ -23059,6 +23180,24 @@
           },
           {
             "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "page",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string",
               "minLength": 30,
               "maxLength": 80,
@@ -23177,10 +23316,51 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "description": "Current page (offset mode only). Absent when paginating with `cursor`.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 200,
+                          "description": "Page size requested."
+                        },
+                        "total": {
+                          "description": "Total matching rows across all pages (offset mode only). Cursor mode omits for performance.",
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "nextCursor": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Opaque cursor for the next page. `null` when this page is the last one."
+                        }
+                      },
+                      "required": [
+                        "limit",
+                        "nextCursor"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Pagination envelope returned alongside every list endpoint."
                     }
                   },
                   "required": [
-                    "parlays"
+                    "parlays",
+                    "pagination"
                   ],
                   "additionalProperties": false
                 }
@@ -24509,6 +24689,13 @@
                                   "pattern": "^(0|[1-9][0-9]*)$",
                                   "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                 },
+                                "capacityPolicyMode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "legacy_tier_v1",
+                                    "active_stake_fifo_uncapped_v2"
+                                  ]
+                                },
                                 "ownProposalSlotsTotal": {
                                   "type": "string",
                                   "pattern": "^(0|[1-9][0-9]*)$",
@@ -24528,6 +24715,24 @@
                                   "type": "string",
                                   "pattern": "^(0|[1-9][0-9]*)$",
                                   "description": "Exact token base-unit quantity encoded as canonical JSON string."
+                                },
+                                "recentOwnerSlotUses": {
+                                  "type": "string",
+                                  "pattern": "^(0|[1-9][0-9]*)$",
+                                  "description": "Exact token base-unit quantity encoded as canonical JSON string."
+                                },
+                                "oldestOwnerUseId": {
+                                  "type": "string",
+                                  "pattern": "^(0|[1-9][0-9]*)$",
+                                  "description": "Exact token base-unit quantity encoded as canonical JSON string."
+                                },
+                                "oldestOwnerUseExpiresAtMs": {
+                                  "type": "string",
+                                  "pattern": "^(0|[1-9][0-9]*)$",
+                                  "description": "Exact token base-unit quantity encoded as canonical JSON string."
+                                },
+                                "capacityWindowMaintenanceRequired": {
+                                  "type": "boolean"
                                 },
                                 "ownProposalSlotsAvailable": {
                                   "type": "string",
@@ -24598,10 +24803,15 @@
                                 "slotOwnerAddress",
                                 "liveTierCode",
                                 "tierHistoryVersion",
+                                "capacityPolicyMode",
                                 "ownProposalSlotsTotal",
                                 "recentPersonalSlotUses",
                                 "outgoingGrantSlots",
                                 "recentDelegatedSlotUses",
+                                "recentOwnerSlotUses",
+                                "oldestOwnerUseId",
+                                "oldestOwnerUseExpiresAtMs",
+                                "capacityWindowMaintenanceRequired",
                                 "ownProposalSlotsAvailable",
                                 "activeOutgoingDelegationCount",
                                 "voluntaryUnlockRestricted",
@@ -26756,7 +26966,7 @@
     },
     "/v1/users/{address}/pending-actions": {
       "get": {
-        "summary": "Combined \"what does this wallet need to do right now\" view.",
+        "summary": "Combined view of what this wallet needs to do right now.",
         "tags": [
           "Account actions"
         ],
@@ -29469,9 +29679,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -30528,9 +30738,9 @@
                               "description": "Exact token base-unit quantity encoded as canonical JSON string."
                             },
                             "proposalCapacityLimit": {
-                              "type": "integer",
-                              "minimum": 0,
-                              "maximum": 25
+                              "type": "string",
+                              "pattern": "^(0|[1-9][0-9]*)$",
+                              "description": "Exact token base-unit quantity encoded as canonical JSON string."
                             },
                             "linkedBundleLimit": {
                               "type": "integer",
@@ -44384,6 +44594,33 @@
                           "type": "string",
                           "pattern": "^[1-9]\\d*$"
                         },
+                        "proposalCapacityPolicy": {
+                          "type": "object",
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "active_stake_floor_uncapped"
+                              ]
+                            },
+                            "auraWholePerSlot": {
+                              "type": "string",
+                              "pattern": "^[1-9]\\d*$"
+                            },
+                            "accounting": {
+                              "type": "string",
+                              "enum": [
+                                "exact_rolling_24h_fifo"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "mode",
+                            "auraWholePerSlot",
+                            "accounting"
+                          ],
+                          "additionalProperties": false
+                        },
                         "bundleComponentCounting": {
                           "type": "string",
                           "enum": [
@@ -44434,10 +44671,10 @@
                                 "minimum": 0,
                                 "maximum": 250
                               },
-                              "proposalCapacity": {
+                              "proposalCapacityAtTierFloor": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 25
+                                "maximum": 9007199254740991
                               },
                               "linkedBundleLimit": {
                                 "type": "integer",
@@ -44466,7 +44703,7 @@
                               "requiredAuraWhole",
                               "requiredAuraAtomic",
                               "creatorRewardPoints",
-                              "proposalCapacity",
+                              "proposalCapacityAtTierFloor",
                               "linkedBundleLimit",
                               "proposalVoteWeight",
                               "creatorEligible",
@@ -44480,8 +44717,7 @@
                           "type": "object",
                           "properties": {
                             "maximumProposalCapacity": {
-                              "type": "string",
-                              "pattern": "^[1-9]\\d*$"
+                              "type": "null"
                             },
                             "maximumLinkedBundleComponents": {
                               "type": "string",
@@ -44534,6 +44770,7 @@
                         "policyVersion",
                         "requiredMinimumTier",
                         "capacityWindowMs",
+                        "proposalCapacityPolicy",
                         "bundleComponentCounting",
                         "tiers",
                         "limits"
@@ -49928,9 +50165,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -51337,9 +51574,9 @@
                                     "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "proposalCapacityLimit": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "maximum": 25
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$",
+                                    "description": "Exact token base-unit quantity encoded as canonical JSON string."
                                   },
                                   "linkedBundleLimit": {
                                     "type": "integer",
@@ -72166,7 +72403,7 @@
         "tags": [
           "Proposals"
         ],
-        "description": "Locks `amount` USDT in the dedicated ParlayVault and stores its exact maximum payout. MarketFactory's legacy governance-routed custody method is disabled. Provide the legs as structured `{ marketId, side }` pairs, and the api produces the canonical on-chain payload. Duplicate or contradictory (yes+no on the same market) legs are rejected up-front, since they would only end up in the refund queue after settlement.",
+        "description": "Locks `amount` USDT in the dedicated ParlayVault and stores its exact maximum payout. MarketFactory's legacy governance-routed custody method is disabled. Provide the legs as structured `{ marketId, side }` pairs plus the exact separately issued, expiring admission authorization. The API produces the fixed-width v2 on-chain payload. Duplicate, contradictory, unsigned, expired, and replayed obligations fail before custody is accepted. One map-entry deposit is a permanent immutable-history cost; a second replay-map deposit is releasable to the depositor after quote expiry, and the separate output dust is returned on terminal refund.",
         "requestBody": {
           "required": true,
           "content": {
@@ -72205,6 +72442,26 @@
                     "pattern": "^\\d+$",
                     "description": "Amount in token base units (string to preserve precision)."
                   },
+                  "quoteNonce": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "description": "Amount in token base units (string to preserve precision)."
+                  },
+                  "quoteExpiresAtMs": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "description": "Amount in token base units (string to preserve precision)."
+                  },
+                  "refundAvailableAtMs": {
+                    "type": "string",
+                    "pattern": "^\\d+$",
+                    "description": "Amount in token base units (string to preserve precision)."
+                  },
+                  "quoteSignature": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{128}$",
+                    "description": "Compact secp256k1 signature from the deployment-pinned ParlayVault quote confirmer."
+                  },
                   "legs": {
                     "minItems": 2,
                     "maxItems": 5,
@@ -72238,6 +72495,10 @@
                   "signerPublicKey",
                   "amount",
                   "combinedOdds",
+                  "quoteNonce",
+                  "quoteExpiresAtMs",
+                  "refundAvailableAtMs",
+                  "quoteSignature",
                   "legs"
                 ]
               }
