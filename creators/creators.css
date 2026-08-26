@@ -19,6 +19,7 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
 
 .crp {
   --crp-green: #55e0a0;
+  --crp-bg: #0b0d10;
   --crp-bg-box: #101318;
   --crp-ink: #f4f5f7;
   --crp-body: #b3bac4;
@@ -27,17 +28,46 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
   --crp-hair: rgba(255, 255, 255, 0.07);
   --crp-dash: rgba(255, 255, 255, 0.12);
   --crp-heavy: rgba(255, 255, 255, 0.16);
+  --crp-box-border: rgba(255, 255, 255, 0.08);
+  --crp-soft: rgba(255, 255, 255, 0.10);
+  --crp-leader-c: rgba(255, 255, 255, 0.18);
+  --crp-avatar: #2a3038;
+  --crp-green-soft: rgba(85, 224, 160, 0.35);
+  --crp-yes-border: rgba(85, 224, 160, 0.45);
+  --crp-yes-bg: rgba(85, 224, 160, 0.07);
+  --crp-no-bg: #1c2127;
   --crp-sans: "Geist", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
   --crp-mono: "Geist Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
   max-width: 664px;
   margin: 0 auto;
   padding: 16px 22px 48px;
   border-radius: 10px;
-  /* Explicit dark canvas: on the (default-dark) theme this blends into the page;
-     if a visitor flips to light mode the pitch keeps its intended look. */
-  background: #0b0d10;
+  background: var(--crp-bg);
   font-family: var(--crp-sans);
   color: var(--crp-body);
+}
+
+/* Light mode: same system, light palette. Mintlify toggles a `dark` class
+   on <html>; its absence means light. */
+html:not(.dark) .crp {
+  --crp-green: #0a9058;
+  --crp-bg: #fafafa;
+  --crp-bg-box: #ffffff;
+  --crp-ink: #14171c;
+  --crp-body: #3f4752;
+  --crp-muted: #6d7683;
+  --crp-faint: #a6acb5;
+  --crp-hair: rgba(0, 0, 0, 0.08);
+  --crp-dash: rgba(0, 0, 0, 0.16);
+  --crp-heavy: rgba(0, 0, 0, 0.22);
+  --crp-box-border: rgba(0, 0, 0, 0.08);
+  --crp-soft: rgba(0, 0, 0, 0.12);
+  --crp-leader-c: rgba(0, 0, 0, 0.25);
+  --crp-avatar: #d8dce2;
+  --crp-green-soft: rgba(10, 144, 88, 0.45);
+  --crp-yes-border: rgba(10, 144, 88, 0.50);
+  --crp-yes-bg: rgba(10, 144, 88, 0.06);
+  --crp-no-bg: #f0f2f4;
 }
 
 /* Zero-specificity base so the .crp-* utility classes below win by source order. */
@@ -125,7 +155,7 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
 /* ---- receipt (PM hero) ---- */
 .crp-receipt {
   background: var(--crp-bg-box);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--crp-box-border);
   border-radius: 6px;
   padding: 20px 22px;
   font-family: var(--crp-mono);
@@ -188,7 +218,7 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
 .crp-leader {
   flex: 1 1 24px;
   min-width: 24px;
-  border-bottom: 1px dotted rgba(255, 255, 255, 0.18);
+  border-bottom: 1px dotted var(--crp-leader-c);
   transform: translateY(-4px);
 }
 .crp-offer-incl {
@@ -244,7 +274,7 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
   padding: 11px 0;
 }
 .crp-ledger-row + .crp-ledger-row {
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.10) 0 4px, transparent 4px 8px) left top / 100% 1px no-repeat;
+  background: repeating-linear-gradient(90deg, var(--crp-soft) 0 4px, transparent 4px 8px) left top / 100% 1px no-repeat;
 }
 .crp-ledger-desc { color: var(--crp-body); }
 .crp-ledger-amt { color: var(--crp-green); font-weight: 700; white-space: nowrap; }
@@ -262,14 +292,14 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
   border-radius: 6px;
   padding: 16px;
 }
-.crp-post { border: 1px solid rgba(255, 255, 255, 0.08); }
-.crp-market { border: 1px solid rgba(85, 224, 160, 0.35); }
+.crp-post { border: 1px solid var(--crp-box-border); }
+.crp-market { border: 1px solid var(--crp-green-soft); }
 .crp-post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .crp-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #2a3038;
+  background: var(--crp-avatar);
   flex: none;
 }
 .crp-post-name { color: var(--crp-ink); font-size: 13px; font-weight: 600; line-height: 1.3; }
@@ -291,13 +321,13 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
 .crp-price-yes {
   color: var(--crp-green);
   font-weight: 700;
-  border: 1px solid rgba(85, 224, 160, 0.45);
-  background: rgba(85, 224, 160, 0.07);
+  border: 1px solid var(--crp-yes-border);
+  background: var(--crp-yes-bg);
 }
 .crp-price-no {
   color: var(--crp-body);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: #1c2127;
+  border: 1px solid var(--crp-soft);
+  background: var(--crp-no-bg);
 }
 .crp-market-foot {
   display: flex;
@@ -315,7 +345,7 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
 .crp-cols { display: grid; grid-template-columns: 1fr 1fr; }
 .crp-col { padding-right: 22px; }
 .crp-col + .crp-col {
-  border-left: 1px solid rgba(255, 255, 255, 0.10);
+  border-left: 1px solid var(--crp-soft);
   padding-left: 22px;
   padding-right: 0;
 }
@@ -387,7 +417,7 @@ body:has(.crp) #navbar button.lg\:hidden { display: none; }
   .crp-col { padding-right: 0; }
   .crp-col + .crp-col {
     border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    border-top: 1px solid var(--crp-soft);
     padding-left: 0;
     margin-top: 18px;
     padding-top: 18px;
