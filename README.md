@@ -114,3 +114,36 @@ The documentation in this repository is licensed under
 free to share and adapt the material, with attribution and under the same
 license. Code snippets within the documentation are dedicated to the public
 domain (CC0).
+
+## Publishing at both Aura addresses
+
+The authored guides in this repository serve two readers: Mintlify at
+`https://docs.aura.markets`, and Aura's own constrained renderer at
+`https://aura.markets/docs`. The subdomain remains the canonical URL for each
+matching document. Mintlify appends each page path to `seo.metatags.canonical`;
+do not replace deep-page canonicals with the homepage.
+
+After reviewing and committing a content update, run in the sibling Aura repo:
+
+```sh
+npm --workspace app run docs:sync -- ../aura-docs <full-reviewed-commit>
+npm --workspace app test -- src/lib/docsCompiler.test.ts src/lib/docs.test.tsx
+```
+
+Review and commit the generated snapshot in Aura. It includes the source commit
+and content hashes; app builds require no sibling checkout or live provider
+fetch. Unsupported MDX components, imports and expressions fail compilation.
+Both sites use the same authored guides; the app uses its own styles, presents
+code tabs sequentially and equations as source notation. Provider search and
+interactive API/stream explorers remain on the isolated subdomain.
+
+`robots.txt` overrides Mintlify's default training opt-in. It permits search and
+retrieval, declines model training, and advertises the canonical docs sitemap.
+Run `node --test scripts/crawl-policy.test.cjs` after policy edits. Blocking
+Google-Extended also declines Gemini grounding; ordinary Google Search remains
+allowed. Robots expresses preferences, not access control. A custom robots file
+is served unchanged even if Mintlify's dashboard indexing toggle changes, so
+private preview hosting still needs authentication.
+
+Before launch, verify DNS/TLS, direct nested links, canonical tags, the sitemap,
+and robots responses on both real hosts. Local tests are not deployment receipts.
