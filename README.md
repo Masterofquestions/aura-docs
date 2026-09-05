@@ -127,7 +127,7 @@ After reviewing and committing a content update, run in the sibling Aura repo:
 
 ```sh
 npm --workspace app run docs:sync -- ../aura-docs <full-reviewed-commit>
-npm --workspace app test -- src/lib/docsCompiler.test.ts src/lib/docs.test.tsx
+npm --workspace app test -- src/lib/docsCompiler.test.ts src/lib/docs.test.ts
 ```
 
 Review and commit the generated snapshot in Aura. It includes the source commit
