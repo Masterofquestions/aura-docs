@@ -126,9 +126,12 @@ do not replace deep-page canonicals with the homepage.
 After reviewing and committing a content update, run in the sibling Aura repo:
 
 ```sh
-npm --workspace app run docs:sync -- ../aura-docs <full-reviewed-commit>
+npm --workspace app run docs:sync -- ../../aura-docs <full-reviewed-commit>
 npm --workspace app test -- src/lib/docsCompiler.test.ts src/lib/docs.test.ts
 ```
+
+npm runs the script from Aura's `app` workspace, so the relative source path
+goes up twice to this sibling repository. An absolute source path also works.
 
 Review and commit the generated snapshot in Aura. It includes the source commit
 and content hashes; app builds require no sibling checkout or live provider
