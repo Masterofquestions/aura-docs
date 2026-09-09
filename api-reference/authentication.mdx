@@ -79,8 +79,8 @@ key. Key rotation preserves the code.
     ```
 
     The challenge expires after five minutes and is single-use. Issuing it for
-    a known address is preferred; an address-less challenge must be returned
-    verbatim in the session request.
+    a known address is preferred. Every session request must echo the exact
+    challenge text, whether or not issuance included an address.
   </Step>
   <Step title="Sign the exact challenge text">
     Use the wallet's `signMessage` operation with the Alephium message hasher.
@@ -101,9 +101,15 @@ key. Key rotation preserves the code.
         "address":"3Cef...your-wallet",
         "publicKey":"0233...compressed-public-key",
         "signature":"abcd...raw-signature",
-        "keyType":"gl-secp256k1"
+        "keyType":"default",
+        "challenge":"<exact challenge text from step 1>"
       }'
     ```
+
+    This manual example is for standard wallet tooling. Embedded Aura clients
+    use the signer SDK's dedicated API-session exchange, which binds the
+    wallet session and authority epoch; do not manually substitute an embedded
+    signature in this example.
 
     The browser flow receives an HttpOnly `aura_session` cookie and a CSRF token
     in the response. Echo the CSRF token in `x-csrf-token` on session-owned
@@ -120,7 +126,7 @@ blake2b-256(utf8("Alephium Signed Message: " + exactChallengeText))
 The signature is a 64-byte raw `r || s` secp256k1 signature encoded as lowercase
 hex. It is not DER and has no recovery byte.
 
-## Browser cookie versus backend bearer
+## Cookie issuance and retained bearer verification
 
 Browsers should keep the session in the HttpOnly cookie:
 
@@ -131,31 +137,30 @@ const aura = createAuraClient({
 })
 ```
 
-Backends may request `issueToken: true` when exchanging the challenge and send
-the returned token as:
+New sessions are issued only through the HttpOnly cookie. `issueToken` is
+rejected; no request-body option exports a session JWT. Use the returned CSRF
+token for authenticated cookie writes and the explicit session-refresh route.
 
-```http
-Authorization: Bearer <user-session-token>
-```
+The verifier can also validate an already held token in the bearer transport,
+with the same durable-session, expiry and revocation checks. This is not a
+bearer-issuance feature or evidence of deployed legacy clients. Keep credentials
+out of URLs, logs and browser localStorage.
 
-Bearer requests do not need CSRF because browsers do not attach an
-`Authorization` header automatically. Store the token like any other secret;
-never put it in a query string, application log or browser `localStorage`.
-
-## Compose builder and user credentials
+## Read owner-private account data
 
 ```ts
 const aura = createAuraClient({
   baseUrl: 'https://api.aura.markets',
-  developerKey: () => secretManager.read('aura/developer-key'),
-  session: { kind: 'bearer', token: () => userSessionStore.read(userId) },
+  session: { kind: 'cookie', credentials: 'include', csrfToken: () => csrf },
 })
 
 const account = await aura.account.snapshot(userAddress)
 ```
 
-The request carries both headers. Aura independently checks the key scope and
-that the path address belongs to the session.
+This browser example uses the authenticated cookie. A developer key identifies
+and scopes a builder; it never substitutes for the user's session. Aura checks
+that an owner-private path belongs to that session and independently checks any
+builder credential supplied by the integration.
 
 ## Restricted trading authority
 

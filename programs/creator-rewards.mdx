@@ -1,53 +1,44 @@
 ---
 title: "Creator Rewards"
 sidebarTitle: "Creator Rewards"
-description: "Earn a tier-scaled share of the trading fee on every market you create, paid in USDT automatically at resolution."
+description: "Earn a tier-scaled share of the trading fee on every market you create, distributed in USDT automatically under the recorded reward schedule."
 keywords: ["Aura creator rewards", "market creator fees", "earn from creating markets", "tier scaled fees", "prediction market creator"]
 ---
 
 Create a market that people want to trade and you earn a slice of every trade on
-it, for the entire life of the market. Your slice is set by your staked $AURA tier.
+it, for the entire life of the market. The slot owner's tier history sets the
+creator allocation, including when you use a borrowed slot. Accepted sharing
+terms determine how that allocation is distributed.
 
 ## What you earn
 
-Between **1% and 30%** of the 2.5% trading fee, scaling with tier:
+Creator allocations start between **0.4% and 40% of the 2.5% trading fee**, before accepted sharing. The source policy uses whole fee points, not voting weights:
 
-| Tier | Creator's cut of the trading fee |
-| --- | ---: |
-| Degenerate | 30% |
-| Diamond | 22% |
-| Platinum | 16% |
-| Gold | 11% |
-| Silver | 7% |
-| Bronze | 3% |
-| Iron | 1% |
+| Tier | AURA required | Proposal votes | Creator fee points | Share of the 250-point trading fee |
+| --- | ---: | ---: | ---: | ---: |
+| Degenerate | 1,000,000 | 30 | 100 | 40% |
+| Diamond | 833,333 | 22 | 83 | 33.2% |
+| Platinum | 666,667 | 16 | 67 | 26.8% |
+| Gold | 500,000 | 11 | 50 | 20% |
+| Silver | 333,333 | 7 | 33 | 13.2% |
+| Bronze | 166,667 | 3 | 17 | 6.8% |
+| Iron | 60,000 | 1 | 6 | 2.4% |
+| Builder | 25,000 | 0 | 3 | 1.2% |
+| Scout | 10,000 | 0 | 1 | 0.4% |
 
-Paid in USDT. The remainder flows to the treasury, which funds liquidity
-rewards, dispute incentives, referral payouts, and development.
+Amounts are calculated in token base units with integer rounding. The creator allocation is carved from the existing fee and does not add another trader charge.
 
 <Note>
-Your cut is the **lower** of your tier when you proposed the market and your tier
-now. Staking more after the fact does not retroactively raise your take, and
-unstaking below your propose-time tier does lower it. See
-[Tier structure](/tokens/tier-structure).
+The slot owner's tier history sets the ceiling at counted proposal use. Dropping below a tier threshold permanently lowers the rate for dependent markets; restaking cannot raise that older rate. A borrowed slot uses its owner's tier history, not the recipient's stake.
 </Note>
 
 ## How it gets paid
 
-Fees accrue inside the market contract on every fill and sit there until the
-market resolves. Once it resolves yes or no, your share is sent to your wallet
-automatically.
+Fees accrue in the Clearinghouse and are handed to the recorded CreatorRewardRouter by reward epoch. A handoff to that escrow is not a payment to an individual wallet. Workers materialize exact entitlements and automatically distribute them to the recorded recipients; the creator receives the exact residual after applicable components and rounding. Recipient payment requires completed materialization, and creator residual payment additionally requires a closed, fully materialized epoch.
 
-There is nothing to claim, no button to press, and no deadline to miss. The
-payout destination is the creator address recorded on the market at proposal time
-and it cannot be changed afterwards, which is also why it cannot be redirected by
-anyone else.
+Where enabled, borrowed-slot terms retain the accepted slot-owner share, and additional reward commitments require the recipient's acceptance before their future interval begins. Accepted commitments cannot be removed, reduced or reassigned by the creator. They never change the public market creator.
 
-<Warning>
-A market that never resolves never pays. If a dispute returns `TOO_EARLY`, the
-market goes back to trading and your accrued fees stay locked until it reaches a
-real resolution. That is not a loss, just a delay.
-</Warning>
+There is no user claim button. Your history distinguishes pending entitlement from confirmed wallet payment. Service availability, finalized observations and schedule maintenance affect timing; market resolution or an escrow handoff alone is not proof that your wallet was paid.
 
 ## Making this worth doing
 
@@ -55,8 +46,9 @@ Your earnings are a percentage of volume, so the whole game is attracting volume
 
 <Steps>
   <Step title="Stake before you propose, not after">
-    Your cut is fixed at propose time by your tier. Proposing at Iron and
-    staking to Degenerate the next day leaves you on 1% for that market forever.
+    The initial ceiling comes from the slot owner's tier. Iron starts at six
+    creator points out of 250 fee points (2.4% of the fee). Staking to Degenerate
+    later cannot raise that older ceiling, and a downward tier crossing can lower it.
   </Step>
   <Step title="Write rules that cannot be argued with">
     Ambiguous resolution criteria are the main reason markets end up disputed,

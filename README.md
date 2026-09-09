@@ -30,12 +30,25 @@ welcome.
 For substantive content changes (new pages, restructured sections), please
 open an issue first so we can discuss scope before you spend time writing.
 
-`api-reference/openapi.json` is the one file to leave alone. It is generated
-from the API's live route definitions in the private `aura` monorepo and
-overwritten on every sync, so hand edits are lost. It also carries only the
-public subset of the API, since internal endpoint families are filtered out
-before publishing. To change it, change the route and re-run
-`npm run docs:sync-openapi` in the monorepo.
+`api-reference/openapi.json` is generated from reviewed route definitions in
+the private `aura` monorepo. Its public surface is selected by the API's maintained
+publication policy; the complete internal snapshot must not be copied here.
+Review any existing local changes before synchronization. From the monorepo root:
+
+```sh
+npm run api:openapi:dump
+node scripts/sync-docs-openapi.js --docs-root <absolute-docs-checkout>
+node scripts/sync-docs-openapi.js --docs-root <absolute-docs-checkout> --check
+node scripts/sync-docs-error-codes.js --docs-root <absolute-docs-checkout>
+node scripts/sync-docs-error-codes.js --docs-root <absolute-docs-checkout> --check
+```
+
+The error-code command preserves the authored frontmatter and introduction, then
+replaces the lookup tables from compiler artifacts and reviewed meanings. Edit
+those canonical sources in Aura to correct a code or its explanation. Both check
+commands compare without writing and fail on drift. Review the exact docs diff,
+including existing local work, before committing selected paths. A successful
+local sync does not publish either website.
 
 ## Local preview
 
@@ -126,12 +139,14 @@ do not replace deep-page canonicals with the homepage.
 After reviewing and committing a content update, run in the sibling Aura repo:
 
 ```sh
-npm --workspace app run docs:sync -- ../../aura-docs <full-reviewed-commit>
+npm --workspace app run docs:sync -- <absolute-docs-checkout> <full-reviewed-commit>
 npm --workspace app test -- src/lib/docsCompiler.test.ts src/lib/docs.test.ts
 ```
 
-npm runs the script from Aura's `app` workspace, so the relative source path
-goes up twice to this sibling repository. An absolute source path also works.
+Use the actual source checkout and its separately reviewed, committed 40-character
+revision. npm runs the command from Aura's `app` workspace; an absolute source
+path avoids ambiguity when Aura is running in an isolated worktree. The snapshot
+reads committed content, so dirty docs changes are not included.
 
 Review and commit the generated snapshot in Aura. It includes the source commit
 and content hashes; app builds require no sibling checkout or live provider

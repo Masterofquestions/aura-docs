@@ -118,7 +118,7 @@ After the reveal phase, the protocol checks whether any single outcome
 cleared the **65% supermajority** of revealed weight:
 
 - **Cleared 65%**. The market resolves to that outcome, traders are
-  paid out, and the penalty pool is ready for claims.
+  paid out, and the recorded penalty pool can proceed to automatic distribution.
 - **Did not clear 65%**. A new commit/reveal round starts, and you can
   commit again in it. Note that anyone who committed in the inconclusive
   round without revealing is slashed **before** the restart, so an
@@ -131,7 +131,7 @@ bond back plus half of the proposer's bond; the other half goes to the treasury.
 No voter rewards are paid on a `TOO_EARLY` round. The slashed $AURA rolls
 forward into the market's next dispute round.
 
-## Step 5: Claim your reward
+## Step 5: Follow automatic rewards
 
 If you backed the winning outcome:
 

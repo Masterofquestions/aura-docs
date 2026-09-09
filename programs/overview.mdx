@@ -9,13 +9,14 @@ Aura pays out to the people who make the market work. There are four programs,
 each aimed at a different job, and they stack: nothing stops you from creating
 markets, quoting on them, referring traders, and voting on disputes.
 
-All of them are funded from the same place, the **2.5% trading fee** charged on
-executed volume and collected in USDT. Nothing here is paid by minting tokens.
+The USDT programs draw from the **2.5% trading fee** on executed volume.
+Dispute voters may also receive AURA from the recorded penalty pool; that is
+a separate asset and source, not another USDT fee or newly minted tokens.
 
 <CardGroup cols={2}>
   <Card title="Creator rewards" icon="lightbulb" href="/programs/creator-rewards">
     Propose a market, earn a tier-scaled slice of every trade on it for as long
-    as it lives. Between 1% and 30% of the trading fee.
+    as it lives. Initially 0.4% to 40% of the trading fee, before accepted sharing and later downward tier adjustments.
   </Card>
   <Card title="Liquidity rewards" icon="layer-group" href="/programs/liquidity-rewards">
     Post resting limit orders near the midpoint and earn from a daily USDT pool
@@ -37,7 +38,7 @@ Every fill pays 2.5%. That single fee funds all four programs:
 
 | Slice | Goes to |
 | --- | --- |
-| 1% to 30% | The market's creator, scaled by their staked tier |
+| Initially 0.4% to 40% | Creator allocation under the slot owner's tier history, before accepted sharing |
 | 10% | The daily liquidity rewards pool |
 | 10% | The referrer of the trader, if they have one |
 | 10% | Winning dispute voters, on disputed markets only |
@@ -52,10 +53,11 @@ and less to the treasury.
 Two different timings, and it is worth knowing which is which.
 
 <CardGroup cols={2}>
-  <Card title="At market resolution" icon="flag-checkered">
-    Creator fees, referral fees, and dispute voter rewards accrue inside the
-    market contract as trades happen, then pay out automatically once the market
-    resolves. No claim, no button, no deadline.
+  <Card title="Recorded settlement and reward epochs" icon="flag-checkered">
+    Referral and dispute payments follow their recorded settlement paths.
+    Creator rewards use recorded Router epochs, accepted components and exact
+    residuals. Aura sends eligible payouts automatically; an escrow handoff or
+    pending history entry is not a confirmed wallet payment.
   </Card>
   <Card title="Daily" icon="calendar-day">
     Liquidity rewards are scored per day and paid the next day, independent of
@@ -64,9 +66,9 @@ Two different timings, and it is worth knowing which is which.
 </CardGroup>
 
 <Note>
-Fees stay locked in the market until it resolves yes or no. This is why a
-`TOO_EARLY` dispute outcome pays nobody: the market returns to trading and its
-fees keep accruing until there is a real resolution. See
+A `TOO_EARLY` dispute round pays no voter reward: its AURA pool carries into a
+later round and the market returns to trading. Creator reward epochs retain
+their separate checkpoint and distribution rules. See
 [Resolution and disputes](/markets/resolution-and-disputes).
 </Note>
 

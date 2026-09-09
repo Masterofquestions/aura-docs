@@ -1,11 +1,10 @@
 ---
 title: "Create a Market"
 sidebarTitle: "Create a Market"
-description: "Propose a prediction market on Aura: the Iron-tier stake requirement, the refundable ALPH deposit, 24-hour community voting, and linked multi-outcome bundles."
+description: "Propose a prediction market on Aura: active-stake creation capacity, the refundable ALPH deposit, 24-hour community voting, and linked multi-outcome bundles."
 ---
 
-Aura puts market creation in the hands of the community. Stakers above the
-**Iron** tier can propose new prediction markets on any topic, including sports,
+Aura puts market creation in the hands of the community. Stakers at **Scout** tier or above can propose new prediction markets on any topic, including sports,
 politics, crypto, and real-world events, and earn a share of the trading fees
 on every market they ship.
 
@@ -13,7 +12,9 @@ on every market they ship.
 
 Before submitting a proposal, you'll need:
 
-- **Iron tier or higher**. At least 60,000 vaulted $AURA. See
+- **Available creation capacity**. Personal capacity starts at Scout with 10,000
+  active AURA. Where slot lending is enabled, an accepted borrowed slot can supply
+  capacity without transferring the owner's stake or voting rights. See
   [Tier Structure](/tokens/tier-structure) and
   [Staking & Vaulting $AURA](/tokens/staking).
 - **A small ALPH deposit**, around 0.5 ALPH per market. This is refundable
@@ -51,21 +52,25 @@ Before submitting a proposal, you'll need:
     review and vote on each proposal, weighted by their tier.
   </Step>
   <Step title="Approval">
-    After voting closes, a curator reviews the most-supported proposals
-    against current platform capacity (number of active markets, recent
-    daily volume, and total queued proposals) and approves the ones that
-    best fit the slate. Approved proposals deploy on-chain immediately;
-    rejected proposals refund the deposit.
+    After voting closes, automation ranks the authenticated proposals, applies
+    the existing volume-dependent acceptance percentage and daily cap, and
+    checks duplicates. It freezes the selection before executing approvals
+    and refunds. A missing required check or unfinished transaction delays
+    progress; a successful submission alone does not prove deployment.
   </Step>
 </Steps>
 
 ## Market limits
 
-To keep the platform high-quality and spam-free, each proposer can have
-**up to 25 proposals outstanding at a time**. A slot frees up whenever one
-of your proposals is finalized (approved or rejected). Sibling markets in
-a linked bundle don't count against the cap, and only the bundle's master
-proposal does.
+Personal capacity is the whole number of 10,000-AURA units in active stake.
+Each counted proposal or linked-bundle root uses one slot for a rolling 24 hours.
+Rejection, cancellation or deployment does not free that use early. A bundle
+uses one capacity source; its components cannot combine different owners' slots.
+
+An accepted outgoing grant reserves its quota against the slot owner's capacity.
+Incoming slots do not change the recipient's tier or voting power. Supported grant
+conditions can restrict categories, market types, bundle size, dates and usage;
+reputation, Top Creator and external approval are not lending conditions.
 
 <Tip>
   See [Binary Market Best Practices](/tutorials/binary-market-best-practices)
@@ -77,7 +82,8 @@ proposal does.
 
 For events with multiple related outcomes such as election races, league seasons,
 or playoff brackets, you can submit a **linked proposal** that bundles up to
-**100 related markets** under one voting decision. If the bundle is approved,
+**100 related markets**, subject to the capacity source's tier and accepted
+terms, under one voting decision. The master counts in that inclusive limit. If the bundle is approved,
 all of its child markets deploy together with shared metadata, so the UI can
 group them into a single "event" page.
 

@@ -22,7 +22,7 @@ does three jobs at once:
 
 <Steps>
   <Step title="Connect your wallet">
-    Sign in to Aura using your compatible crypto wallet.
+    Sign in to your Aura account and open its built-in wallet.
   </Step>
   <Step title="Navigate to the Vault">
     Click the **Vault** tab in the navigation toolbar at the top of the
@@ -34,44 +34,27 @@ does three jobs at once:
   </Step>
   <Step title="Confirm your stake">
     Confirm the staking transaction in your wallet. Your new tier
-    status takes effect immediately upon confirmation.
+    status takes effect upon confirmation. Oracle participation activates separately after its 24-hour delay and keeper processing; creator eligibility does not prove Oracle eligibility.
   </Step>
 </Steps>
 
 ## How to unlock tokens
 
 <Steps>
-  <Step title="Navigate to the Vault">
-    Ensure you're signed in and click the **Vault** tab.
+  <Step title="Open the Vault">
+    Sign in and open the Vault page. It shows your active stake, any pending request and the currently available unlock amount.
   </Step>
   <Step title="Request unlock">
-    Click **Request Unlock** to initiate your token unlocking. This
-    starts a **7-day cooldown period**.
+    Choose an amount within the displayed limit and confirm. Only one request may be outstanding. Its seven-day waiting period starts, and the requested amount immediately stops contributing to your creator tier and capacity. Recent proposal uses and outgoing slot allocations can limit the amount available to request.
   </Step>
-  <Step title="Withdraw your tokens">
-    After the 7-day period, return to the Vault page and withdraw your
-    tokens via the **Withdraw** tab.
+  <Step title="Follow automatic delivery">
+    After seven days, Aura automatically delivers the free portion to the original wallet. There is no manual Withdraw tab or claim transaction. Exact funded penalties captured before the exit cutoff can retain part of the request. Released funds become eligible under the original maturity; a new dispute cannot restart the wait.
   </Step>
 </Steps>
 
-### Understanding the cooldown period
+Penalty exposure is bounded when it is admitted, both for each owner and across the Vault. Only exact funded claims captured before an exit cutoff can retain that exit's funds; each claim is collected or released once. Those already funded claims are not clamped to 1% of the Vault's later, smaller balance. Ordinary unreserved slashing retains its separate circuit breaker. New disputes cannot keep adding obligations to an existing exit indefinitely.
 
-After requesting an unlock, your staked $AURA tokens enter a mandatory
-cooldown period of **7 days**.
-
-During this time:
-
-- Your tokens remain locked but **no longer contribute to your tier
-  privileges**.
-- After the cooldown ends, return to the Vault page to complete the
-  withdrawal.
-
-<Warning>
-  - Tokens remain secure during the cooldown and can only be withdrawn
-    to your connected wallet.
-  - After withdrawal, your tier status resets based on your remaining
-    locked tokens.
-</Warning>
+Delivery still depends on working services and confirmed chain execution. A submitted payment or an unavailable balance read does not prove completion. The Vault page lets you retry a failed read and follows a remaining request until it is delivered or fully accounted for.
 
 ## Slashing: why staking has skin in the game
 
@@ -101,8 +84,9 @@ as each phase closes:
 | Was eligible (Iron tier+) but **didn't vote at all** | **0.1% of vaulted $AURA** is slashed. | During the reveal window |
 
 Every slashed token flows into the **penalty pool** for that specific
-market. Once the pool is finalized, winning voters claim their share,
-weighted by their voting tier, directly into their wallet as $AURA.
+market. Once a YES/NO pool is finalized, Aura automatically distributes the
+recorded winning-voter allocations as $AURA. There is no user claim action.
+A TOO_EARLY round retains its pool for a later round.
 
 <Tip>
   The slash percentage is small per individual vote (0.1%), but it
@@ -111,65 +95,26 @@ weighted by their voting tier, directly into their wallet as $AURA.
   vote on disputes you've actually researched.
 </Tip>
 
-### Voting power vs. stake at risk
+### Stake at risk and exit protection
 
-Higher tiers get more voting weight on disputes, and have more $AURA
-at risk if they vote wrong:
+Round eligibility and penalty backing are captured under the Oracle's activation and round rules. A later balance read does not redefine an already funded claim. Penalties do not reach your USDT or trading positions, or another user's stake.
 
-| Tier | Voting weight | Slash if you back the wrong side (per vote) |
-| --- | ---: | ---: |
-| Degenerate | 30 | 1,000 $AURA (0.1% of 1,000,000) |
-| Diamond | 22 | 833 $AURA |
-| Platinum | 16 | 667 $AURA |
-| Gold | 11 | 500 $AURA |
-| Silver | 7 | 333 $AURA |
-| Bronze | 3 | 167 $AURA |
-| Iron | 1 | 60 $AURA |
-
-The trade-off is intentional: bigger stakers get bigger reward shares
-when they're right, and bigger penalties when they're wrong. See
-[Voting on Disputes](/tutorials/voting-on-disputes) for the actual
-voting flow.
-
-### What slashing does *not* affect
-
-The Vault is built so that slashing only ever touches the **vaulted
-balance** for the user being slashed. It cannot:
-
-- Affect any other user's balance, even pro-rata.
-- Touch your USDT, your open trading positions, or your market shares.
-- Slash more than you have vaulted at the time the penalty is applied.
-
-Two fairness protections apply on top of that:
-
-- **New stakers are protected.** If your first deposit landed *after* a
-  dispute's vote already started, you can't be slashed as a non-voter of
-  that dispute, because you never had a chance to participate.
-- **Pre-dispute unlocks are protected.** $AURA you requested to unlock
-  *before* a dispute started is out of that dispute's slashing reach.
-  Requesting the unlock *after* the dispute started doesn't help, since the
-  pending amount stays exposed until the round settles, so "vote and
-  flee" doesn't work.
+Penalty exposure is bounded when it is admitted, both for each owner and across the Vault. Only exact funded claims captured before an exit cutoff can retain that exit's funds; each claim is collected or released once. Those already funded claims are not clamped to 1% of the Vault's later, smaller balance. Ordinary unreserved slashing retains its separate circuit breaker. New disputes cannot keep adding obligations to an existing exit indefinitely.
 
 ### Authority over slashing
 
 Only the **Optimistic Oracle contract** can call the Vault's slash
 function, and even then only as part of a dispute resolution flow
-that's already gone through commit, reveal, and supermajority
-finalization.
+that follows the recorded round and phase rules. Some non-voter processing
+occurs during reveal; the dedicated penalty passes must complete before the
+reward pool is finalized.
 
 This authority is rotated through a **timelocked pointer**: changing
 which contract can slash requires queuing a new slasher address and
 waiting through a delay window before the change takes effect. There
 is no way to push an emergency slash through with no notice.
 
-On top of the slasher gate, the Vault enforces a **global slashing
-circuit breaker**: no more than **1% of the entire vault** can be
-slashed in any rolling 24-hour window, no matter who asks. Legitimate
-dispute penalties never come close to that ceiling (a round slashing
-every staker moves ~0.1% of the vault), so the cap exists purely as
-defense-in-depth: even a fully compromised oracle could not drain
-staked $AURA faster than 1% per day, leaving days of notice to respond.
+Penalty exposure is bounded when it is admitted, both for each owner and across the Vault. Only exact funded claims captured before an exit cutoff can retain that exit's funds; each claim is collected or released once. Those already funded claims are not clamped to 1% of the Vault's later, smaller balance. Ordinary unreserved slashing retains its separate circuit breaker. New disputes cannot keep adding obligations to an existing exit indefinitely.
 
 Finally, staking is restricted to **regular wallet addresses** (EOAs
 and multisigs). Smart contracts cannot stake, because several payout and
@@ -185,7 +130,8 @@ processing.
   real time.
 - Wrong-side and silent dispute voters lose 0.1% of vaulted $AURA per
   vote; that $AURA funds rewards for correct voters.
-- Only the Optimistic Oracle can trigger a slash, and only after a
-  finalized dispute vote.
-- You retain full custody. Aura cannot move, freeze, or arbitrarily
-  reduce your vaulted balance outside the explicit dispute flow.
+- Only the bound Optimistic Oracle can invoke the Vault penalty operations,
+  under the recorded round and funded-claim rules.
+- Unlock requests use a seven-day wait and automatic free-portion delivery.
+  Exact captured penalties and existing creator-capacity commitments retain
+  their defined effect; governance and operational availability remain trust dependencies.

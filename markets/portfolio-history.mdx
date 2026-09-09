@@ -1,0 +1,77 @@
+---
+title: "Portfolio and history"
+description: "Understand your portfolio estimate, transaction history, CSV export and realized trading cash flow."
+---
+
+Aura is pre-mainnet. This guide describes the current dashboard behavior; it
+does not establish a live deployment.
+
+## Balances and portfolio value
+
+Your portfolio combines confirmed wallet collateral with the current quoted
+value of open positions. Available-to-trade collateral accounts for reservations
+and active wallet operations, so it can differ from confirmed ownership.
+
+A missing balance, position or required quote makes the total unavailable. A
+verified empty account can show zero. Open-position values are estimates, and
+the chart does not reconstruct their historical market value. History rows and
+expected payouts do not authorize spending.
+
+## Account updates
+
+Account events trigger fresh reads. A replay reset starts that read/subscription
+sequence again. Switching wallets clears or masks the previous account's content;
+late results from the previous wallet must not populate the new account.
+
+The account view combines sources with their own authority and freshness. It is
+not one atomic snapshot across the chain, trading engine, wallet and indexer.
+Unavailable upstream evidence remains unavailable.
+
+## History and CSV
+
+History includes proposals, fills, parlays, direct fee rewards, market winnings
+and supported wallet transfers. Every source page must complete before the view
+can export CSV. A source error, repeated cursor or incomplete parlay payment
+evidence disables export. Retained rows for the same wallet are marked stale
+after an outage; they are not transferred to another wallet.
+
+A parlay placement is an outgoing stake at creation time. Its incoming return
+needs confirmed actual returned units and an authoritative payment-event time.
+A predicted win is not payment proof. A confirmed zero return creates no incoming
+row, and the return never reuses the placement's transaction link.
+
+CSV follows your visible filters and sort order, including incoming/outgoing
+signs and occurrence times. It retains displayed precision, so it is an activity
+export, not an exact base-unit accounting ledger. A direct fee reward's allocation
+day does not establish its payment time; an unfinalized allocation is not paid cash.
+
+## Realized P/L
+
+The P/L view is cumulative trading cash flow. Buy fills and parlay stakes are
+outgoing; sell fills, market winnings and confirmed actual parlay returns are
+incoming. Finalized direct maker rewards are included. Wallet deposits,
+withdrawals and historical changes in open-position value are excluded.
+
+Amounts are accumulated exactly from decimal strings before the headline is
+formatted to two places. Chart coordinates have display precision limits.
+Invalid amounts, unsupported precision or incomplete sources make the complete
+total unavailable.
+
+A confirmed amount without an authoritative payment time may contribute to the
+total while the chart remains unavailable. Missing payment time is not replaced
+with an allocation date or the time a settlement was observed.
+
+## Privacy and pending actions
+
+Owner-private balances, positions, orders, settlements and watchlists require
+your matching session. Other routes intentionally expose public activity; an
+address in a URL does not itself make the route private.
+
+The public pending-actions summary exposes governance and dispute action
+metadata. Governance voting is actionable from the inclusive start until the
+exclusive end. Reveal actions must match the current round and its open reveal
+phase. The separate authenticated pending-reveals queue is owner-only, contains
+private vote choices and omits salts.
+
+A transaction ID alone does not prove successful delivery. Confirmation, script
+execution, indexing and wallet recovery evidence describe different stages.

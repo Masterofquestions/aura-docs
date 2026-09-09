@@ -11,7 +11,9 @@ without trusting us, and what still depends on trusting us. Both are below.
 
 ## What protects funds without trusting Aura
 
-These are properties of the contracts. They hold whether or not we behave.
+These describe current pre-mainnet source. Operational enforcement, infrastructure
+and live recovery remain release qualifications; there is no live production
+app, user population or funds implied by this page.
 
 <AccordionGroup>
   <Accordion title="Payout destinations are fixed in the contract" icon="lock">
@@ -30,22 +32,25 @@ These are properties of the contracts. They hold whether or not we behave.
     with independent bounds. Draining or miscounting one cannot reach into
     another or into trader collateral.
   </Accordion>
-  <Accordion title="Resolution does not require an admin" icon="unlock">
-    Finalizing an outcome, running the penalty passes, and cleaning up voter
-    records are all permissionless. If Aura went dark tomorrow, anyone could
-    still push a resolved market through to the point where winners can claim.
+  <Accordion title="Recorded obligations survive a stopped worker" icon="unlock">
+    User payouts follow recorded recipients, exact amounts and replay guards.
+    Some contract maintenance is permissionless, while company-signer, finalized
+    evidence and automatic delivery paths still depend on running services.
+    A stopped indexer is not proof that a user can independently execute every
+    payout. A pending obligation must remain visible until proven paid.
   </Accordion>
+
   <Accordion title="Governance changes are timelocked" icon="clock">
-    Every governance setter follows propose, wait, then execute. Mainnet delay is
-    24 hours, and there is no setter that shortens it. You get a full day of
-    visible warning before a treasury, oracle, vault, or voting pointer changes.
+    Many pointer changes follow propose, wait, then execute, with their own
+    contract-specific conditions. Factory-governed changes use the reviewed
+    notice period; the Vault slasher change has an eight-day mainnet notice
+    and must clear its existing liabilities. Immediate pause and restricted
+    live-operator revocation are separate containment powers.
   </Accordion>
-  <Accordion title="Slashing has a global circuit breaker" icon="gauge-high">
-    Total slashing is capped at 1% of everything staked per rolling 24-hour
-    window. Past the cap the contract clamps the penalty rather than reverting,
-    so a bug or an attack in the penalty path cannot cascade into the vault.
-    Individual voters risk 0.1% of their committed balance per losing vote.
+  <Accordion title="Penalty exposure and exits are bounded" icon="gauge-high">
+    Penalty exposure is bounded when it is admitted, both for each owner and across the Vault. Only exact funded claims captured before an exit cutoff can retain that exit's funds; each claim is collected or released once. Those already funded claims are not clamped to 1% of the Vault's later, smaller balance. Ordinary unreserved slashing retains its separate circuit breaker. New disputes cannot keep adding obligations to an existing exit indefinitely.
   </Accordion>
+
   <Accordion title="Only real accounts can trade or stake" icon="user-check">
     Traders and stakers must be externally owned accounts, not contracts. This
     keeps the slashing and reward paths solvent, and it stops a contract from
@@ -91,19 +96,45 @@ resolution that went against the operator.
 
 Being straight about the parts that are not trustless:
 
-- **Governance keys** can rotate the treasury, oracle, vault, and voting
-  addresses, subject to the 24-hour timelock. Intended to be a multisig in
-  production.
+- **Governance authorities** retain contract-specific pointer, unpause and
+  recovery powers. Source rules and intended custody do not prove possession
+  or deployed enforcement of those authorities.
 - **The pause switch** is immediate and has no timelock by design.
 - **Treasury operators** can route protocol revenue on resolved markets. Not
   user funds.
-- **The indexer and API** are operated by Aura. They are a convenience layer over
-  chain state, not a source of truth. Every balance, position, and outcome can be
-  read directly from the contracts, and you should verify against the chain if the
-  stakes justify it.
+- **The indexer, API and sequencer** are operated by Aura. Chain state records
+  on-chain effects; durable journals also record accepted intents, off-chain
+  trading and outstanding obligations. Chain balances alone cannot reconstruct
+  those books. Recovery requires a coherent cross-system snapshot and retained
+  custody material, followed by independent reconciliation.
 - **Market resolution rules** are written by whoever proposed the market. A badly
   worded market is a real risk that no amount of contract security fixes. Read the
   rules before trading.
+
+## Accounting observations
+
+Trading collateral and AURA stake are separate assets and custody domains. A
+reservation limits reuse; it does not create more funds. A recorded reward,
+an escrow handoff and a confirmed payment to your wallet are different stages.
+
+The solvency observer compares outstanding obligations and custody. AURA Vault
+accounting compares held AURA with vaulted balances plus pending slash payouts;
+funded claims and withdrawal reservations already belong inside those balances.
+A verified empty token balance can prove zero. Missing or malformed evidence
+stays unverified, and a positive unexplained balance is not automatically called
+a donation. The observation retains its chain block and finality evidence;
+database insertion time alone does not show how fresh that chain state is.
+
+Database projections and later chain reads are not one atomic snapshot. Finite
+signed projections remain measurements: a negative database balance compared
+with zero on-chain is a discrepancy, not a missing read. A discrepancy needs
+reconciliation with the event history before its cause can be determined.
+
+Failed or unverified observations create operator incidents when evidence can be
+stored. An evidence-write failure makes the observer's scheduler unhealthy and
+withholds normal work until the configured evidence writes complete under the
+current authority. These checks do not themselves order an automatic pause,
+liquidation or payout. Local checks also do not prove deployed alert delivery.
 
 ## Reporting a vulnerability
 

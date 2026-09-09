@@ -47,9 +47,7 @@ penalizes it rather than letting it be a free option. If you commit, set a
 reminder and reveal.
 </Warning>
 
-Slashing is capped protocol-wide at 1% of everything staked per rolling 24-hour
-window. If penalties would exceed that, they are clamped rather than reverted, so
-a pathological dispute cannot cascade through the vault.
+Penalty exposure is bounded when it is admitted, both for each owner and across the Vault. Only exact funded claims captured before an exit cutoff can retain that exit's funds; each claim is collected or released once. Those already funded claims are not clamped to 1% of the Vault's later, smaller balance. Ordinary unreserved slashing retains its separate circuit breaker. New disputes cannot keep adding obligations to an existing exit indefinitely.
 
 ## How voting works
 

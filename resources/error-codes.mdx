@@ -18,178 +18,493 @@ an error back from the REST API instead, you want
 
 ## Reading a failed transaction
 
-A reverted Aura transaction reports:
+A reverted transaction reports the contract address and a numeric code:
 
 ```text
 Assertion Failed in Contract @ <contract-address>, Error Code: <N>
 ```
 
-<Steps>
-  <Step title="Identify the contract">
-    Match the address against [Contracts](/resources/contracts). If it is not one
-    of the singletons, it is an individual market, so use the
-    [MarketContract table](#marketcontract).
-  </Step>
-  <Step title="Look up the code in that contract's table">
-    The same number means different things in different contracts. Code `4` is
-    `ALREADY_RESOLVED` in a market and `Unauthorized` in the factory. You have to
-    know which contract threw it.
-  </Step>
-</Steps>
+Match the address and code to the artifact for the active network and release.
+The same number can mean different things in different contracts. An address
+outside the singleton list is not enough to identify the contract type. Shared
+InstantMarket errors appear under [MarketConstants](#marketconstants).
 
-Codes are stable and are never reused. Gaps in the numbering are intentional, so
-a decoder that maps by position stays correct across releases.
+<Note>
+Aura is pre-mainnet. These tables describe the currently committed artifacts;
+they do not prove a deployment. Codes have changed during pre-mainnet development:
+for example, CheckpointRegistry moved from 900–902 to 940–942 on August 21, 2026.
+Never decode by table position or renumber an already deployed code.
+</Note>
 
-## MarketContract
+The tables below are generated from compiler artifacts and reviewed explanations.
+Update them through Aura's maintained error-code sync tool. Numeric gaps and
+reserved historical slots are intentional. Codes at or above 700 share one
+repository-wide namespace, checked by the generator.
 
-Thrown by an individual market: order placement, settlement, claims, and
-teardown.
+## AuraSlashRewardBatchCoordinator
 
-| Code | Name | What it means |
-| --- | --- | --- |
-| 0 | `INVALID_AMOUNT` | Quantity, amount, outcome, or side failed validation. Also any path where an amount was zero. |
-| 1 | `INSUFFICIENT_SHARES` | A sell order asked for more shares than the trader has free. Check for shares already locked in resting orders. |
-| 3 | `UNAUTHORIZED` | The caller is not permitted on this path. Treasury, creator, and oracle entry points each accept only their own caller. |
-| 4 | `ALREADY_RESOLVED` | Trading attempted after the market resolved, or a second attempt to finalize it. |
-| 6 | `ZERO_RETURN` | A claim computed a payout of zero. Defensive, and should be unreachable in practice. |
-| 7 | `NO_POSITION` | Claim attempted from the losing side, or by an address with no position. |
-| 8 | `MARKET_NOT_RESOLVED` | Claim, fee withdrawal, or teardown attempted before a final outcome was set. |
-| 9 | `ORDER_NOT_FOUND` | A cancel or settle referenced an order id that does not exist. |
-| 10 | `ORDER_CANCELLED` | A cancel or settle referenced an order that was already cancelled. |
-| 11 | `ORDERS_DONT_CROSS` | Settlement was attempted on two orders whose prices do not cross. |
-| 12 | `INVALID_FILL` | Side or outcome mismatch, over-fill, zero-payment fill, or a fill below the minimum precision. |
-| 13 | `INVALID_PRICE` | Order price was outside the valid range. Prices must be between 1 and 999. |
-| 14 | `INSUFFICIENT_COLLATERAL` | Collateral accounting guard. Defensive, and not expected to trip. |
-| 15 | `UNCLAIMED_POSITIONS` | Teardown blocked because winning shares remain unclaimed. |
-| 16 | `OPEN_ORDERS_REMAIN` | Teardown blocked because open orders still hold collateral or shares. |
-| 17 | `INVALID_OUTCOME` | Finalize was called with an outcome other than yes or no. |
-| 18 | `TRADER_NOT_EOA` | The caller is a contract. Only externally owned accounts may trade. |
+`enum AuraSlashRewardCoordinatorErr` from `AuraSlashRewardBatchCoordinator.ral.json`:
 
-Codes `2` and `5` are reserved and not thrown.
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 1050 | `ASC_BAD_DOMAIN` | Invalid domain. |
+| 1051 | `ASC_UNAUTHORIZED` | Caller failed the contract-specific authorization gate. |
+| 1052 | `ASC_BAD_ROSTER` | Invalid roster. |
+| 1053 | `ASC_ALREADY_SEALED` | Already sealed. |
+| 1054 | `ASC_NOT_READY` | Required ready condition is not satisfied. |
+| 1055 | `ASC_PAUSED` | Operation is disabled while this contract or lane is paused. |
+| 1056 | `ASC_BAD_SOURCE` | Invalid source. |
+| 1057 | `ASC_SOURCE_REPLAY` | A previously consumed identifier or source transition was replayed. |
+| 1058 | `ASC_BAD_CERTIFICATE` | Invalid certificate. |
+| 1059 | `ASC_BAD_VALIDITY` | Invalid validity. |
+| 1060 | `ASC_BAD_CONFIRMER` | Invalid confirmer. |
+| 1061 | `ASC_BAD_FUNDER` | Invalid funder. |
+| 1062 | `ASC_BAD_LANE` | Invalid lane. |
+| 1063 | `ASC_BAD_SEQUENCE` | Invalid sequence. |
+| 1064 | `ASC_BAD_AMOUNT` | Invalid amount. |
+| 1065 | `ASC_BAD_ACCOUNTING` | Invalid accounting. |
+| 1066 | `ASC_REPLAY` | A previously consumed identifier or source transition was replayed. |
+| 1067 | `ASC_BATCH_LIVE` | Reconciliation attempted while the lane still reports the funded batch as live. |
+| 1068 | `ASC_PENDING` | Confirmer rotation expected a pending change to be absent or present, but found the opposite state. |
+| 1069 | `ASC_TIMELOCK` | The pending change has not satisfied its timelock. |
+
+## AuraSlashRewardBatchLane
+
+`enum AuraSlashRewardLaneErr` from `AuraSlashRewardBatchLane.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 1080 | `ASL_BAD_DOMAIN` | Invalid domain. |
+| 1081 | `ASL_NOT_COORDINATOR` | Caller failed the contract-specific authorization gate. |
+| 1082 | `ASL_BAD_SEQUENCE` | Invalid sequence. |
+| 1083 | `ASL_BAD_DIGEST` | Invalid digest. |
+| 1084 | `ASL_BAD_COUNT` | Invalid count. |
+| 1085 | `ASL_BAD_AMOUNT` | Invalid amount. |
+| 1086 | `ASL_BATCH_MISSING` | Required batch is missing. |
+| 1087 | `ASL_BATCH_MISMATCH` | Batch mismatch. |
+| 1088 | `ASL_BAD_RECIPIENT` | Invalid recipient. |
+| 1089 | `ASL_BAD_ACCOUNTING` | Invalid accounting. |
+
+## CheckpointRegistry
+
+Codes 940–942 were assigned before mainnet deployment to avoid the current `RewardRouterErr` 900–915 namespace.
+
+`enum CkErr` from `CheckpointRegistry.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 940 | `CK_NOT_OPERATOR` | Caller is not the configured checkpoint operator. |
+| 941 | `CK_NOT_MONOTONIC` | Checkpoint sequence did not strictly advance, or its epoch rewound. |
+| 942 | `CK_BAD_HASH` | Checkpoint event hash is not exactly 32 bytes. |
+
+## Clearinghouse
+
+`enum ChErr` from `constants.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 800 | `CH_NOT_OPERATOR` | Caller failed the contract-specific authorization gate. |
+| 801 | `CH_BAD_SEQUENCE` | Settlement batch sequence is not the next authoritative sequence. |
+| 802 | `CH_BAD_BLOB_SIZE` | Invalid blob size. |
+| 803 | `CH_PAUSED` | Operation is disabled while this contract or lane is paused. |
+| 804 | `CH_NOT_SETTLEABLE_ORIGIN` | Order owner is not a supported settleable asset-address origin. |
+| 805 | `CH_ZERO_AMOUNT` | Deposit, withdrawal, claim, or batch amount must be greater than zero. |
+| 806 | `CH_INSUFFICIENT_BALANCE` | Insufficient balance. |
+| 807 | `CH_BAD_VERSION` | Invalid version. |
+| 808 | `CH_BAD_NETWORK` | Invalid network. |
+| 809 | `CH_BAD_DOMAIN` | Invalid domain. |
+| 810 | `CH_BAD_OUTCOME` | Invalid outcome. |
+| 811 | `CH_BAD_SIDE` | Invalid side. |
+| 812 | `CH_BAD_ORDER_TYPE` | Invalid order type. |
+| 813 | `CH_RESERVED_FLAGS` | Signed intent sets a flag bit that is reserved by the current payload version. |
+| 814 | `CH_BAD_PRICE` | Invalid price. |
+| 815 | `CH_BAD_LOT` | Invalid lot. |
+| 816 | `CH_MARKET_MISMATCH` | Market mismatch. |
+| 817 | `CH_SELF_MATCH` | Both legs resolve to the same owner/public key. |
+| 818 | `CH_BAD_MATCH_TYPE` | Invalid match type. |
+| 819 | `CH_BAD_MAKER_SIDE` | Invalid maker side. |
+| 820 | `CH_MAKER_PRICE_MISMATCH` | Maker price mismatch. |
+| 821 | `CH_PRICE_BOUND_VIOLATED` | Execution price violates one or both signed limit-price bounds. |
+| 822 | `CH_PRICES_DONT_CROSS` | The two signed order prices do not cross for the requested match type. |
+| 823 | `CH_FEE_CAP_EXCEEDED` | Fee cap exceeded. |
+| 824 | `CH_OVERFILL` | Requested fill would exceed the signed order quantity. |
+| 825 | `CH_AON_VIOLATED` | An all-or-none order was partially filled or had prior filled quantity. |
+| 826 | `CH_COST_BOUND_VIOLATED` | Cumulative executed value exceeds the signed proportional cost bound. |
+| 827 | `CH_INSUFFICIENT_POSITION` | Insufficient position. |
+| 828 | `CH_MARKET_RESOLVED` | (Retired.) Resolution now produces a skip event; code 828 remains reserved. |
+| 829 | `CH_MARKET_NOT_REGISTERED` | Market is absent from the venue registry or has already been retired. |
+| 830 | `CH_ALREADY_REGISTERED` | Already registered. |
+| 831 | `CH_NOT_TREASURY_OPS` | Required treasury ops condition is not satisfied. |
+| 832 | `CH_NOT_FACTORY_MARKET` | Required factory market condition is not satisfied. |
+| 833 | `CH_NOT_RESOLVED` | Required resolved condition is not satisfied. |
+| 834 | `CH_ALREADY_RECORDED` | Already recorded. |
+| 835 | `CH_CLAIM_DELAY` | Claim or push payout was attempted before the post-resolution claim delay elapsed. |
+| 836 | `CH_NOTHING_TO_CLAIM` | No position, fee allowance, or reward amount remains claimable for this request. |
+| 837 | `CH_PRUNE_TOO_EARLY` | Intent/cancellation pruning was attempted before expiry plus the required safety margins. |
+| 838 | `CH_BAD_COMMAND` | Invalid command. |
+| 839 | `CH_TIMELOCK_PENDING` | Timelock pending. |
+| 840 | `CH_NO_PENDING_OPERATOR` | Required pending operator is absent. |
+| 841 | `CH_REFERRAL_UNDERFLOW` | Treasury cut cannot cover the computed referral portion. |
+| 842 | `CH_BAD_RESOLUTION_OUTCOME` | Invalid resolution outcome. |
+| 843 | `CH_OUTCOME_MISMATCH` | Outcome mismatch. |
+| 844 | `CH_BAD_DEADLINE` | Signed order deadline is outside its permitted creation/expiry window. |
+| 845 | `CH_COLLATERAL_UNDERFLOW` | Settlement, claim, or teardown would drive tracked market collateral below zero. |
+| 846 | `CH_BAD_LIFETIME` | Invalid lifetime. |
+| 847 | `CH_REWARDS_WALLET_UNSET` | Liquidity-reward withdrawal was requested before its wallet was configured. |
+| 848 | `CH_ALLOWANCE_EXCEEDED` | Allowance exceeded. |
+| 849 | `CH_OBLIGATIONS_OUTSTANDING` | Market retirement is blocked by collateral, fee, reward, or payout obligations. |
+| 850 | `CH_BAD_VOTER_SHARE` | Invalid voter share. |
+| 851 | `CH_VAULT_UNRECOGNIZED` | Vault identity is not recognized by the active Factory deployment domain. |
+| 852 | `CH_NOT_GOVERNANCE` | Caller failed the contract-specific authorization gate. |
+| 853 | `CH_VAULT_ROTATION_PENDING` | Vault rotation pending. |
+| 854 | `CH_RESOLUTION_UNRECORDED` | Operation requires a Clearinghouse resolution record that has not been written. |
+| 855 | `CH_DRAIN_WINDOW_OPEN` | Market retirement was attempted before resolution observation and its drain window completed. |
+| 856 | `CH_ALREADY_OBSERVED` | Already observed. |
+| 857 | `CH_BAD_BATCH_COUNT` | Invalid batch count. |
+| 858 | `CH_BATCH_TOO_LARGE` | Settlement batch exceeds `MAX_FILLS_PER_BATCH`. |
+| 859 | `CH_BAD_CREATED_AT` | Invalid created at. |
+| 860 | `CH_COLLATERAL_MISMATCH` | Collateral mismatch. |
+| 861 | `CH_VENUE_MISMATCH` | Venue mismatch. |
+| 862 | `CH_IOC_EXPIRED` | An IOC leg was offered again in a later batch after its first fill. |
+| 863 | `CH_DISPUTE_FEE_ALREADY_PAID` | The canonical market/voter dispute-fee entitlement was already paid. |
+| 864 | `CH_INVALID_CREATOR_ECONOMICS` | Invalid creator economics. |
+| 865 | `CH_REWARD_ROUTER_UNSET` | Creator reward routing was requested before its router was bound. |
+| 866 | `CH_REWARD_ROUTER_ALREADY_BOUND` | The one-time creator reward-router binding is already set. |
+| 867 | `CH_INVALID_REWARD_ROUTER` | Invalid reward router. |
+| 868 | `CH_NOT_REWARD_ROUTER` | Required reward router condition is not satisfied. |
+| 869 | `CH_REWARD_ROUTE_MISMATCH` | Reward route mismatch. |
+| 870 | `CH_BELOW_MIN_FILL_NOTIONAL` | Executed leg principal is below the minimum fill notional. |
+| 871 | `CH_INVALID_OPERATOR` | Invalid operator. |
+| 872 | `CH_PENDING_OPERATOR_EXISTS` | A second settlement-operator rotation was proposed while one is pending. |
+| 873 | `CH_NOT_PAUSE_AUTHORITY` | Caller failed the contract-specific authorization gate. |
+| 874 | `CH_FEE_REWARD_COORDINATOR_UNSET` | A fee-reward operation requires a bound coordinator, but none is set. |
+| 875 | `CH_FEE_REWARD_COORDINATOR_ALREADY_BOUND` | The one-time fee-reward coordinator binding is already set. |
+| 876 | `CH_INVALID_FEE_REWARD_COORDINATOR` | Invalid fee reward coordinator. |
+| 877 | `CH_NOT_FEE_REWARD_COORDINATOR` | Required fee reward coordinator condition is not satisfied. |
+| 878 | `CH_LEGACY_REWARD_PATH_DISABLED` | The retired direct fee-reward path is permanently disabled. |
+| 879 | `CH_BAD_FEE_REWARD_RESERVE` | Invalid fee reward reserve. |
+| 880 | `CH_BAD_FEE_REWARD_DIGEST` | Invalid fee reward digest. |
+| 881 | `CH_FEE_REWARD_MIGRATION_NOT_PAUSED` | Fee-reward generation migration requires the Clearinghouse to be paused. |
+| 882 | `CH_FEE_REWARD_GENERATION_ALREADY_V2` | The venue has already completed its fee-reward V2 generation migration. |
+| 883 | `CH_UNSAFE_LEGACY_REWARD_MIGRATION` | Legacy reward custody or obligations make the V2-only migration unsafe. |
+| 884 | `CH_INTERNAL_CLAIM_DISABLED` | Historical internal-balance and user-claim selectors are permanently disabled; automatic external-wallet delivery is the only payout path. |
+
+## CreatorCapacityAuthority
+
+`enum CapacityAuthorityErrorCodes` from `constants.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 1 | `Unauthorized` | Caller failed the contract-specific authorization gate. |
+| 2 | `InvalidAddress` | Invalid address. |
+| 3 | `AlreadyBound` | Already bound. |
+| 4 | `NotBound` | Required bound condition is not satisfied. |
+| 5 | `InvalidDelegation` | Invalid delegation. |
+| 6 | `InvalidStatus` | Invalid status. |
+| 7 | `InvalidTerms` | Invalid terms. |
+| 8 | `InvalidNonce` | Invalid nonce. |
+| 9 | `InsufficientCapacity` | Insufficient capacity. |
+| 10 | `InsufficientSlots` | Insufficient slots. |
+| 11 | `DelegationExpired` | Delegated slot use is outside the grant's active time window. |
+| 12 | `ActiveSlotUse` | Delegated slot allocation is inactive or already at its active-proposal limit. |
+| 13 | `InvalidSlotUse` | Invalid slot use. |
+| 14 | `DuplicateDelegation` | A grant already exists for this delegation id. |
+| 15 | `RestrictionFailed` | Category, market type, bundle, reputation, or authorization restriction rejected the slot use. |
+| 16 | `EligibilityMissing` | Required eligibility is missing. |
+| 17 | `InvalidRewardShare` | Invalid reward share. |
+| 18 | `FactoryNotBound` | The CreatorCapacityAuthority has no bound MarketFactory. |
+| 19 | `VaultNotBound` | The CreatorCapacityAuthority has no bound Vault. |
+| 20 | `TimelockNotElapsed` | The pending change has not satisfied its timelock. |
+| 21 | `PendingChangeExists` | A second governance or grant transition was proposed while one is pending. |
+| 22 | `NoPendingChange` | Required pending change is absent. |
+| 23 | `InvalidDeployment` | Invalid deployment. |
+| 24 | `Decommissioned` | Operation is disabled because this contract is decommissioned. |
+| 25 | `MaintenanceRequired` | More than the fixed 16-row FIFO prune budget is expired; call `advanceOwnerCapacityWindow(owner)` and retry. |
+
+## CreatorCapacityPolicyRegistry
+
+`enum CapacityPolicyRegistryErrorCodes` from `constants.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 1 | `Unauthorized` | Caller failed the contract-specific authorization gate. |
+| 2 | `InvalidAddress` | Invalid address. |
+| 3 | `AlreadyBound` | Already bound. |
+| 4 | `NotBound` | Required bound condition is not satisfied. |
+| 5 | `InvalidTerms` | Invalid terms. |
+| 6 | `InvalidNonce` | Invalid nonce. |
+| 7 | `InvalidStatus` | Invalid status. |
+| 8 | `PendingChangeExists` | A second terms or attestation-authority transition was proposed while one is pending. |
+| 9 | `NoPendingChange` | Required pending change is absent. |
+| 10 | `TimelockNotElapsed` | The pending change has not satisfied its timelock. |
+| 11 | `AttestationRetired` | Slot-lending eligibility/content attestation publication and issuer rotation are retired; this compatibility method always rejects. |
+
+## CreatorRewardRouter
+
+`enum RewardRouterErr` from `constants.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 900 | `RR_UNAUTHORIZED` | Caller failed the contract-specific authorization gate. |
+| 901 | `RR_BAD_NONCE` | Invalid nonce. |
+| 902 | `RR_BAD_COUNT` | Invalid count. |
+| 903 | `RR_BAD_STATUS` | Invalid status. |
+| 904 | `RR_BAD_COMMITMENT` | Invalid commitment. |
+| 905 | `RR_BAD_ASSIGNMENT` | Invalid assignment. |
+| 906 | `RR_BAD_MARKET` | Invalid market. |
+| 907 | `RR_BAD_SLOT_ATTRIBUTION` | Invalid slot attribution. |
+| 908 | `RR_BAD_CONSERVATION` | Invalid conservation. |
+| 909 | `RR_SCHEDULE_LOCKED` | Reward schedule is retired or locked by an in-progress bounded build. |
+| 910 | `RR_BUILD_NOT_READY` | Reward schedule or entitlement materialization has not reached its required complete phase. |
+| 911 | `RR_ROUTE_MISMATCH` | Route mismatch. |
+| 912 | `RR_NOTHING_TO_CLAIM` | No newly materialized accrual or recipient entitlement remains claimable. |
+| 913 | `RR_TOO_MANY_RECIPIENTS` | Too many recipients. |
+| 914 | `RR_BAD_PAYOUT` | Invalid payout. |
+| 915 | `RR_BOUNDARY_NOT_READY` | The reward epoch boundary cannot advance until prior materialization is complete. |
+
+## FeeRewardBatchCoordinator
+
+`enum FeeRewardCoordinatorErr` from `FeeRewardBatchCoordinator.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 1020 | `FRC_BAD_DOMAIN` | Invalid domain. |
+| 1021 | `FRC_UNAUTHORIZED` | Caller failed the contract-specific authorization gate. |
+| 1022 | `FRC_BAD_ROSTER` | Invalid roster. |
+| 1023 | `FRC_NOT_READY` | Required ready condition is not satisfied. |
+| 1024 | `FRC_PAUSED` | Operation is disabled while this contract or lane is paused. |
+| 1025 | `FRC_BAD_CERTIFICATE` | Invalid certificate. |
+| 1026 | `FRC_BAD_KIND` | Invalid kind. |
+| 1027 | `FRC_BAD_CONFIRMER` | Invalid confirmer. |
+| 1028 | `FRC_BAD_VALIDITY` | Invalid validity. |
+| 1029 | `FRC_BAD_LANE` | Invalid lane. |
+| 1030 | `FRC_REPLAY` | A previously consumed identifier or source transition was replayed. |
+| 1031 | `FRC_BAD_SOURCE` | Invalid source. |
+| 1032 | `FRC_BAD_AMOUNT` | Invalid amount. |
+| 1033 | `FRC_BAD_CALLBACK` | Invalid callback. |
+| 1034 | `FRC_BAD_SPONSOR` | Invalid sponsor. |
+| 1035 | `FRC_NOT_REFUNDABLE` | Required refundable condition is not satisfied. |
+| 1036 | `FRC_BATCH_LIVE` | Reconciliation attempted while a fee-reward lane still reports the funded batch as live. |
+| 1037 | `FRC_BAD_ACCOUNTING` | Invalid accounting. |
+| 1038 | `FRC_PENDING_CHANGE` | A second confirmer rotation was proposed while one is pending. |
+| 1039 | `FRC_NO_PENDING_CHANGE` | Required pending change is absent. |
+| 1040 | `FRC_TIMELOCK` | The pending change has not satisfied its timelock. |
+
+## FeeRewardBatchLane
+
+`enum FeeRewardLaneErr` from `FeeRewardBatchLane.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 970 | `FRL_BAD_DOMAIN` | Invalid domain. |
+| 971 | `FRL_NOT_COORDINATOR` | Caller failed the contract-specific authorization gate. |
+| 972 | `FRL_BAD_SEQUENCE` | Invalid sequence. |
+| 973 | `FRL_BAD_KIND` | Invalid kind. |
+| 974 | `FRL_BAD_DIGEST` | Invalid digest. |
+| 975 | `FRL_BAD_COUNT` | Invalid count. |
+| 976 | `FRL_BAD_AMOUNT` | Invalid amount. |
+| 977 | `FRL_BATCH_MISSING` | Required batch is missing. |
+| 978 | `FRL_BATCH_MISMATCH` | Batch mismatch. |
+| 979 | `FRL_BAD_RECIPIENT` | Invalid recipient. |
+| 980 | `FRL_BAD_COLLATERAL` | Invalid collateral. |
+| 981 | `FRL_BAD_ACCOUNTING` | Invalid accounting. |
+
+## MarketConstants
+
+Shared market errors retained for `InstantMarket`; several CLOB-era names remain ABI-stable historical slots.
+
+`enum ErrorCodes` from `constants.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 0 | `INVALID_AMOUNT` | Quantity / amount / outcome / side validation failure; also any "amount == 0" path |
+| 1 | `INSUFFICIENT_SHARES` | SELL order requires more shares than the trader has free; lock-counter underflow guard |
+| 2 | `MARKET_CLOSED` | (Reserved — current code path uses `ALREADY_RESOLVED` instead.) |
+| 3 | `UNAUTHORIZED` | Caller is not allowed for this entry (treasury / creator / oracle path mismatch) |
+| 4 | `ALREADY_RESOLVED` | Trading attempted after `resolved == true`; double `finalizeMarket` |
+| 5 | `ZERO_SHARES` | (Reserved.) |
+| 6 | `ZERO_RETURN` | `claim` payout computed to 0 (defensive; should be unreachable given other guards) |
+| 7 | `NO_POSITION` | Claim attempted from the losing side (or zero-position user) |
+| 8 | `MARKET_NOT_RESOLVED` | Claim / fee withdraw / destroy attempted before `finalOutcome` is set |
+| 9 | `ORDER_NOT_FOUND` | `cancelOrder` / `settleTrades*` referenced a non-existent order id |
+| 10 | `ORDER_CANCELLED` | `cancelOrder` / `settleTrades*` referenced an already-cancelled order |
+| 11 | `ORDERS_DONT_CROSS` | Settle attempted with `buy.price < sell.price` or `yesPrice + noPrice` mismatched for the path |
+| 12 | `INVALID_FILL` | Side mismatch / outcome mismatch / over-fill / zero-payment fill / sub-precision fill |
+| 13 | `INVALID_PRICE` | `price <= 0u \|\| price >= PRICE_PRECISION` on order placement |
+| 14 | `INSUFFICIENT_COLLATERAL` | Collateral counter underflow guards (defensive; never expected to trip) |
+| 15 | `UNCLAIMED_POSITIONS` | `destroyMarket` blocked: `unclaimedWinningShares > 0` |
+| 16 | `OPEN_ORDERS_REMAIN` | `destroyMarket` blocked: open BUY or SELL orders still hold collateral / shares |
+| 17 | `INVALID_OUTCOME` | `finalizeMarket(outcome)` called with `outcome ∉ {1, 2}` |
+| 18 | `TRADER_NOT_EOA` | `placeLimitOrder` caller is a contract address, not an asset address (EOA / P2MPKH) — issue #25 |
+| 19 | `INVALID_ADDRESS` | Address argument fails the contract-specific address or role-domain check. |
+| 20 | `RESOLUTION_NOT_RECORDED` | Market destruction is blocked until the Clearinghouse records its resolution. |
 
 ## MarketFactory
 
-Thrown when proposing markets, linking related proposals, or executing
-governance changes.
+`enum FactoryErrorCodes` from `constants.ral.json`:
 
-| Code | Name | What it means |
-| --- | --- | --- |
-| 4 | `Unauthorized` | Caller is not governance, is not the voting contract, or does not hold the required tier. |
-| 6 | `InvalidAmount` | Proposal field validation failed, a proposal id was not found, or a deposit was zero. |
-| 7 | `ProposalLimitReached` | The proposer already has 25 open proposals. |
-| 8 | `TransferFailed` | Reentrancy guard. Should not be reachable externally. |
-| 9 | `QuestionTooLong` | Question exceeds 400 bytes. |
-| 12 | `RulesTooLong` | Resolution rules exceed 1200 bytes. |
-| 13 | `ProposalNotFound` | Linking referenced a master proposal that does not exist. |
-| 14 | `MetadataTooLong` | Metadata exceeds 2048 bytes. |
-| 15 | `Paused` | The factory is paused. |
-| 16 | `InvalidAddress` | A governance setter was passed an empty or null address. |
-| 18 | `TooManyLinkedIds` | Linked proposal payload exceeds 8192 bytes. Split it across more transactions. |
-| 19 | `CounterUnderflow` | Active market counter guard. Defensive. |
-| 20 | `CategoryTooLong` | Category exceeds 128 bytes. |
-| 21 | `ResolutionSourcesTooLong` | Resolution sources exceed 1200 bytes. |
-| 22 | `ImageUrlTooLong` | Image URL exceeds 512 bytes. |
-| 23 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
-| 24 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
-| 25 | `PendingChangeExists` | A change is already queued. Execute or cancel it first. |
-
-Codes `0` through `3`, `5`, `10`, `11`, and `17` are reserved and not thrown.
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 0 | `MarketClosed` | (Reserved.) |
+| 1 | `MarketNotFinalized` | (Reserved.) |
+| 2 | `MarketAlreadyFinalized` | (Reserved.) |
+| 3 | `MarketNotActive` | (Reserved.) |
+| 4 | `Unauthorized` | Caller is not governance / not the voting contract / not tier-eligible |
+| 5 | `InvalidProposalStatus` | (Reserved.) |
+| 6 | `InvalidAmount` | `proposeMarket` field validation; `getProposal` on missing id; deposit amount = 0 |
+| 7 | `ProposalLimitReached` | Proposer hit `MAX_PROPOSALS_PER_USER` (25) on a counts=true call |
+| 8 | `TransferFailed` | Reentrancy guard (`locked == true`) — should never trip externally |
+| 9 | `QuestionTooLong` | `size!(question) > MAX_QUESTION_LENGTH` (400) |
+| 12 | `RulesTooLong` | `size!(rules) > MAX_RULES_LENGTH` (1200) |
+| 13 | `ProposalNotFound` | `linkProposals` referenced a missing master proposal |
+| 14 | `MetadataTooLong` | `size!(metadata) > MAX_METADATA_LENGTH` (2048) |
+| 15 | `Paused` | Mutating user-facing entry point hit while `paused == true` |
+| 16 | `InvalidAddress` | Governance setter passed `nullContractAddress!()` or empty bytecode |
+| 17 | `RangeOutOfBounds` | Reserved (no longer thrown — `resetProposalCounts` was removed; slot kept so off-chain ordinal decoders stay stable) |
+| 18 | `TooManyLinkedIds` | `linkProposals` payload exceeds `MAX_LINKED_IDS_BYTES` (8192) |
+| 19 | `CounterUnderflow` | Defensive — `recordMarketResolution` saw `activeMarketsCount == 0` |
+| 20 | `CategoryTooLong` | `size!(category) > MAX_CATEGORY_LENGTH` (128) |
+| 21 | `ResolutionSourcesTooLong` | `size!(resolutionSources) > MAX_RESOLUTION_SOURCES_LENGTH` (1200) |
+| 22 | `ImageUrlTooLong` | `size!(imageUrl) > MAX_IMAGE_URL_LENGTH` (512) |
+| 23 | `NoPendingChange` | Timelock execute / cancel called with no queued change |
+| 24 | `TimelockNotElapsed` | Timelock execute called before `pendingTime + timelockDelay` |
+| 25 | `PendingChangeExists` | Second propose attempted while a change is already queued |
+| 26 | `PayoutAlreadyProcessed` | The durable shared-float payout id was already consumed. |
+| 27 | `InvalidPayoutId` | Shared-float payout id is malformed or missing. |
+| 28 | `InvalidBundle` | Linked-bundle shape, commitment, membership, or lifecycle state is invalid. |
+| 29 | `BundleNotAllowed` | Creator policy does not permit this proposal to use a linked bundle. |
+| 30 | `BundleLimitExceeded` | Linked bundle exceeds the snapshotted creator-policy limit. |
+| 31 | `BundleAlreadyFrozen` | Linked bundle membership has already been frozen. |
+| 32 | `InvalidCreatorPolicy` | Creator tier, reward, capacity, or policy snapshot is invalid. |
+| 33 | `InvalidSlotAttribution` | Proposal slot ownership/delegation attribution is invalid. |
+| 34 | `LegacyParlayDisabled` | The retired governance-wallet parlay path is disabled. |
 
 ## OptimisticOracle
 
-Thrown during outcome submission, disputes, commit and reveal voting, and
-penalty processing.
+Inline error constants from `OptimisticOracle.ral.json` (PascalCase U256 heuristic):
 
-| Code | Name | What it means |
-| --- | --- | --- |
-| 0 | `MarketClosed` | The relevant window has closed: commit, reveal, or dispute. Also returned when trying to void a dispute round that had already completed. |
-| 1 | `MarketNotFinalized` | The path requires a finalized state that has not been reached yet. |
-| 2 | `MarketAlreadyFinalized` | An outcome was already submitted, or the market was already disputed. |
-| 3 | `MarketNotActive` | Market lookup failed or the market did not validate. |
-| 4 | `Unauthorized` | Caller is not the admin, not the market, or holds no tier and so cannot vote. |
-| 7 | `InvalidVote` | Outcome or vote value out of range, or a commit hash that is not 32 bytes. |
-| 8 | `InvalidReveal` | The revealed vote does not match the committed hash. |
-| 9 | `AlreadyCommitted` | This voter already committed in this round. |
-| 10 | `AlreadyRevealed` | This voter already revealed in this round, or already claimed vote rewards. |
-| 11 | `NoCommit` | Reveal attempted with no matching commit in this round. |
-| 12 | `InvalidOracleResponse` | Commit or reveal attempted before a dispute was opened. |
-| 13 | `PenaltiesAlreadyFinalized` | Penalties are locked in for this round. |
-| 14 | `PenaltiesNotFinalized` | Reward claim attempted before penalties were finalized. |
-| 15 | `NotMajority` | Vote reward claimed by a voter who was not on the winning side. |
-| 16 | `NoMajority` | No majority weight recorded. Defensive. |
-| 17 | `RangeOutOfBounds` | Penalty pagination range is invalid. |
-| 19 | `Paused` | The oracle is paused, which freezes the whole dispute pipeline. |
-| 20 | `InvalidConfig` | A window duration was zero, or a reward percentage exceeded 100. |
-| 21 | `InvalidAddress` | A governance setter was passed a null address. |
-| 22 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
-| 23 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
-| 24 | `PendingChangeExists` | A change is already queued. |
-| 25 | `CommitsNotFullyRevealed` | Some voters committed but have not revealed or been penalized yet. Run the penalty pass before finalizing. |
-| 26 | `InvalidOutcomeVotesNotEmpty` | A losing-side tally is still non-zero, so not every wrong-side voter has been penalized. |
-| 27 | `NotPaused` | The recovery path for voiding an interrupted round only works while paused. |
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 0 | `MarketClosed` | Window check failed. Dispute, commit, and reveal endpoints are inclusive; disputed finalization/non-voter processing therefore require `now > commitEndTime`. Also used when restart targets an entry whose inclusive endpoint was strictly before pause (or whose incomplete snapshot deadline was at/before pause), or acknowledgement targets an affected entry. |
+| 1 | `MarketNotFinalized` | Path requires finalized state; undisputed finalization requires `now > disputeDeadline`, and a disputed round with missing reveals cannot finalize while `now <= revealEndTime`. `applyVotePenalties` requires a finalized outcome or `restartPending`; also `removeVoteRecord` while the market entry still exists. |
+| 2 | `MarketAlreadyFinalized` | Re-submit of an outcome on a market that already has one; double-dispute |
+| 3 | `MarketNotActive` | Market lookup failed or `validateMarket` returned false |
+| 4 | `Unauthorized` | Caller is not admin / not market / non-tiered voter |
+| 7 | `InvalidVote` | Outcome ∉ \{1,2\} on submit; vote ∉ \{1,2,3\} on reveal; commit hash ≠ 32 bytes |
+| 8 | `InvalidReveal` | Hash mismatch on reveal |
+| 9 | `AlreadyCommitted` | Voter already committed this round |
+| 10 | `AlreadyRevealed` | Voter already revealed this round; double-claim of vote rewards |
+| 11 | `NoCommit` | Reveal attempted without a matching commit this round; also `removeVoteRecord` on a voter with no state entry |
+| 12 | `InvalidOracleResponse` | Entry is in the wrong lifecycle state for the requested dispute, snapshot, pause-recovery, or commit/reveal operation. |
+| 13 | `PenaltiesAlreadyFinalized` | Second `finalizePenalties` / penalty pagination after lock-in |
+| 14 | `PenaltiesNotFinalized` | Vote-reward claim before `finalizePenalties`; `removeMarketOutcome` with non-zero pool |
+| 15 | `NotMajority` | Vote-reward claim from a non-majority voter |
+| 16 | `NoMajority` | `entry.majorityWeight == 0` on reward calc (defensive) |
+| 17 | `RangeOutOfBounds` | Snapshot pagination did not begin at its cursor, or a snapshot/liability page has `end > count` / `start >= end`. |
+| 18 | (retired) | Was `Stakeholder`; slot remains reserved for decoder stability. |
+| 19 | `Paused` | Mutating entry point hit while `paused == true` — includes `finalizeOutcome`, `applyVotePenalties`, `applyNonVoterPenalties` (a pause freezes the whole dispute pipeline, not just its inputs) |
+| 20 | `InvalidConfig` | Constructor / windows update with zero duration; voter reward pct > 100 |
+| 21 | `InvalidAddress` | Governance setter passed `nullContractAddress!()` |
+| 22 | `NoPendingChange` | Timelock execute / cancel called with no queued change |
+| 23 | `TimelockNotElapsed` | Timelock execute called early |
+| 24 | `PendingChangeExists` | Second propose attempted while a change is queued |
+| 25 | `CommitsNotFullyRevealed` | `finalizePenalties` found a committed liability not yet revealed or processed by `applyVotePenalties`. |
+| 26 | `InvalidOutcomeVotesNotEmpty` | `finalizePenalties` completeness gate: a losing-side tally is still non-zero (wrong-side voters not yet all slashed) |
+| 27 | `NotPaused` | `restartMarket` called while the oracle is not paused (it's a pause-only escape hatch) |
+| 28 | `MarketFactoryAlreadySet` | One-time MarketFactory binding was already initialized. |
+| 29 | `SnapshotIncomplete` | Temporary immutable round-snapshot construction, abort, reconciliation, or cleanup is not in the required phase. |
+| 30 | `SnapshotAlreadyComplete` | Snapshot construction was attempted after the temporary linked snapshot was sealed. |
+| 31 | `SnapshotWeightMismatch` | Snapshot rows/count/weight, linked cursor, or authoritative reconciliation bound do not match the Vault state. |
+| 32 | (retired) | Was the reveal-quorum assertion; no-quorum now enters `restartPending`. |
+| 33 | `RoundRestartPending` | Commit/reveal attempted while the round awaits liability processing before restart. |
+| 34 | `LiabilitiesNotFullyProcessed` | Restart, finalization, outcome removal, or voter-row reuse attempted before immutable liabilities and required snapshot cleanup were terminal. |
+| 35 | `ActivationBacklogPending` | The strict activation FIFO still has matured work; process it from the authoritative expected cursor before snapshot acquisition. |
+| 36 | `ProcessingBatchTooLarge` | Snapshot/reconciliation/liability/pause/abort/cleanup page exceeds `MAX_PROCESSING_BATCH` (20). |
+| 37 | `SnapshotBuildExpired` | The authoritative progress-renewed Vault lease expired, or expiry recovery was called while it was still live. |
+| 38 | `ElectorateUnavailable` | Round is waiting for activated eligible stake, or resume still found none. |
+| 39 | `InvalidDependency` | Deployment-domain, lifecycle-accounting, Vault-rotation, or captured-dependency invariant failed. |
+| 40 | `PauseRecoveryIncomplete` | Admin attempted `setPaused(false)` before every entry counted at pause start was either restarted/recovered or permissionlessly acknowledged as unaffected. |
+| 41 | `LegacyVoteRewardsDisabled` | The retired direct vote-reward claim path is disabled. |
+| 42 | `AuraSlashRewardCoordinatorNotReady` | The AURA slash-reward coordinator is not bound and ready for this transition. |
 
-Codes `5`, `6`, and `18` are reserved and not thrown.
+## ParlayVault
+
+`enum ParlayVaultErr` from `ParlayVault.ral.json`:
+
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 700 | `Unauthorized` | Caller failed the contract-specific authorization gate. |
+| 701 | `Paused` | Operation is disabled while this contract or lane is paused. |
+| 702 | `InvalidAddress` | Invalid address. |
+| 703 | `InvalidAmount` | Invalid amount. |
+| 704 | `InvalidParlay` | Invalid parlay. |
+| 705 | `AlreadyTerminal` | Already terminal. |
+| 706 | `PayoutOutOfBounds` | Combined odds or maximum payout exceeds the per-parlay custody cap. |
+| 707 | `LiabilityOutOfBounds` | Accepting the parlay would exceed the total outstanding-liability cap. |
+| 708 | `InsufficientCustody` | Insufficient custody. |
+| 709 | `PendingChangeExists` | A second authority rotation was proposed while one is pending. |
+| 710 | `NoPendingChange` | Required pending change is absent. |
+| 711 | `TimelockNotElapsed` | The pending change has not satisfied its timelock. |
+| 712 | `OperatorNotAcknowledged` | A pending operator rotation has not completed the candidate acknowledgement step. |
+| 713 | `BadAccounting` | Invalid accounting. |
+| 714 | `OperatorGenerationMismatch` | Operator generation mismatch. |
+| 715 | `Retired` | Operation is disabled because this contract is retired. |
+| 716 | `RetirementConditionsNotMet` | Retirement requires a paused, obligation-free Vault with all authority transitions settled. |
+| 717 | `BadCertificate` | Admission or terminal certificate domain, public key, signature length, or signature verification failed. |
+| 718 | `CertificateExpired` | A quote or terminal certificate is expired or exceeds its immutable maximum lifetime. |
+| 719 | `QuoteReplay` | Admission quote digest was already consumed or terminal certificate nonce does not match the recorded quote. |
+| 720 | `UnknownMarket` | A structured leg does not resolve to the canonical same-group Factory market identity. |
+| 721 | `DuplicateMarket` | The canonical structured-leg vector repeats a market id. |
+| 722 | `TerminalEvidenceMismatch` | Certified outcomes disagree with canonical resolved market state or the requested terminal transition. |
+| 723 | `PayoutEpochCapExceeded` | Paying the winning parlay would exceed the immutable payout-epoch cap. |
+| 724 | `RefundNotAvailable` | The signed refund time has not arrived or is outside the allowed admission delay. |
+| 725 | `QuoteNonceNotReleasable` | The stored quote nonce cannot yet be removed from the consumed-quote replay set. |
 
 ## VaultContract
 
-Thrown when staking, unstaking, or withdrawing $AURA.
+`enum VaultErrorCodes` from `VaultContract.ral.json`:
 
-| Code | Name | What it means |
-| --- | --- | --- |
-| 1 | `AmountMustBePositive` | Stake or unlock request was for zero. |
-| 2 | `InsufficientVaultedBalance` | Unlock or withdrawal exceeds the staked balance. |
-| 3 | `WithdrawTimeNotReached` | Withdrawal attempted before the unlock period elapsed. |
-| 4 | `NoActiveUnlockRequest` | Withdrawal attempted with no unlock queued. |
-| 5 | `ActiveUnlockRequestExists` | An unlock request is already queued. Complete or wait it out first. |
-| 6 | `Unauthorized` | Caller is not the owner, or not the authorized slasher. |
-| 7 | `InvalidRecipient` | Slashed-token collection was passed a null recipient. |
-| 8 | `InvalidSlasher` | Slasher update was passed a null address. |
-| 9 | `Paused` | The vault is paused, so new stakes are blocked. |
-| 10 | `InvalidOwner` | Owner update was passed a null address. |
-| 11 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
-| 12 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
-| 13 | `PendingChangeExists` | A change is already queued. |
-| 14 | `StakerNotEOA` | The caller is a contract. Only externally owned accounts may stake. |
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 1 | `AmountMustBePositive` | `vaultTokens` / `requestUnlock` got amount = 0 (note: `slash` is accounting-only since PR #30 and no longer asserts amount > 0 — it accepts 0 for the non-voter path) |
+| 2 | `InsufficientVaultedBalance` | Unlock / withdraw references more than the user has; `getStakerAt` out of range |
+| 3 | `WithdrawTimeNotReached` | `withdrawTokens` called before `unlockTime` |
+| 4 | `NoActiveUnlockRequest` | `withdrawTokens` called without a queued unlock |
+| 5 | `ActiveUnlockRequestExists` | `requestUnlock` called while another request is queued |
+| 6 | `Unauthorized` | Caller is not owner (admin paths) / not slasher (`slash` / `collectSlashed`) |
+| 7 | `InvalidRecipient` | `collectSlashed` called with `recipient == nullContractAddress!()` (PR #30; was `slash`'s recipient guard before the accounting-only split) |
+| 8 | `InvalidSlasher` | `proposeSlasherUpdate` got `nullContractAddress!()` |
+| 9 | `Paused` | `vaultTokens` called while `paused == true` |
+| 10 | `InvalidOwner` | `proposeOwnerUpdate` got `nullContractAddress!()` |
+| 11 | `NoPendingChange` | Timelock execute / cancel called with no queued change |
+| 12 | `TimelockNotElapsed` | Timelock execute called early |
+| 13 | `PendingChangeExists` | Second propose attempted while a change is queued |
+| 14 | `StakerNotEOA` | `vaultTokens` called by a contract address — stakers must be asset addresses (slash / reward paths create outputs to the staker, impossible for contracts) |
+| 15 | `SlashingPaused` | Exact-liability slash or slash collection attempted while the Vault slashing kill switch is active. |
+| 16 | `SlasherAlreadySet` | One-time slasher/bootstrap initialization was attempted twice. |
+| 17 | `ActivationBatchTooLarge` | Strict activation FIFO page exceeds 10 entries. |
+| 18 | (retired) | Reserved former aggregate activation-state error slot. |
+| 19 | `OracleLiabilityOutstanding` | Withdrawal/slash would consume reserved Oracle liability; legacy amount-only `slash` also fails closed with this code. |
+| 20 | `OracleLiabilityMismatch` | Exact liability, snapshot member, cursor, or aggregate locked-accounting invariant did not match. |
+| 21 | `CreatorCapacityCommitted` | Vault/Authority migration attempted after creator-capacity history became committed. |
+| 22 | `InvalidCapacityAuthority` | Reciprocal Vault/CreatorCapacityAuthority deployment-domain binding failed. |
+| 23 | `ActivationCursorMismatch` | `processOracleActivations(expectedCursor, maxEntries)` did not start at the current authoritative FIFO cursor. |
 
 ## Voting
 
-Thrown when voting on market proposals or finalizing the vote.
+Inline error constants from `Voting.ral.json` (PascalCase U256 heuristic):
 
-| Code | Name | What it means |
-| --- | --- | --- |
-| 0 | `InvalidAmount` | The referenced proposal does not exist. |
-| 1 | `MarketNotFinalized` | Finalize called before the voting period ended. |
-| 2 | `MarketAlreadyFinalized` | Vote or finalize on an already-finalized proposal. |
-| 3 | `MarketClosed` | Submission outside the voting period, or a vote after it ended. |
-| 4 | `Unauthorized` | Caller is not the admin, holds no tier, or already voted. |
-| 5 | `RangeOutOfBounds` | Sweep range is invalid. |
-| 6 | `Paused` | Voting is paused. |
-| 7 | `InvalidAddress` | Admin update was passed a null address. |
-| 8 | `NoPendingChange` | Timelock execute or cancel called with nothing queued. |
-| 9 | `TimelockNotElapsed` | Timelock execute called before the delay elapsed. |
-| 10 | `PendingChangeExists` | A change is already queued. |
-
-## The ones people actually hit
-
-Four codes account for most real failures:
-
-<AccordionGroup>
-  <Accordion title="INSUFFICIENT_SHARES (market, code 1)" icon="circle-minus">
-    You are trying to sell shares that are already committed to a resting sell
-    order. Free balance is what you hold minus what is locked in open orders.
-    Cancel the resting order first, or sell a smaller amount.
-  </Accordion>
-  <Accordion title="INVALID_PRICE (market, code 13)" icon="tag">
-    Prices are integer ticks from 1 to 999, where 500 means 50%. Both 0 and 1000
-    are rejected, because a market at absolute certainty has nothing to trade.
-  </Accordion>
-  <Accordion title="INVALID_FILL (market, code 12)" icon="ban">
-    Usually a quantity that is not a whole multiple of the lot size. Order
-    quantities must be multiples of `10000000` base units.
-  </Accordion>
-  <Accordion title="TRADER_NOT_EOA (market, code 18)" icon="robot">
-    The transaction came from a contract address. Aura requires trades to come
-    from a real account so that penalties and payouts have somewhere to land.
-    Sign from a normal wallet.
-  </Accordion>
-</AccordionGroup>
+| Code | Name | Meaning |
+| ---: | --- | --- |
+| 0 | `InvalidAmount` | Vote / finalize / status check on a missing proposal |
+| 1 | `MarketNotFinalized` | `finalizeWinner` / `finalizeLoser` called before `votingEndTime` |
+| 2 | `MarketAlreadyFinalized` | Vote on or re-finalize an already-finalized proposal |
+| 3 | `MarketClosed` | `submitProposal` outside voting period; `vote` after `votingEndTime` |
+| 4 | `Unauthorized` | Caller is not admin / non-tiered voter / double-vote attempt |
+| 5 | `RangeOutOfBounds` | `sweepFinalizedProposals(start, end)` got `end > proposalCount` or `start >= end` |
+| 6 | `Paused` | `vote` / `submitProposal` called while `paused == true` |
+| 7 | `InvalidAddress` | `proposeAdminUpdate` got `nullContractAddress!()` |
+| 8 | `NoPendingChange` | Timelock execute / cancel called with no queued change |
+| 9 | `TimelockNotElapsed` | Timelock execute called early |
+| 10 | `PendingChangeExists` | Second propose attempted while a change is queued |
+| 11 | `MissingDepositPayer` | A storage-deposit payer was required but not supplied. |
