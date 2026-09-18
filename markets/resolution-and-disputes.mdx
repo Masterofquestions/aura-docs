@@ -81,9 +81,10 @@ and **the market goes back to open**:
 - **Trading continues uninterrupted.** Nothing is cancelled, no positions are
   unwound, and nobody is refunded. Your shares and resting orders stay exactly
   where they were.
-- **Trading fees stay with the market.** They keep accruing and are only paid
-  out to the creator, treasury, and referrers once the market eventually
-  resolves YES or NO.
+- **Fee obligations remain recorded.** Creator and available treasury fees
+  follow their separate daily schedules, including before resolution. Referral
+  and voter obligations retain their own settlement rules; a `TOO_EARLY` round
+  does not make the provisional voter reserve available to treasury.
 - The disputer won, so they get their own bond back **plus half of the
   proposer's bond** (the proposer called it too early); the other half goes to
   the treasury.
@@ -98,10 +99,12 @@ market: the worst it can do is cost the proposer half their bond.
 
 Voting is open to **\$AURA stakers**:
 
-- You must hold a vaulted \$AURA position above the **None** tier (i.e. at
-  least the **Iron** tier, 60,000 \$AURA) at commit time.
-- Your staked balance is **snapshotted when you commit**, so unstaking
-  between commit and reveal doesn't dodge the slashing risk.
+- You need at least **Iron** tier, 60,000 vaulted \$AURA, completed Oracle
+  activation after its 24-hour delay and keeper processing, and eligibility
+  in that round. Scout and Builder do not qualify for Oracle voting.
+- Round eligibility and penalty backing follow the Oracle's activation and
+  snapshot rules. Unstaking between commit and reveal does not erase an
+  already funded penalty claim.
 
 There is no on-chain restriction on voting in markets you've traded; your
 protection against biased voting is the 65% supermajority requirement and
@@ -135,14 +138,14 @@ Voting weight matches your staking tier:
 | Silver | 7 |
 | Bronze | 3 |
 | Iron | 1 |
-| None | 0 (cannot vote) |
+| Scout, Builder or None | 0 (cannot vote) |
 
 See [Tier Structure](/tokens/tier-structure) for stake requirements.
 
 ## Voter rewards (and penalties)
 
-Aura's dispute system uses **slashing**, not protocol fees, to reward honest
-voting:
+Dispute rewards have two separate sources: an **AURA penalty pool** and a
+**USDT fee reserve** for qualifying final disputes.
 
 - **Wrong-side voters**. Anyone who revealed a vote for the *losing*
   outcome has **0.1% of their vaulted \$AURA** slashed per vote.
@@ -150,11 +153,14 @@ voting:
   committed at all) are slashed by the same amount, since silent voters
   undermine the oracle.
 - **Slashed \$AURA** flows into a **penalty pool** for that market.
-- **Winning voters** then claim a proportional share of the penalty pool,
-  weighted by their voting tier.
+- **Winning voters** receive their recorded proportional share of the finalized
+  penalty pool automatically, weighted by their voting tier. No claim is required.
 
-Dispute rewards are paid in **\$AURA**, so the wrong side of a controversial
-market literally funds the right side. See
+The separate USDT reserve is **10% of gross trading fees**. A qualifying final
+YES/NO dispute allocates it to winning voters; otherwise it is released to
+treasury after final resolution. An earlier dispute alone does not guarantee a
+voter fee reward, and `TOO_EARLY` pays no voter reward. See
+[Dispute voting rewards](/programs/dispute-rewards) and
 [Staking & Vaulting \$AURA](/tokens/staking) for the slashing mechanics in
 detail.
 
@@ -195,4 +201,5 @@ through unchallenged.
 - `TOO_EARLY` throws out the submission and returns the market to trading.
 - The dispute loser forfeits their bond: half to the winner, half to the
   treasury.
-- Voters are paid in **\$AURA** from a slashing pool, not in USDT fees.
+- Voters can receive **\$AURA** from the penalty pool and, for qualifying final
+  disputes, **USDT** from the separate trading-fee reserve.

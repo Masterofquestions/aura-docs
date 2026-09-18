@@ -6,14 +6,14 @@ keywords: ["Aura dispute voting", "voter rewards", "slashing", "oracle rewards",
 ---
 
 When a market's outcome is contested, staked \$AURA holders settle it by vote.
-Voting with the winning side pays twice. Voting with the losing side costs you.
+Winning voters can receive AURA and qualifying USDT rewards. Voting with the
+losing side costs you.
 
-This is the only Aura program where you can lose money, and that is the entire
-point: it is what makes the oracle trustworthy.
+Dispute voting puts your staked AURA at risk to support honest resolution.
 
 ## What you earn
 
-Voting correctly pays in **two different assets**.
+Eligible rewards use **two different assets**.
 
 <CardGroup cols={2}>
   <Card title="Slashed $AURA" icon="coins">
@@ -22,13 +22,15 @@ Voting correctly pays in **two different assets**.
     by vote weight.
   </Card>
   <Card title="A USDT cut of the fees" icon="dollar-sign">
-    A market resolved through a dispute vote pays its winning voters **10% of the
-    trading fees that market collected**, split by vote weight.
+    A qualifying final YES/NO dispute allocates **10% of the market's gross
+    trading fees** to its winning voters, split by vote weight.
   </Card>
 </CardGroup>
 
-The fee share only applies to markets that were actually disputed. An undisputed
-market pays voters nothing, because there was no work to do.
+The final recorded dispute must qualify for the fee share. An earlier dispute
+alone is insufficient, and `TOO_EARLY` pays no voter reward. The provisional
+USDT reserve stays reserved until final YES/NO resolution, then goes to qualifying
+voters or is released to treasury. It does not reduce the creator allocation.
 
 ## What you risk
 

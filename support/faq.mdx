@@ -97,8 +97,11 @@ description: "Common questions about Aura: wallets and sign-in, deposits and fee
     wallet.
   </Accordion>
   <Accordion title="Can I withdraw staked tokens?">
-    Yes. You can request to unlock your tokens at any time. Once initiated, a
-    mandatory 7-day cooldown applies before withdrawal.
+    Request an amount within the Vault's displayed unlock limit. Only one
+    request may be outstanding. After seven days, Aura automatically delivers
+    the free portion to your original wallet; captured penalty claims can
+    retain part of it. Recent proposal uses and outgoing slot allocations can
+    limit new requests. See [Staking & Vaulting \$AURA](/tokens/staking).
   </Accordion>
 </AccordionGroup>
 
@@ -106,15 +109,17 @@ description: "Common questions about Aura: wallets and sign-in, deposits and fee
 
 <AccordionGroup>
   <Accordion title="How do I create a new market?">
-    Ensure you have at least **Iron**-tier status, navigate to the **Propose
-    Market** button, complete the proposal form, and submit it for community
-    voting.
+    You need available creation capacity: personal capacity starts at **Scout**
+    with 10,000 active AURA, or an accepted borrowed slot can supply capacity
+    where lending is enabled. Open **Propose Market**, complete the form, and
+    submit it for community voting. See [Create a market](/markets/creating-markets).
   </Accordion>
   <Accordion title="Is there a limit on how many markets I can propose?">
-    Yes. Each proposer can have up to **25 proposals outstanding** at a
-    time. A slot frees up whenever one of your proposals is finalized
-    (approved or rejected). Sibling markets inside a linked bundle don't
-    count against the cap, and only the bundle's master proposal does.
+    Personal capacity is one slot per whole 10,000 active AURA. Each counted
+    proposal or linked-bundle root uses one slot for a rolling 24 hours;
+    rejection, cancellation or deployment does not free it early. Borrowed
+    slots follow their accepted quota and conditions, and linked bundles have
+    separate tier limits.
   </Accordion>
   <Accordion title="What fees are involved in trading?">
     A small, transparent **2.5%** trading fee is applied to each transaction
@@ -134,8 +139,9 @@ description: "Common questions about Aura: wallets and sign-in, deposits and fee
     a 24-hour community voting period to resolve the outcome.
   </Accordion>
   <Accordion title="Who can vote on disputed outcomes?">
-    Anyone with at least **Iron tier** (60,000 vaulted \$AURA) at commit
-    time can vote. Votes are tier-weighted, and backing a losing outcome
+    You need at least **Iron tier** (60,000 vaulted \$AURA), completed Oracle
+    activation after its 24-hour delay and keeper processing, and eligibility
+    in that round. Votes are tier-weighted, and backing a losing outcome
     slashes 0.1% of your vaulted \$AURA. That cost is what keeps votes honest,
     so there is no separate check on whether you hold a position.
   </Accordion>

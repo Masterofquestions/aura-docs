@@ -125,8 +125,9 @@ cleared the **65% supermajority** of revealed weight:
   inconclusive round doesn't wipe the slate for silent commits.
 
 If `TOO_EARLY` clears 65%, the submitted outcome is thrown out and the market
-goes back to trading. Nothing is cancelled or refunded, and trading fees stay
-with the market until it eventually resolves YES or NO. The disputer gets their
+goes back to trading. Nothing is cancelled or refunded. Creator and available
+treasury fees retain their separate daily schedules; voter reserves remain
+reserved. The disputer gets their
 bond back plus half of the proposer's bond; the other half goes to the treasury.
 No voter rewards are paid on a `TOO_EARLY` round. The slashed \$AURA rolls
 forward into the market's next dispute round.
@@ -140,6 +141,9 @@ If you backed the winning outcome:
 - Rewards are paid in **\$AURA** directly to your wallet, and Aura's
   automation pushes the payout once penalties are finalized, so no
   claim transaction is required from you.
+- A qualifying final YES/NO dispute also allocates the separate **USDT** reserve
+  of 10% of gross trading fees to winning voters. An earlier dispute alone does
+  not establish eligibility. See [Dispute voting rewards](/programs/dispute-rewards).
 
 If you backed the losing outcome (or didn't reveal):
 

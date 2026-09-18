@@ -5,6 +5,12 @@ description: "Earn a tier-scaled share of the trading fee on every market you cr
 keywords: ["Aura creator rewards", "market creator fees", "earn from creating markets", "tier scaled fees", "prediction market creator"]
 ---
 
+<Note>
+Aura is pre-mainnet. This page describes current source behavior, including
+daily payouts still undergoing release verification; it does not establish a
+live payout service.
+</Note>
+
 Create a market that people want to trade and you earn a slice of every trade on
 it, for the entire life of the market. The slot owner's tier history sets the
 creator allocation, including when you use a borrowed slot. Accepted sharing
@@ -34,11 +40,13 @@ The slot owner's tier history sets the ceiling at counted proposal use. Dropping
 
 ## How it gets paid
 
-Fees accrue in the Clearinghouse and are handed to the recorded CreatorRewardRouter by reward epoch. A handoff to that escrow is not a payment to an individual wallet. Workers materialize exact entitlements and automatically distribute them to the recorded recipients; the creator receives the exact residual after applicable components and rounding. Recipient payment requires completed materialization, and creator residual payment additionally requires a closed, fully materialized epoch.
+Current source schedules creator fees and accepted sharing allocations for automatic daily payouts, including while a market remains unresolved. Processing uses daily UTC windows and catches up after missed runs.
+
+Fees first move from the Clearinghouse into the recorded reward escrow. Workers calculate each accepted allocation and deliver it to the recorded wallet. While an earning period is open, a small rounding remainder can stay pending; the exact remainder is delivered after that period closes and its calculations finish. Without sharing, this rounding holdback is zero.
 
 Where enabled, borrowed-slot terms retain the accepted slot-owner share, and additional reward commitments require the recipient's acceptance before their future interval begins. Accepted commitments cannot be removed, reduced or reassigned by the creator. They never change the public market creator.
 
-There is no user claim button. Your history distinguishes pending entitlement from confirmed wallet payment. Service availability, finalized observations and schedule maintenance affect timing; market resolution or an escrow handoff alone is not proof that your wallet was paid.
+There is no user claim button, claim fee or email-code step. Your dashboard distinguishes earned, awaiting payout and actually paid amounts, with payment history. Service availability, confirmed chain observations and schedule maintenance affect timing. A transfer into reward escrow is shown as pending until the recipient wallet payment is confirmed.
 
 ## Making this worth doing
 
@@ -52,8 +60,8 @@ Your earnings are a percentage of volume, so the whole game is attracting volume
   </Step>
   <Step title="Write rules that cannot be argued with">
     Ambiguous resolution criteria are the main reason markets end up disputed,
-    and a disputed market pays 10% of its fees to voters instead of building your
-    reputation. Name the exact source and the exact condition. See
+    and a qualifying dispute allocates 10% of gross fees to voters. This reserve
+    does not reduce your recorded creator allocation. Name the exact source and the exact condition. See
     [Creating markets](/markets/creating-markets).
   </Step>
   <Step title="Pick questions with a natural audience">

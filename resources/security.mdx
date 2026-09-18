@@ -11,16 +11,18 @@ without trusting us, and what still depends on trusting us. Both are below.
 
 ## What protects funds without trusting Aura
 
-These describe current pre-mainnet source. Operational enforcement, infrastructure
+These describe current pre-mainnet source, including daily fee distribution
+still undergoing release verification. Operational enforcement, infrastructure
 and live recovery remain release qualifications; there is no live production
 app, user population or funds implied by this page.
 
 <AccordionGroup>
   <Accordion title="Payout destinations are fixed in the contract" icon="lock">
-    Winnings go to the position holder. Creator fees go to the recorded market
-    creator. Trading fees go to the treasury address the factory currently
-    points at. None of these accept a destination from the caller, so there is
-    no admin call that redirects a user's payout somewhere else.
+    Winnings go to the position holder. Creator fees follow the recorded creator
+    and accepted sharing schedule. Available company fees go to the treasury
+    address the factory currently points at. Exact payout authorizations bind
+    these destinations, amounts and cumulative payment state; callers cannot
+    substitute another recipient or reuse a payment after new fees accrue.
   </Accordion>
   <Accordion title="A market cannot be destroyed with money still in it" icon="shield">
     Tearing down a resolved market requires every fee bucket to be empty and no
@@ -100,8 +102,9 @@ Being straight about the parts that are not trustless:
   recovery powers. Source rules and intended custody do not prove possession
   or deployed enforcement of those authorities.
 - **The pause switch** is immediate and has no timelock by design.
-- **Treasury operators** can route protocol revenue on resolved markets. Not
-  user funds.
+- **Treasury operators** can route available net protocol fees daily, including
+  before resolution. Referral, maker and qualifying dispute rewards remain
+  separate obligations, as does trader collateral.
 - **The indexer, API and sequencer** are operated by Aura. Chain state records
   on-chain effects; durable journals also record accepted intents, off-chain
   trading and outstanding obligations. Chain balances alone cannot reconstruct

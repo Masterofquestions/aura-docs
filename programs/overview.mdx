@@ -9,6 +9,9 @@ Aura pays out to the people who make the market work. There are four programs,
 each aimed at a different job, and they stack: nothing stops you from creating
 markets, quoting on them, referring traders, and voting on disputes.
 
+Aura is pre-mainnet. The schedules below describe current source behavior;
+daily creator payouts remain subject to release verification.
+
 The USDT programs draw from the **2.5% trading fee** on executed volume.
 Dispute voters may also receive AURA from the recorded penalty pool; that is
 a separate asset and source, not another USDT fee or newly minted tokens.
@@ -34,14 +37,15 @@ a separate asset and source, not another USDT fee or newly minted tokens.
 
 ## Where the fee goes
 
-Every fill pays 2.5%. That single fee funds all four programs:
+Every fill pays 2.5%. That fee funds the USDT allocations below; the AURA
+penalty pool is separate:
 
 | Slice | Goes to |
 | --- | --- |
 | Initially 0.4% to 40% | Creator allocation under the slot owner's tier history, before accepted sharing |
 | 10% | The daily liquidity rewards pool |
 | 10% | The referrer of the trader, if they have one |
-| 10% | Winning dispute voters, on disputed markets only |
+| 10% provisionally reserved | Winning voters if the final dispute qualifies; otherwise released to treasury |
 | Remainder | Protocol treasury, which funds development and the programs above |
 
 Because the creator's slice scales with tier, the treasury's share is what
@@ -50,18 +54,19 @@ and less to the treasury.
 
 ## How payouts reach you
 
-Two different timings, and it is worth knowing which is which.
+Each program has its own payout schedule and eligibility checks.
 
 <CardGroup cols={2}>
-  <Card title="Recorded settlement and reward epochs" icon="flag-checkered">
+  <Card title="After settlement" icon="flag-checkered">
     Referral and dispute payments follow their recorded settlement paths.
-    Creator rewards use recorded Router epochs, accepted components and exact
-    residuals. Aura sends eligible payouts automatically; an escrow handoff or
-    pending history entry is not a confirmed wallet payment.
+    Aura sends eligible payouts automatically; an escrow handoff or pending
+    history entry is not a confirmed wallet payment.
   </Card>
   <Card title="Daily" icon="calendar-day">
-    Liquidity rewards are scored per day and paid the next day, independent of
-    whether any market resolved.
+    Creator and accepted sharing payouts use daily UTC windows, including before
+    resolution, with any final rounding remainder paid after its earning period
+    closes. Liquidity rewards are scored per day for next-day delivery. Both
+    depend on completed calculations, confirmed evidence and working services.
   </Card>
 </CardGroup>
 
@@ -78,8 +83,8 @@ their separate checkpoint and distribution rules. See
   <Accordion title="I have good ideas for markets" icon="lightbulb">
     [Creator rewards](/programs/creator-rewards). Your earnings scale with how
     much volume your market attracts, so this rewards judgment about what people
-    want to trade. Stake \$AURA first, since your tier at propose time sets your
-    cut.
+    want to trade. Your available slot and its owner's tier history set the
+    initial allocation; accepted sharing and later tier reductions also apply.
   </Accordion>
   <Accordion title="I have capital and want yield" icon="layer-group">
     [Liquidity rewards](/programs/liquidity-rewards). Quote both sides near the
@@ -90,8 +95,7 @@ their separate checkpoint and distribution rules. See
     everything your referrals trade for as long as they trade.
   </Accordion>
   <Accordion title="I follow a subject closely" icon="scale-balanced">
-    [Dispute voting](/programs/dispute-rewards). The highest rate of return and
-    the only one that can lose you money. Backing a losing outcome costs you
-    staked \$AURA.
+    [Dispute voting](/programs/dispute-rewards). Correct votes can earn AURA and
+    qualifying USDT rewards. Backing a losing outcome costs you staked \$AURA.
   </Accordion>
 </AccordionGroup>
