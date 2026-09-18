@@ -3,27 +3,27 @@ title: "Voting on Disputes"
 description: "Step-by-step walkthrough of the commit/reveal voting flow on a disputed market."
 ---
 
-When a market outcome is disputed, $AURA stakers settle it through a
+When a market outcome is disputed, \$AURA stakers settle it through a
 **commit/reveal vote**. This tutorial walks through the voter's
 experience from start to finish.
 
 If you haven't read the conceptual overview yet, start with
 [Resolution & Disputes](/markets/resolution-and-disputes). For the rules
 that govern voting power and slashing, see
-[Staking & Vaulting $AURA](/tokens/staking).
+[Staking & Vaulting \$AURA](/tokens/staking).
 
 ## Before you start
 
 You need:
 
 - An Aura account (sign in with email or Google).
-- At least the **Iron** tier, meaning 60,000 vaulted $AURA. See
-  [Staking & Vaulting $AURA](/tokens/staking).
+- At least the **Iron** tier, meaning 60,000 vaulted \$AURA. See
+  [Staking & Vaulting \$AURA](/tokens/staking).
 
 You should also know:
 
 - Voting is **not free**. If you back the wrong outcome, **0.1% of your
-  vaulted $AURA is slashed** per vote. Vote on markets you've actually
+  vaulted \$AURA is slashed** per vote. Vote on markets you've actually
   researched.
 - You sign **one transaction**, the commit. Aura's reveal automation
   submits the matching reveal for you when the reveal window opens.
@@ -128,7 +128,7 @@ If `TOO_EARLY` clears 65%, the submitted outcome is thrown out and the market
 goes back to trading. Nothing is cancelled or refunded, and trading fees stay
 with the market until it eventually resolves YES or NO. The disputer gets their
 bond back plus half of the proposer's bond; the other half goes to the treasury.
-No voter rewards are paid on a `TOO_EARLY` round. The slashed $AURA rolls
+No voter rewards are paid on a `TOO_EARLY` round. The slashed \$AURA rolls
 forward into the market's next dispute round.
 
 ## Step 5: Follow automatic rewards
@@ -137,13 +137,13 @@ If you backed the winning outcome:
 
 - Your proportional share of the **penalty pool** is calculated from
   your tier weight relative to the total winning weight.
-- Rewards are paid in **$AURA** directly to your wallet, and Aura's
+- Rewards are paid in **\$AURA** directly to your wallet, and Aura's
   automation pushes the payout once penalties are finalized, so no
   claim transaction is required from you.
 
 If you backed the losing outcome (or didn't reveal):
 
-- 0.1% of your vaulted $AURA is slashed and added to the penalty pool
+- 0.1% of your vaulted \$AURA is slashed and added to the penalty pool
   for the winners.
 
 ## Things to know
@@ -151,7 +151,7 @@ If you backed the losing outcome (or didn't reveal):
 ### What "tier weight" means at vote time
 
 The contract reads your tier from the Vault at the moment you commit,
-not at the moment you reveal. So if you stake more $AURA between
+not at the moment you reveal. So if you stake more \$AURA between
 commit and reveal, your additional stake doesn't increase your weight
 for that round, but it does for the next round. Your staked balance
 is snapshotted at commit time too, so unstaking mid-round doesn't

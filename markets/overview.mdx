@@ -6,28 +6,28 @@ keywords: ["how prediction markets work", "Aura markets", "yes no shares", "orde
 ---
 
 An Aura market is a question with a deadline and two sides. You buy shares in the
-outcome you think is right, and if you are right, each share pays out $1.
+outcome you think is right, and if you are right, each share pays out \$1.
 
 Everything else on this page is detail hanging off that sentence.
 
 ## Shares, prices, and probability
 
-A market on "Will ALPH close above $5 on December 31?" has two share types, yes
-and no. Exactly one of them will be worth $1 when the market resolves. The other
+A market on "Will ALPH close above \$5 on December 31?" has two share types, yes
+and no. Exactly one of them will be worth \$1 when the market resolves. The other
 will be worth nothing.
 
-Because the winning share pays $1, its price is a probability. A yes share
-trading at $0.64 means the market collectively thinks there is a 64% chance.
+Because the winning share pays \$1, its price is a probability. A yes share
+trading at \$0.64 means the market collectively thinks there is a 64% chance.
 
 <CardGroup cols={3}>
   <Card title="Buy at 0.64" icon="cart-shopping">
-    You pay $0.64 for a yes share.
+    You pay \$0.64 for a yes share.
   </Card>
   <Card title="Right" icon="circle-check">
-    The share pays $1. You made $0.36 on $0.64 risked.
+    The share pays \$1. You made \$0.36 on \$0.64 risked.
   </Card>
   <Card title="Wrong" icon="circle-xmark">
-    The share pays nothing. You lost the $0.64.
+    The share pays nothing. You lost the \$0.64.
   </Card>
 </CardGroup>
 
@@ -35,14 +35,14 @@ You do not have to hold to resolution. Shares trade continuously, so if your
 market moves from 0.64 to 0.80 you can sell and take the difference without
 waiting to find out who was right.
 
-## Why yes and no prices add to $1
+## Why yes and no prices add to \$1
 
-A yes share and a no share together are guaranteed to pay exactly $1, because one
+A yes share and a no share together are guaranteed to pay exactly \$1, because one
 of them wins. That is what links the two prices: yes at 0.64 implies no at 0.36.
 
 It also enables something that looks strange at first. If someone wants to buy yes
 at 0.64 and someone else wants to buy no at 0.36, no existing shares need to change
-hands at all. Their $1 combined mints a fresh pair of shares, one to each of them.
+hands at all. Their \$1 combined mints a fresh pair of shares, one to each of them.
 Aura's matcher does this automatically, which means a market can have real
 liquidity on both sides without anyone holding inventory first.
 
@@ -72,12 +72,12 @@ returns `yes` and `no` books separately. See
     If nobody disputes it within 24 hours, it stands.
   </Step>
   <Step title="Or it gets disputed">
-    A challenger posts their own bond, and staked $AURA holders settle it by
+    A challenger posts their own bond, and staked \$AURA holders settle it by
     commit-and-reveal vote. See
     [Resolution and disputes](/markets/resolution-and-disputes).
   </Step>
   <Step title="Winners claim">
-    Once the outcome is final, winning shares are redeemable for $1 each. Creator
+    Once the outcome is final, winning shares are redeemable for \$1 each. Creator
     fees, referral fees, and voter rewards pay out automatically at the same time.
   </Step>
 </Steps>
@@ -97,7 +97,7 @@ be argued with.
   </Accordion>
   <Accordion title="A good market" icon="circle-check">
     "Will ALPH's closing price on CoinGecko on December 31, 2026 at 23:59 UTC be
-    above $5.00?"
+    above \$5.00?"
 
     One source, one timestamp, one threshold. There is exactly one right answer
     and anyone can check it.

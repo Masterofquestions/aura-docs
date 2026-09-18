@@ -4,7 +4,7 @@ sidebarTitle: "Stake $AURA"
 description: "Stake $AURA to unlock tier benefits, earn voting power, and put skin in the oracle."
 ---
 
-The **Aura Vault** is the on-chain home of every staked $AURA token. It
+The **Aura Vault** is the on-chain home of every staked \$AURA token. It
 does three jobs at once:
 
 1. **Tracks tier eligibility.** The tier you qualify for (and the
@@ -15,7 +15,7 @@ does three jobs at once:
 3. **Backs the optimistic oracle with skin in the game.** When a
    dispute is resolved, voters who backed the wrong outcome (or who
    committed a vote and never revealed it) have a portion of their
-   vaulted $AURA **slashed**. That $AURA flows to the voters who got
+   vaulted \$AURA **slashed**. That \$AURA flows to the voters who got
    the call right.
 
 ## How to stake tokens
@@ -29,7 +29,7 @@ does three jobs at once:
     site.
   </Step>
   <Step title="Select your tier">
-    Enter the number of $AURA tokens you wish to vault. Your tier is
+    Enter the number of \$AURA tokens you wish to vault. Your tier is
     assigned automatically based on the amount staked.
   </Step>
   <Step title="Confirm your stake">
@@ -65,7 +65,7 @@ nothing on the ones they get wrong. That breaks the alignment Aura
 needs: voters should only weigh in on outcomes they actually believe.
 
 Slashing fixes the asymmetry. By making wrong-side votes (and silent
-commits) cost real $AURA, the cost of voting on a market you don't
+commits) cost real \$AURA, the cost of voting on a market you don't
 understand is roughly equal to the reward of voting on one you do. The
 result is an honest oracle where the most confident, best-informed
 voters get most of the weight.
@@ -79,13 +79,13 @@ as each phase closes:
 | Voter behavior | What happens | When |
 | --- | --- | --- |
 | Revealed a vote for the **winning** outcome | Earns a proportional share of the penalty pool. | After the vote finalizes |
-| Revealed a vote for a **losing** outcome | **0.1% of vaulted $AURA** is slashed. | After the vote finalizes |
-| Committed a vote but **never revealed** | **0.1% of vaulted $AURA** is slashed. | After the vote finalizes |
-| Was eligible (Iron tier+) but **didn't vote at all** | **0.1% of vaulted $AURA** is slashed. | During the reveal window |
+| Revealed a vote for a **losing** outcome | **0.1% of vaulted \$AURA** is slashed. | After the vote finalizes |
+| Committed a vote but **never revealed** | **0.1% of vaulted \$AURA** is slashed. | After the vote finalizes |
+| Was eligible (Iron tier+) but **didn't vote at all** | **0.1% of vaulted \$AURA** is slashed. | During the reveal window |
 
 Every slashed token flows into the **penalty pool** for that specific
 market. Once a YES/NO pool is finalized, Aura automatically distributes the
-recorded winning-voter allocations as $AURA. There is no user claim action.
+recorded winning-voter allocations as \$AURA. There is no user claim action.
 A TOO_EARLY round retains its pool for a later round.
 
 <Tip>
@@ -124,12 +124,12 @@ processing.
 
 ## Summary
 
-- The Vault holds every staked $AURA token and tracks who stakes how
+- The Vault holds every staked \$AURA token and tracks who stakes how
   much.
 - Your tier and voting power are computed from your vaulted balance in
   real time.
-- Wrong-side and silent dispute voters lose 0.1% of vaulted $AURA per
-  vote; that $AURA funds rewards for correct voters.
+- Wrong-side and silent dispute voters lose 0.1% of vaulted \$AURA per
+  vote; that \$AURA funds rewards for correct voters.
 - Only the bound Optimistic Oracle can invoke the Vault penalty operations,
   under the recorded round and funded-claim rules.
 - Unlock requests use a seven-day wait and automatic free-portion delivery.

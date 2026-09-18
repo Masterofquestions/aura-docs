@@ -83,7 +83,13 @@ references.
   list.
 - **Internal links** — use root-relative paths without the `.mdx` extension,
   e.g. `[Tier Structure](/tokens/tier-structure)`.
-- **Math** — KaTeX is enabled. Inline `\(...\)`, block `$$...$$`.
+- **Currency and token symbols** — escape literal dollar signs in MDX prose
+  (including headings, links, tables, and component bodies): `\$1`, `\$0.64`,
+  `\$AURA`. Otherwise Mintlify can interpret the text between dollar signs as
+  math, removing spaces and changing the font. Keep dollar signs literal in
+  frontmatter, JSX attributes/expressions, and code samples.
+- **Math** — KaTeX is enabled. Use `$...$` for inline equations and `$$...$$`
+  for block equations; reserve these delimiters for actual math.
 - **Images** — drop in `images/` and reference with `/images/foo.png`.
   Prefer SVG for diagrams; keep PNGs under 500&nbsp;KB.
 

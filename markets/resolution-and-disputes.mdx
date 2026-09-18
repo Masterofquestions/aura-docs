@@ -6,7 +6,7 @@ description: "How Aura's optimistic oracle settles markets, and how the commit/r
 Aura uses an **optimistic oracle**: most markets resolve without any vote.
 A bonded proposer states the outcome, and if no one disputes within the
 challenge window, that outcome stands. When a market *is* disputed,
-$AURA stakers settle it through a **tier-weighted commit/reveal vote**.
+\$AURA stakers settle it through a **tier-weighted commit/reveal vote**.
 
 ## Submitting an outcome
 
@@ -87,7 +87,7 @@ and **the market goes back to open**:
 - The disputer won, so they get their own bond back **plus half of the
   proposer's bond** (the proposer called it too early); the other half goes to
   the treasury.
-- No voter rewards are paid on a `TOO_EARLY` round. The slashed $AURA
+- No voter rewards are paid on a `TOO_EARLY` round. The slashed \$AURA
   rolls forward into the penalty pool for the market's next dispute round.
 
 Anyone can submit an outcome again later, which opens a fresh dispute window.
@@ -96,16 +96,16 @@ market: the worst it can do is cost the proposer half their bond.
 
 ## Eligibility
 
-Voting is open to **$AURA stakers**:
+Voting is open to **\$AURA stakers**:
 
-- You must hold a vaulted $AURA position above the **None** tier (i.e. at
-  least the **Iron** tier, 60,000 $AURA) at commit time.
+- You must hold a vaulted \$AURA position above the **None** tier (i.e. at
+  least the **Iron** tier, 60,000 \$AURA) at commit time.
 - Your staked balance is **snapshotted when you commit**, so unstaking
   between commit and reveal doesn't dodge the slashing risk.
 
 There is no on-chain restriction on voting in markets you've traded; your
 protection against biased voting is the 65% supermajority requirement and
-the slashing economics, since a voter risks real $AURA to push a wrong outcome.
+the slashing economics, since a voter risks real \$AURA to push a wrong outcome.
 
 ## What happens if no outcome clears 65%?
 
@@ -145,17 +145,17 @@ Aura's dispute system uses **slashing**, not protocol fees, to reward honest
 voting:
 
 - **Wrong-side voters**. Anyone who revealed a vote for the *losing*
-  outcome has **0.1% of their vaulted $AURA** slashed per vote.
+  outcome has **0.1% of their vaulted \$AURA** slashed per vote.
 - **Non-revealers**. Stakers who committed but never revealed (or never
   committed at all) are slashed by the same amount, since silent voters
   undermine the oracle.
-- **Slashed $AURA** flows into a **penalty pool** for that market.
+- **Slashed \$AURA** flows into a **penalty pool** for that market.
 - **Winning voters** then claim a proportional share of the penalty pool,
   weighted by their voting tier.
 
-Dispute rewards are paid in **$AURA**, so the wrong side of a controversial
+Dispute rewards are paid in **\$AURA**, so the wrong side of a controversial
 market literally funds the right side. See
-[Staking & Vaulting $AURA](/tokens/staking) for the slashing mechanics in
+[Staking & Vaulting \$AURA](/tokens/staking) for the slashing mechanics in
 detail.
 
 ## Bonds & finalization
@@ -172,7 +172,7 @@ After a vote round resolves with a clear winner:
   non-revealers are slashed after finalization. The penalty pool can only
   be finalized once **every** committed vote has been revealed or slashed
   (penalties can't be silently skipped), and only then do winning voters
-  receive their $AURA rewards.
+  receive their \$AURA rewards.
 
 ### If the protocol is ever paused
 
@@ -195,4 +195,4 @@ through unchallenged.
 - `TOO_EARLY` throws out the submission and returns the market to trading.
 - The dispute loser forfeits their bond: half to the winner, half to the
   treasury.
-- Voters are paid in **$AURA** from a slashing pool, not in USDT fees.
+- Voters are paid in **\$AURA** from a slashing pool, not in USDT fees.
