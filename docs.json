@@ -70,6 +70,7 @@
             "pages": [
               "programs/overview",
               "programs/creator-rewards",
+              "programs/creator-agreements",
               "programs/liquidity-rewards",
               "programs/referral-program",
               "programs/dispute-rewards"
