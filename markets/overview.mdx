@@ -1,12 +1,15 @@
 ---
 title: "Markets Overview"
 sidebarTitle: "Overview"
-description: "How Aura prediction markets work: yes and no shares, the dual order book, how markets are created, and how they resolve."
+description: "How Aura prediction markets work: outcome shares, the dual order book, how markets are created, and how outcomes are settled."
 keywords: ["how prediction markets work", "Aura markets", "yes no shares", "order book", "market resolution", "binary market"]
 ---
 
-An Aura market is a question with a deadline and two sides. You buy shares in the
-outcome you think is right, and if you are right, each share pays out \$1.
+An Aura market asks a clearly defined question with two outcomes, or is part of a
+linked event page containing several options. You buy shares in the outcome you
+think is right, and if you are right, each share pays out \$1. Aura does not stop
+trading because a calendar date passes; an outcome can be proposed whenever the
+event is decidable under the market's rules.
 
 Everything else on this page is detail hanging off that sentence.
 
@@ -69,8 +72,9 @@ returns `yes` and `no` books separately. See
     2.5% fee that funds the [reward programs](/programs/overview).
   </Step>
   <Step title="Someone proposes the outcome">
-    After the event happens, anyone can submit the outcome with a 100 USDT bond.
-    If nobody disputes it within 24 hours, it stands.
+    When the event is decidable under the market's rules, anyone can submit the
+    outcome with a 100 USDT bond. If nobody disputes it within 24 hours, it
+    stands.
   </Step>
   <Step title="Or it gets disputed">
     A challenger posts their own bond, and staked \$AURA holders settle it by

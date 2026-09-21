@@ -22,8 +22,8 @@ description: "Common questions about Aura: wallets and sign-in, deposits and fee
 
 <AccordionGroup>
   <Accordion title="How do I create a wallet?">
-    You don't install anything, because Aura has a built-in wallet. Click
-    **Connect** and sign up with your email or Google. Your account is created
+    You don't install anything, because Aura has a built-in wallet. Choose
+    **Sign up** and use your email or Google. Your account is created
     in one step with a generated username you can change in Settings, and you
     can add a passkey afterwards for one-tap sign-in.
   </Accordion>
@@ -131,12 +131,13 @@ description: "Common questions about Aura: wallets and sign-in, deposits and fee
 
 <AccordionGroup>
   <Accordion title="How is the outcome of a market determined?">
-    Outcomes are initially proposed by users post-market completion and
-    finalized through community voting if disputes arise.
+    When an event is decidable under its rules, a user can propose an outcome.
+    It becomes final after the challenge window unless someone disputes it;
+    disputed outcomes go through the commit/reveal vote.
   </Accordion>
   <Accordion title="What if I disagree with a proposed market outcome?">
-    You can initiate a dispute by posting a dispute bond. This action triggers
-    a 24-hour community voting period to resolve the outcome.
+    You can initiate a dispute by posting a dispute bond before the challenge
+    window closes. The dispute then opens the commit/reveal voting process.
   </Accordion>
   <Accordion title="Who can vote on disputed outcomes?">
     You need at least **Iron tier** (60,000 vaulted \$AURA), completed Oracle

@@ -9,8 +9,9 @@ Aura pays out to the people who make the market work. There are four programs,
 each aimed at a different job, and they stack: nothing stops you from creating
 markets, quoting on them, referring traders, and voting on disputes.
 
-Aura is pre-mainnet. The schedules below describe current source behavior;
-daily creator payouts remain subject to release verification.
+Aura is pre-mainnet. The schedules below describe the current implementation;
+production activation, credentials, and final operational checks are part of
+launch readiness.
 
 The USDT programs draw from the **2.5% trading fee** on executed volume.
 Dispute voters may also receive AURA from the recorded penalty pool; that is
@@ -58,9 +59,10 @@ Each program has its own payout schedule and eligibility checks.
 
 <CardGroup cols={2}>
   <Card title="After settlement" icon="flag-checkered">
-    Referral and dispute payments follow their recorded settlement paths.
-    Aura sends eligible payouts automatically; an escrow handoff or pending
-    history entry is not a confirmed wallet payment.
+    Referral payments are swept from settled fill accruals, while dispute
+    payments follow their recorded settlement paths. Aura sends eligible
+    payouts automatically; an escrow handoff or pending history entry is not a
+    confirmed wallet payment.
   </Card>
   <Card title="Daily" icon="calendar-day">
     Creator and accepted sharing payouts use daily UTC windows, including before

@@ -25,17 +25,19 @@ nothing.
 
 ## How it gets paid
 
-Referral fees accrue inside each market contract as your referrals trade, then
-pay out to your wallet automatically once that market resolves.
+Referral fees accrue from settled fills as your referrals trade, then enter the
+automatic payout queue for delivery to your wallet. A payment can remain pending
+until the worker and chain confirmation complete; it does not wait for the
+market to resolve.
 
 Your dashboard shows history rather than a claim button, because there is nothing
 for you to sign. The payout goes to the wallet recorded as the referrer, and it
 cannot be redirected.
 
 <Note>
-Because payout happens at market resolution, fees from a long-dated market arrive
-when that market resolves, not when the trade happened. Volume on markets
-resolving next week pays next week.
+Payout timing follows settled fills and payout processing, not a market's
+resolution. Your dashboard shows pending and paid history so you can distinguish
+an accrued referral amount from a confirmed wallet payment.
 </Note>
 
 ## Getting your link
