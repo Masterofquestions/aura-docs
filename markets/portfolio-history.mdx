@@ -1,6 +1,6 @@
 ---
 title: "Portfolio and history"
-description: "Understand your portfolio estimate, transaction history, CSV export and realized trading cash flow."
+description: "Understand your portfolio estimate, transaction history, CSV export and realized profit and loss."
 ---
 
 ## Balances and portfolio value
@@ -26,16 +26,14 @@ Unavailable upstream evidence remains unavailable.
 
 ## History and CSV
 
-History includes proposals, fills, parlays, direct fee rewards, market winnings
-and supported wallet transfers. Every source page must complete before the view
-can export CSV. A source error, repeated cursor or incomplete parlay payment
-evidence disables export. Retained rows for the same wallet are marked stale
-after an outage; they are not transferred to another wallet.
+History includes proposals, fills, Vault activity, resolution bonds, direct fee
+rewards, market winnings and supported wallet transfers. Vault activity includes
+deposits, activation, unlock requests, returned AURA and slashes. New Parlays are
+unavailable and there is no Parlays History filter.
 
-A parlay placement is an outgoing stake at creation time. Its incoming return
-needs confirmed actual returned units and an authoritative payment-event time.
-A predicted win is not payment proof. A confirmed zero return creates no incoming
-row, and the return never reuses the placement's transaction link.
+Every source page must complete before the view can export CSV. A source error
+or repeated cursor disables export. Retained rows for the same wallet are marked stale
+after an outage; they are not transferred to another wallet.
 
 CSV follows your visible filters and sort order, including incoming/outgoing
 signs and occurrence times. It retains displayed precision, so it is an activity
@@ -44,15 +42,27 @@ day does not establish its payment time; an unfinalized allocation is not paid c
 
 ## Realized P/L
 
-The P/L view is cumulative trading cash flow. Buy fills and parlay stakes are
-outgoing; sell fills, market winnings and confirmed actual parlay returns are
-incoming. Finalized direct maker rewards are included. Wallet deposits,
-withdrawals and historical changes in open-position value are excluded.
+The P/L view recognizes profit and loss when positions are sold or finally
+resolved. Buying shares adds their price and trading fee to cost basis; an open
+buy contributes zero realized P/L. A sale subtracts the corresponding average
+cost basis from proceeds after fees.
+
+Final resolution values winning shares at one collateral token each and losing
+shares at zero, then subtracts their remaining cost basis. A losing position
+therefore records a loss without a payout. A winning payout may still be pending;
+when it arrives, it is not counted as profit a second time.
+
+For retained historical Parlays, open stakes contribute zero. A confirmed
+terminal result records actual returns minus stake, including a confirmed zero
+return. Finalized direct rewards are included as income. Wallet deposits,
+withdrawals, Vault movements and changes in estimated open-position value are
+excluded.
 
 Amounts are accumulated exactly from decimal strings before the headline is
 formatted to two places. Chart coordinates have display precision limits.
-Invalid amounts, unsupported precision or incomplete sources make the complete
-total unavailable.
+Invalid amounts, unsupported precision, missing cost-basis evidence or incomplete
+sources make the complete total unavailable. Current wallet balances cannot
+substitute for missing trading history.
 
 A confirmed amount without an authoritative payment time may contribute to the
 total while the chart remains unavailable. Missing payment time is not replaced
