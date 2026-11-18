@@ -21,11 +21,14 @@ submitted internally under the user's restricted enclave authorization.
 | Vault | explicitly documented protocol-vault operations |
 | Oracle | submit/dispute an outcome, commit and reveal |
 | Governance | cast an on-chain vote |
-| Factory | propose markets, submit/link proposals and parlay deposit |
+| Factory | propose markets and submit/link proposals |
 
 Always use the current OpenAPI operation for the exact request and response.
 Wallet collateral deposits and withdrawals use the session-bound
 `/v1/funding` flow, not a generic build-tx tutorial.
+
+New Parlays are unavailable; the build-tx API does not provide a way to create
+one. Existing payout, refund and historical records remain supported.
 
 ## Safe flow
 
