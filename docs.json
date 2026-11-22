@@ -77,6 +77,19 @@
             ]
           },
           {
+            "group": "Creator playbook",
+            "pages": [
+              "creators/overview",
+              "creators/earning",
+              "creators/picking-markets",
+              "creators/launching",
+              "creators/content",
+              "creators/measuring",
+              "creators/example",
+              "creators/ai-prompts"
+            ]
+          },
+          {
             "group": "Tutorials",
             "pages": [
               "tutorials/user-tutorials",
