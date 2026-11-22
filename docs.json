@@ -162,17 +162,6 @@
             }
           }
         ]
-      },
-      {
-        "tab": "Changelog",
-        "groups": [
-          {
-            "group": "Changelog",
-            "pages": [
-              "changelog"
-            ]
-          }
-        ]
       }
     ]
   },
@@ -269,8 +258,7 @@
         "items": [
           { "label": "API reference", "href": "https://docs.aura.markets/api-reference/introduction" },
           { "label": "Your first API call", "href": "https://docs.aura.markets/api-reference/quickstart" },
-          { "label": "Realtime data", "href": "https://docs.aura.markets/api-reference/realtime" },
-          { "label": "Changelog", "href": "https://docs.aura.markets/changelog" }
+          { "label": "Realtime data", "href": "https://docs.aura.markets/api-reference/realtime" }
         ]
       },
       {
