@@ -6,7 +6,7 @@
    pages only. Scoped via :has(.crp) — no other page is affected. */
 #content-area:has(.crp) #header { display: none; }
 body:has(.crp) footer#footer { display: none; }
-/* Hide the Guides / API Reference / Changelog tab row — these pages belong to
+/* Hide the docs tab row — these pages belong to
    no tab, so the active-tab highlight is misleading. Same for the mobile
    drawer strip, which exposes the same navigation. */
 body:has(.crp) #navbar div:has(> .nav-tabs) { display: none; }
